@@ -1,0 +1,6 @@
+library(shinyEventLogger)
+set_logging()
+set_logging_session()
+log_event("Loading data")
+connectionDetails <- DatabaseConnector::createConnectionDetails("sqlite", server = "fullResults.sql")
+conn <- DatabaseConnector::connect(connectionDetails = connectionDetails)
