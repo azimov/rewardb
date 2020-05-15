@@ -16,14 +16,14 @@ SELECT fr.TARGET_COHORT_ID, fr.TARGET_COHORT_NAME, fr.OUTCOME_COHORT_ID, fr.OUTC
     CASE
         WHEN harm_t.sc_harm_count IS NULL THEN 'none'
         WHEN harm_t.sc_harm_count = 1 THEN 'one'
-        WHEN harm_t.sc_harm_count == 5 THEN 'all'
+        WHEN harm_t.sc_harm_count = 5 THEN 'all'
         WHEN harm_t.sc_harm_count > 1 THEN 'most'
         ELSE harm_t.sc_harm_count
     END AS sc_risk,
     CASE
         WHEN benefit_t.sc_benefit_count IS NULL THEN 'none'
         WHEN benefit_t.sc_benefit_count = 1 THEN 'one'
-        WHEN benefit_t.sc_benefit_count == 5 THEN 'all'
+        WHEN benefit_t.sc_benefit_count = 5 THEN 'all'
         WHEN benefit_t.sc_benefit_count > 1 THEN 'most'
         ELSE benefit_t.sc_benefit_count
     END AS sc_benefit

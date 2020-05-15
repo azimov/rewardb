@@ -89,7 +89,6 @@ server <- function(input, output, session) {
     table3$C_PT <- formatC(table3$C_PT, digits = 0, format = "f")
     table3$T_PT <- formatC(table3$T_PT, digits = 0, format = "f")
 
-
     for (n in names(niceColumnName)) {
       colnames(table3)[colnames(table3) == n] <- niceColumnName[n]
     }
@@ -109,6 +108,15 @@ server <- function(input, output, session) {
                                     df <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = treatment, outcome = outcome)
                                     forestPlot(df)
                                   })
+
+  output$eOutcomeProb <- renderPlotly({
+                                        selectedInput <- filteredTableSelected()
+                                        target <- selectedInput$TARGET_COHORT_ID
+                                        outcome <- selectedInput$OUTCOME_COHORT_ID
+                                        sql <- "SELECT * FROM full_results WHERE TARGET_COHORT_ID = @target";
+                                        df <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = target)
+                                        plot <- outcomeDistribution(df, target, outcome)
+                                      })
 
   manhattanRes <- eventReactive(input$querySql, {
     shinyEventLogger::log_output(paste("filtering m plot - sql query"))

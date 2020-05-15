@@ -53,3 +53,10 @@ distPlot <- function(dfFunc, xCol, yFunc) {
     geom_boxplot()
   return(plot)
 }
+
+outcomeDistribution <- function(df, target, outcome) {
+  log_output(nrow(df))
+  plot <- ggplot(df, aes(x=RR, colour=SOURCE_NAME)) + geom_density(alpha = 0.8)
+
+  return(ggplotly(plot))
+}

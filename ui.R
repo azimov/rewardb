@@ -48,6 +48,10 @@ ui <- fluidPage(
                                                              tabPanel("Forest plot",
                                                                       plotOutput("forestPlot", height = 500, hover = hoverOpts("plotHoverForestPlot")),
                                                                       div(strong("Figure 1."), "Forest plot of effect estimates from each database")
+                                                             ),
+                                                              tabPanel("Event outcome probability",
+                                                                      plotly::plotlyOutput("eOutcomeProb"),
+                                                                      div(strong("Figure 2."), "Distribution of IRR given data")
                                                              )
                                                  )
                                 )
