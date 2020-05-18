@@ -55,7 +55,6 @@ distPlot <- function(dfFunc, xCol, yFunc) {
 }
 
 outcomeDistribution <- function(df, target, outcome) {
-  log_output(nrow(df))
   plot <- ggplot(df, aes(x=RR, colour=SOURCE_NAME)) + geom_density(alpha = 0.8)
 
   return(ggplotly(plot))
