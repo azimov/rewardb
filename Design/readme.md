@@ -19,7 +19,7 @@ API.
 
 The design of this tool is as follows:
 * The full analysis is computed in R and can be ran on any system with access to the CDM
-* Each individual task is considered to be atomic, that is to say that it is possible to run each step of the anlaysis
+* Each individual task is considered to be atomic, that is to say that it is possible to run each step of the analysis
 for each target-outcome cohort individually for each database. There are chains of dependencies, but the application
 will verify that the previous step has been completed (e.g. the cohorts must have been created for a data source before
 the SCCS step can be run).

@@ -49,9 +49,9 @@ ui <- fluidPage(
                                                                       plotOutput("forestPlot", height = 500, hover = hoverOpts("plotHoverForestPlot")),
                                                                       div(strong("Figure 1."), "Forest plot of effect estimates from each database")
                                                              ),
-                                                              tabPanel("Event outcome probability",
-                                                                      plotly::plotlyOutput("eOutcomeProb"),
-                                                                      div(strong("Figure 2."), "Distribution of IRR given data")
+                                                              tabPanel("IRR probability",
+                                                                      plotly::plotlyOutput("eOutcomeProb", height=800),
+                                                                      div(strong("Figure 2."), paste("Kernel Density Estimates of IRR scores for all outcomes in data set for ",  textOutput("targetStr")))
                                                              )
                                                  )
                                 )

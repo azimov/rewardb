@@ -50,6 +50,11 @@ server <- function(input, output, session) {
                                              return(paste(s$TARGET_COHORT_NAME, s$TARGET_COHORT_ID, "for", s$OUTCOME_COHORT_NAME, s$OUTCOME_COHORT_ID))
                                            })
 
+  output$targetStr <- renderText({
+                                   s <- filteredTableSelected()
+                                   s$TARGET_COHORT_NAME
+                                 })
+
   output$selectTreatement <- renderUI({
                                         df <- mainTableRe()
                                         widget <- shinyWidgets::pickerInput("targetCohorts", "Drug Exposures:",
@@ -113,9 +118,11 @@ server <- function(input, output, session) {
                                         selectedInput <- filteredTableSelected()
                                         target <- selectedInput$TARGET_COHORT_ID
                                         outcome <- selectedInput$OUTCOME_COHORT_ID
+                                        sql <- "SELECT * FROM full_results WHERE TARGET_COHORT_ID = @target AND OUTCOME_COHORT_ID = @outcome ORDER BY SOURCE_ID";
+                                        dfScores <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = target, outcome = outcome)
                                         sql <- "SELECT * FROM full_results WHERE TARGET_COHORT_ID = @target";
                                         df <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = target)
-                                        plot <- outcomeDistribution(df, target, outcome)
+                                        plot <- outcomeDistribution(df, dfScores, target, outcome)
                                       })
 
   manhattanRes <- eventReactive(input$querySql, {

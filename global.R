@@ -3,7 +3,7 @@ set_logging()
 set_logging_session()
 log_event("Loading data")
 
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "sqlite", server = "fullResults.sqlite")
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "sqlite", server = "fullResults.db")
 dbConn <- DatabaseConnector::connect(connectionDetails = connectionDetails)
 
 # CONST Exact strings used in SQL query

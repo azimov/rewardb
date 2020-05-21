@@ -49,13 +49,13 @@ distPlot <- function(dfFunc, xCol, yFunc) {
   df <- dfFunc()
   plot <- ggplot(df) +
     aes_string(x = xCol(), y = yFunc) +
-    aes(color = SOURCE_NAME) +
-    geom_boxplot()
+    geom_boxplot(aes(fill=SOURCE_NAME))
   return(plot)
 }
 
-outcomeDistribution <- function(df, target, outcome) {
-  plot <- ggplot(df, aes(x=RR, colour=SOURCE_NAME)) + geom_density(alpha = 0.8)
+outcomeDistribution <- function(df, dfScores, target, outcome) {
+  plot <- ggplot(df, aes(x=RR)) + geom_density(adjust=3, trim=TRUE, alpha = 0.4, aes(fill=SOURCE_NAME))
 
+  plot <- plot + geom_vline(data=dfScores, aes(xintercept=RR, color=SOURCE_NAME))
   return(ggplotly(plot))
 }
