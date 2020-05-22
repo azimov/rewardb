@@ -4,7 +4,7 @@ set_logging_session()
 log_event("Loading data")
 source("readConfig.R")
 
-appContext <- loadAppContext("config.dev.yml")
+appContext <- loadAppContext("config.covid-resp.yml")
 dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
 
 # CONST Exact strings used in SQL query
