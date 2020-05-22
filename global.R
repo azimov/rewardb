@@ -2,9 +2,10 @@ library(shinyEventLogger)
 set_logging()
 set_logging_session()
 log_event("Loading data")
+source("readConfig.R")
 
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "sqlite", server = "fullResults.db")
-dbConn <- DatabaseConnector::connect(connectionDetails = connectionDetails)
+appContext <- loadAppContext("config.dev.yml")
+dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
 
 # CONST Exact strings used in SQL query
 scBenefitRisk <- c("none", "one", "most", "all")

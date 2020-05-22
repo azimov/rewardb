@@ -1,0 +1,12 @@
+name: development dashboard
+short_name: dev
+description: Example description text
+outcome_concept_ids: ~
+target_concept_ids: 1
+connectionDetails:
+  dbms: sqlite
+  server: development.db
+resultsDataSource:
+  dbms: pdw
+  server: JRDUSAPSCTL01
+  port: 17001

@@ -6,5 +6,7 @@ install.packages(c(
   "scales",
   "DatabaseConnector",
   "DT",
-  "shinyEventLogger"
+  "shinyEventLogger",
+  "devtools"
 ))
+
