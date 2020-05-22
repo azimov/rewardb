@@ -42,10 +42,11 @@ runMetaAnalysis <- function(dbConn, fullResults, ncores = parallel::detectCores(
     sub <- data.frame(subset(fullResults, TARGET_COHORT_ID == treatment & OUTCOME_COHORT_ID == outcome))
     results <- meta::metainc(event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT,
                              data = sub, sm = "IRR", model.glmm = "UM.RS")
-    row <- c(SOURCE_ID = 99, SOURCE_NAME = '*Meta Analysis*', TARGET_COHORT_ID = treatment, TARGET_COHORT_NAME = sub$TARGET_COHORT_NAME[1], OUTCOME_COHORT_ID = outcome,
-             OUTCOME_COHORT_NAME = sub$OUTCOME_COHORT_NAME[1], T_AT_RISK = sum(sub$T_AT_RISK), T_PT = sum(sub$T_PT), T_CASES = sum(sub$T_CASES),
+    row <- c(SOURCE_ID = 99, TARGET_COHORT_ID = treatment, OUTCOME_COHORT_ID = outcome,
+             T_AT_RISK = sum(sub$T_AT_RISK), T_PT = sum(sub$T_PT), T_CASES = sum(sub$T_CASES),
              C_AT_RISK = sum(sub$C_AT_RISK), C_PT = sum(sub$C_PT), C_CASES = sum(sub$C_CASES),
-             RR = exp(results$TE.random), LB_95 = exp(results$lower.random), UB_95 = exp(results$upper.random), P_VALUE = results$pval.random, I2 = results$I2)
+             RR = exp(results$TE.random), LB_95 = exp(results$lower.random), UB_95 = exp(results$upper.random),
+             P_VALUE = results$pval.random, I2 = results$I2)
   }
 
   DatabaseConnector::dbAppendTable(conn, "results", meta_table)
