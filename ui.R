@@ -10,9 +10,56 @@ treatments <- DatabaseConnector::renderTranslateQuerySql(dbConn, filterSql)
 exposureClassesSql <- "SELECT DISTINCT(EXPOSURE_CLASS) FROM TREATMENT_CLASSES ORDER BY EXPOSURE_CLASS"
 exposureClasses <- DatabaseConnector::renderTranslateQuerySql(dbConn, exposureClassesSql)
 
+manhattanPlotPanel <- tabPanel("Plots",
+                               HTML("<h4> Plot configuration </h4>"),
+                               fluidRow(
+                                 column(2,
+                                        pickerInput("mplotType", "Plot type",
+                                                    choices = c("Manhattan", "Distribution")
+                                        )
+                                 ),
+                                 column(2,
+                                        pickerInput("yFunc", "Y Function",
+                                                    choices = c("RR", "log(RR)", "1/RR",
+                                                                "-1 * RR", "-1 * log(RR)",
+                                                                "P_VALUE", "LB_95", "UB_95"
+                                                    )
+                                        )
+                                 ),
+                                 column(2,
+                                        uiOutput("selectMx")
+                                 ),
+                                 column(2,
+                                        uiOutput("selectDataSource")
+                                 ),
+                               ),
+                               plotly::plotlyOutput("mplot"),
+                               div(strong("Figure 3."), textOutput("mplotFigureTitle"))
+
+)
+
+
+mainPanelOutput <- tabPanel("Main Results",
+                            DT::dataTableOutput("mainTable"),
+                            conditionalPanel(condition = "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0",
+                                             HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
+                                             tabsetPanel(id = "tabsetPanelResults",
+                                                         tabPanel("Detailed results", DT::dataTableOutput("fullResultsTable")),
+                                                         tabPanel("Forest plot",
+                                                                  plotOutput("forestPlot", height = 500, hover = hoverOpts("plotHoverForestPlot")),
+                                                                  div(strong("Figure 1."), "Forest plot of effect estimates from each database")
+                                                         ),
+                                                         tabPanel("IRR probability",
+                                                                  plotly::plotlyOutput("eOutcomeProb", height = 800),
+                                                                  div(strong("Figure 2."), paste("Kernel Density Estimates of IRR scores for all outcomes in data set for ", textOutput("targetStr")))
+                                                         )
+                                             )
+                            )
+)
+
 ### UI Script ###
 ui <- fluidPage(
-  titlePanel(HTML(paste("<h1>REWARD-B Dashboard</h1>")), windowTitle = "All-by-all analysis"),
+  titlePanel(HTML(paste("<h1>REWARD-B Dashboard", appContext$name ,"</h1>")), windowTitle = paste("REWARD-B Dashboard - ", appContext$name)),
   fluidRow(
     column(2,
            setSliderColor(c("#DDDDDD"), c(1)),
@@ -38,52 +85,7 @@ ui <- fluidPage(
 
     column(9,
 
-           tabsetPanel(id = "mainPanel",
-                       tabPanel("Main Results",
-                                DT::dataTableOutput("mainTable"),
-                                conditionalPanel(condition = "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0",
-                                                 HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
-                                                 tabsetPanel(id = "tabsetPanelResults",
-                                                             tabPanel("Detailed results", DT::dataTableOutput("fullResultsTable")),
-                                                             tabPanel("Forest plot",
-                                                                      plotOutput("forestPlot", height = 500, hover = hoverOpts("plotHoverForestPlot")),
-                                                                      div(strong("Figure 1."), "Forest plot of effect estimates from each database")
-                                                             ),
-                                                              tabPanel("IRR probability",
-                                                                      plotly::plotlyOutput("eOutcomeProb", height=800),
-                                                                      div(strong("Figure 2."), paste("Kernel Density Estimates of IRR scores for all outcomes in data set for ",  textOutput("targetStr")))
-                                                             )
-                                                 )
-                                )
-                       ),
-                       tabPanel("Plots",
-                         HTML("<h4> Plot configuration </h4>"),
-                         fluidRow(
-                           column(2,
-                                  pickerInput("mplotType", "Plot type",
-                                              choices = c("Manhattan",  "Distribution")
-                                  )
-                           ),
-                           column(2,
-                                  pickerInput("yFunc", "Y Function",
-                                              choices = c("RR", "log(RR)", "1/RR",
-                                                          "-1 * RR", "-1 * log(RR)",
-                                                          "P_VALUE", "LB_95", "UB_95"
-                                              )
-                                  )
-                           ),
-                           column(2,
-                                  uiOutput("selectMx")
-                           ),
-                           column(2,
-                                  uiOutput("selectDataSource")
-                           ),
-                         ),
-                         plotly::plotlyOutput("mplot"),
-                         div(strong("Figure 3."), textOutput("mplotFigureTitle"))
-
-                       )
-           )
+           tabsetPanel(id = "mainPanel", mainPanelOutput)
     )
   )
 )

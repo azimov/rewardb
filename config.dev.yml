@@ -2,7 +2,7 @@ name: development dashboard
 short_name: dev
 description: Example description text
 outcome_concept_ids: ~
-target_concept_ids: 1
+target_concept_ids: 739138
 connectionDetails:
   dbms: sqlite
   server: development.db
