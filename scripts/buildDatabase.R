@@ -56,11 +56,11 @@ buildFromConfig <- function(appContext) {
   connection <- DatabaseConnector::connect(appContext$connectionDetails)
 
   pdwConnectionDetails <- DatabaseConnector::createConnectionDetails(appContext$resultsDatabase$cdmDataSource)
-  pdWconnection <- DatabaseConnector::connect(connectionDetails = pdwConnectionDetails)
+  pdwConnection <- DatabaseConnector::connect(connectionDetails = pdwConnectionDetails)
 
   if (appContext$outcome_concept_ids == NULL) {
     targetIds <- appContext$target_concept_ids * 1000
-    fullResults <- activesurveillancedev::getFullResultsSubsetTreatments(connection = pdWconnection,
+    fullResults <- activesurveillancedev::getFullResultsSubsetTreatments(connection = pdwConnection,
                                                                          resultsDatabaseSchema = appContext$resultsDatabase$schema,
                                                                          cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
                                                                          outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
@@ -72,7 +72,7 @@ buildFromConfig <- function(appContext) {
     if (appContext$custom_outcome_cohort_ids != NULL) {
       outcomeIds <- append(outcomeIds, appContext$custom_outcome_cohort_ids)
     }
-    fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdWconnection,
+    fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdwConnection,
                                                                          resultsDatabaseSchema = appContext$resultsDatabase$schema,
                                                                          cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
                                                                          outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,

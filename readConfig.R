@@ -1,7 +1,7 @@
 loadAppContext <- function (filePath, createConnection=FALSE) {
   app <- yaml::read_yaml(filePath)
   # Create database connection
-  connectionDetails <- DatabaseConnector::createConnectionDetails(cfg$connectionDetails)
+  connectionDetails <- DatabaseConnector::createConnectionDetails(app$connectionDetails)
 
   app$dbConn <- NULL
   if (createConnection) {
