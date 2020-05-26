@@ -1,7 +1,7 @@
-name: COVID-19 respiritory disease outcomes
+name: 'COVID-19 respiritory disease outcomes'
 short_name: covid_resp
 description: 'Dashboard for COVID-19 respiratory disease outcomes'
-outcome_concept_ids: 255848, 319049, 4266367, 312437
+outcome_concept_ids: [255848, 319049, 4266367, 312437]
 custom_outcome_cohort_ids: ~
 target_concept_ids: ~
 connectionDetails:
@@ -13,8 +13,8 @@ resultsDatabase:
   cohortDefinitionTable: "homer_cohort_definition_May2020"
   outcomeCohortDefinitionTable: "homer_outcome_cohort_definition_May2020"
   asurvResultsTable: "homer_AllbyAll_results_May2020"
+  
   cdmDataSource:
     dbms: pdw
     server: JRDUSAPSCTL01
     port: 17001
-

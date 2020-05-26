@@ -6,7 +6,7 @@ This repository includes the reward-b shiny application.
 Currently under development. To use, point your RStudio workspace at the directory with this 
 repository and run:
 
-    source("requirements.R") # Install's required packgages
+    source("requirements.R") # Install required packgages
     shiny::runApp()
     
  The development version uses a small subest of data in an SQlite database. This is for quick

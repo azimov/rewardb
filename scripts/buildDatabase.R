@@ -31,13 +31,18 @@ exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
   createCohortReferences(conn)
 }
 
-runMetaAnalysis <- function(dbConn, fullResults, ncores = parallel::detectCores() - 1) {
+runMetaAnalysis <- function(dbConn, ncores = parallel::detectCores() - 1) {
+  registerDoParallel(cores = ncores)
+  print("compute meta-analysis")
 
+  # TODO is the I/O faster to read all results or to read results per computation
+  # Probably fastest to do the computation in the DB engine - but not with sqlite!
+  fullResults <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT * FROM RESULTS")
   exposures <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT DISTINCT(TARGET_COHORT_ID) FROM TARGET")
   outcomes <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT DISTINCT(OUTCOME_COHORT_ID) FROM OUTCOME")
 
-  registerDoParallel(cores = ncores)
-  meta_table <- foreach(outcome = outcomes) %:%
+
+  meta_table <- foreach(outcome = outcomes, .combine = "rbind") %:%
     foreach(treatment = exposures, .combine = "rbind") %dopar% {
     sub <- data.frame(subset(fullResults, TARGET_COHORT_ID == treatment & OUTCOME_COHORT_ID == outcome))
     results <- meta::metainc(event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT,
@@ -49,16 +54,15 @@ runMetaAnalysis <- function(dbConn, fullResults, ncores = parallel::detectCores(
              P_VALUE = results$pval.random, I2 = results$I2)
   }
 
-  DatabaseConnector::dbAppendTable(conn, "results", meta_table)
+  DatabaseConnector::dbAppendTable(dbConn, "results", meta_table)
 }
 
 buildFromConfig <- function(appContext) {
   connection <- DatabaseConnector::connect(appContext$connectionDetails)
+  pdWconnection <- DatabaseConnector::connect(connectionDetails = appContext$resultsDatabase$cdmDataSource)
 
-  pdwConnectionDetails <- DatabaseConnector::createConnectionDetails(appContext$resultsDatabase$cdmDataSource)
-  pdwConnection <- DatabaseConnector::connect(connectionDetails = pdwConnectionDetails)
-
-  if (appContext$outcome_concept_ids == NULL) {
+  if (is.null(appContext$outcome_concept_ids)) {
+    print("extracting exposure results")
     targetIds <- appContext$target_concept_ids * 1000
     fullResults <- activesurveillancedev::getFullResultsSubsetTreatments(connection = pdwConnection,
                                                                          resultsDatabaseSchema = appContext$resultsDatabase$schema,
@@ -66,24 +70,28 @@ buildFromConfig <- function(appContext) {
                                                                          outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
                                                                          drugIngredientConceptList = targetIds,
                                                                          asurvResultsTable = appContext$resultsDatabase$asurvResultsTable)
-  } else if (appContext$outcome_concept_ids ){
+  } else if (!is.null(appContext$outcome_concept_ids)) {
     outcomeIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
 
-    if (appContext$custom_outcome_cohort_ids != NULL) {
+    if (!is.null(appContext$custom_outcome_cohort_ids)) {
       outcomeIds <- append(outcomeIds, appContext$custom_outcome_cohort_ids)
     }
-    fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdwConnection,
-                                                                         resultsDatabaseSchema = appContext$resultsDatabase$schema,
-                                                                         cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
-                                                                         outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
-                                                                         drugIngredientConceptList = outcomeIds,
-                                                                         asurvResultsTable = appContext$resultsDatabase$asurvResultsTable)
+
+    print("extracting outcome results")
+    fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdWconnection,
+                                                                       resultsDatabaseSchema = appContext$resultsDatabase$schema,
+                                                                       cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
+                                                                       outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
+                                                                       customOutcomeCohortList = outcomeIds,
+                                                                       asurvResultsTable = appContext$resultsDatabase$asurvResultsTable)
   } else {
     print("ERROR: check config - cannot create dataset without specifying either subset of outcomes or targets")
     return(NULL)
   }
 
-  exportToDashboarDatabase(fullResults, conn, overwrite = TRUE)
-  runMetaAnalysis <- function(dbConn, fullResults)
+  exportToDashboarDatabase(fullResults, connection, overwrite = TRUE)
+  runMetaAnalysis(connection)
+
+  DatabaseConnector::disconnect(pdWconnection)
   DatabaseConnector::disconnect(connection)
 }

@@ -7,6 +7,8 @@ install.packages(c(
   "DatabaseConnector",
   "DT",
   "shinyEventLogger",
-  "devtools"
+  "devtools",
+  "doParallel",
+  "forearch"
 ))
 
