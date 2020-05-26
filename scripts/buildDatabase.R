@@ -59,7 +59,7 @@ runMetaAnalysis <- function(dbConn, ncores = parallel::detectCores() - 1) {
 
 buildFromConfig <- function(appContext) {
   connection <- DatabaseConnector::connect(appContext$connectionDetails)
-  pdWconnection <- DatabaseConnector::connect(connectionDetails = appContext$resultsDatabase$cdmDataSource)
+  pdwConnection <- DatabaseConnector::connect(connectionDetails = appContext$resultsDatabase$cdmDataSource)
 
   if (is.null(appContext$outcome_concept_ids)) {
     print("extracting exposure results")
@@ -78,7 +78,7 @@ buildFromConfig <- function(appContext) {
     }
 
     print("extracting outcome results")
-    fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdWconnection,
+    fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdwConnection,
                                                                        resultsDatabaseSchema = appContext$resultsDatabase$schema,
                                                                        cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
                                                                        outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
