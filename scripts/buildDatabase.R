@@ -1,6 +1,7 @@
 library(foreach)
 library(doParallel)
 
+# This function will change a lot as the method for storing cohorts change
 createCohortReferences <- function(conn) {
   sql <- "SELECT TARGET_COHORT_ID, cast(TARGET_COHORT_ID / 1000 AS INT) AS DRUG_CONCEPT_ID FROM TARGET"
   df <- DatabaseConnector::renderTranslateQuerySql(conn, sql)
@@ -26,13 +27,18 @@ exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
 
   DatabaseConnector::dbWriteTable(conn, "outcome", outcomesRefs, overwrite = overwrite)
   DatabaseConnector::dbWriteTable(conn, "target", targetRefs, overwrite = overwrite)
-
+  
+  # TODO: Import exposure classes for medications
+  if ("EXPOSURE_CLASS" %in% names(dataFrame)) {
+    exposureClasses <- dplyr::distinct(dataFrame[, c("TARGET_COHORT_ID", "EXPOSURE_CLASS")])
+    DatabaseConnector::dbWriteTable(conn, "treatment_classes", exposureClasses, overwrite = overwrite)
+  }
   # Add table for cohort - concept id references
   createCohortReferences(conn)
 }
 
 runMetaAnalysis <- function(dbConn, ncores = parallel::detectCores() - 1) {
-  registerDoParallel(cores = ncores)
+  #registerDoParallel(cores = ncores)
   print("compute meta-analysis")
 
   # TODO is the I/O faster to read all results or to read results per computation
@@ -40,21 +46,21 @@ runMetaAnalysis <- function(dbConn, ncores = parallel::detectCores() - 1) {
   fullResults <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT * FROM RESULTS")
   exposures <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT DISTINCT(TARGET_COHORT_ID) FROM TARGET")
   outcomes <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT DISTINCT(OUTCOME_COHORT_ID) FROM OUTCOME")
+  print("computing")
+  meta_table <- foreach(outcome=outcomes$OUTCOME_COHORT_ID, .combine = "rbind") %:%
+    foreach(treatment = exposures$TARGET_COHORT_ID, .combine = "rbind") %dopar% {
+      sub <- fullResults[fullResults$TARGET_COHORT_ID == treatment & fullResults$OUTCOME_COHORT_ID == outcome, ]
+      results <- meta::metainc(event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT,
+                               data = sub, sm = "IRR", model.glmm = "UM.RS")
+      c(SOURCE_ID = 99, TARGET_COHORT_ID = treatment, OUTCOME_COHORT_ID = outcome,
+               T_AT_RISK = sum(sub$T_AT_RISK), T_PT = sum(sub$T_PT), T_CASES = sum(sub$T_CASES),
+               C_AT_RISK = sum(sub$C_AT_RISK), C_PT = sum(sub$C_PT), C_CASES = sum(sub$C_CASES),
+               RR = exp(results$TE.random), LB_95 = exp(results$lower.random), UB_95 = exp(results$upper.random),
+               P_VALUE = results$pval.random, I2 = results$I2)
+    }
 
-
-  meta_table <- foreach(outcome = outcomes, .combine = "rbind") %:%
-    foreach(treatment = exposures, .combine = "rbind") %dopar% {
-    sub <- data.frame(subset(fullResults, TARGET_COHORT_ID == treatment & OUTCOME_COHORT_ID == outcome))
-    results <- meta::metainc(event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT,
-                             data = sub, sm = "IRR", model.glmm = "UM.RS")
-    row <- c(SOURCE_ID = 99, TARGET_COHORT_ID = treatment, OUTCOME_COHORT_ID = outcome,
-             T_AT_RISK = sum(sub$T_AT_RISK), T_PT = sum(sub$T_PT), T_CASES = sum(sub$T_CASES),
-             C_AT_RISK = sum(sub$C_AT_RISK), C_PT = sum(sub$C_PT), C_CASES = sum(sub$C_CASES),
-             RR = exp(results$TE.random), LB_95 = exp(results$lower.random), UB_95 = exp(results$upper.random),
-             P_VALUE = results$pval.random, I2 = results$I2)
-  }
-
-  DatabaseConnector::dbAppendTable(dbConn, "results", meta_table)
+  fullResults <- rbind(fullResults, meta_table)
+  DatabaseConnector::dbWriteTable(dbConn, "results", fullResults, overwrite = TRUE)
 }
 
 buildFromConfig <- function(appContext) {
@@ -92,6 +98,6 @@ buildFromConfig <- function(appContext) {
   exportToDashboarDatabase(fullResults, connection, overwrite = TRUE)
   runMetaAnalysis(connection)
 
-  DatabaseConnector::disconnect(pdWconnection)
+  DatabaseConnector::disconnect(pdwConnection)
   DatabaseConnector::disconnect(connection)
 }

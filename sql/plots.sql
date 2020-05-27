@@ -1,18 +1,18 @@
 WITH benefit_t AS(
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS sc_benefit_count
-    FROM full_results
+    FROM results
     WHERE RR <= @benefitThreshold
         AND P_VALUE < 0.05
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 ), harm_t AS (
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS sc_harm_count
-    FROM full_results
+    FROM results
     WHERE RR >= @harmThreshold
         AND P_VALUE < 0.05
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 )
 
-SELECT fr.*, tc.EXPOSURE_CLASS,
+SELECT fr.*, o.outcome_cohort_name, t.target_cohort_name, tc.EXPOSURE_CLASS,
     CASE
         WHEN harm_t.sc_harm_count IS NULL THEN 'none'
         WHEN harm_t.sc_harm_count = 1 THEN 'one'
@@ -27,7 +27,9 @@ SELECT fr.*, tc.EXPOSURE_CLASS,
         WHEN benefit_t.sc_benefit_count > 1 THEN 'most'
         ELSE benefit_t.sc_benefit_count
     END AS sc_benefit
-FROM full_results fr
+FROM results fr
 LEFT JOIN harm_t ON harm_t.TARGET_COHORT_ID = fr.TARGET_COHORT_ID AND harm_t.OUTCOME_COHORT_ID = fr.OUTCOME_COHORT_ID
 LEFT JOIN benefit_t ON benefit_t.TARGET_COHORT_ID = fr.TARGET_COHORT_ID AND benefit_t.OUTCOME_COHORT_ID = fr.OUTCOME_COHORT_ID
-INNER JOIN TREATMENT_CLASSES tc ON fr.TARGET_COHORT_ID = tc.TARGET_COHORT_ID
+LEFT JOIN TREATMENT_CLASSES tc ON fr.TARGET_COHORT_ID = tc.TARGET_COHORT_ID
+INNER JOIN treatment t ON t.target_cohort_id = fr.target_cohort_id
+INNER JOIN outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id

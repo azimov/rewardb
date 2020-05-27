@@ -26,7 +26,6 @@ server <- function(input, output, session) {
                                          filtered <- df[
                                            df$OUTCOME_COHORT_NAME %in% input$outcomeCohorts &
                                              df$TARGET_COHORT_NAME %in% input$targetCohorts &
-                                             df$EXPOSURE_CLASS %in% input$exposureClasses &
                                              df$SC_RISK %in% input$scRisk &
                                              df$SC_BENEFIT %in% input$scBenefit,]
                                          return(filtered)
@@ -81,7 +80,7 @@ server <- function(input, output, session) {
     outcome <- s$OUTCOME_COHORT_ID
 
     log_event(s)
-    sql <- "SELECT * FROM full_results WHERE OUTCOME_COHORT_ID = @outcome AND TARGET_COHORT_ID = @treatment ORDER BY SOURCE_ID"
+    sql <- "SELECT * FROM results WHERE OUTCOME_COHORT_ID = @outcome AND TARGET_COHORT_ID = @treatment ORDER BY SOURCE_ID"
     table3 <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, treatment = treatment, outcome = outcome)
     table3$RR[table3$RR > 100] <- NA
     table3$C_PT <- format(table3$C_PT, digits = 0, format = "f")
@@ -109,7 +108,7 @@ server <- function(input, output, session) {
                                     selectedInput <- filteredTableSelected()
                                     treatment <- selectedInput$TARGET_COHORT_ID
                                     outcome <- selectedInput$OUTCOME_COHORT_ID
-                                    sql <- "SELECT * FROM full_results WHERE TARGET_COHORT_ID = @target AND OUTCOME_COHORT_ID = @outcome ORDER BY SOURCE_ID";
+                                    sql <- "SELECT * FROM results WHERE TARGET_COHORT_ID = @target AND OUTCOME_COHORT_ID = @outcome ORDER BY SOURCE_ID";
                                     df <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = treatment, outcome = outcome)
                                     forestPlot(df)
                                   })
@@ -118,9 +117,9 @@ server <- function(input, output, session) {
                                         selectedInput <- filteredTableSelected()
                                         target <- selectedInput$TARGET_COHORT_ID
                                         outcome <- selectedInput$OUTCOME_COHORT_ID
-                                        sql <- "SELECT * FROM full_results WHERE TARGET_COHORT_ID = @target AND OUTCOME_COHORT_ID = @outcome ORDER BY SOURCE_ID";
+                                        sql <- "SELECT * FROM results WHERE TARGET_COHORT_ID = @target AND OUTCOME_COHORT_ID = @outcome ORDER BY SOURCE_ID";
                                         dfScores <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = target, outcome = outcome)
-                                        sql <- "SELECT * FROM full_results WHERE TARGET_COHORT_ID = @target";
+                                        sql <- "SELECT * FROM results WHERE TARGET_COHORT_ID = @target";
                                         df <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = target)
                                         plot <- outcomeDistribution(df, dfScores, target, outcome)
                                       })
