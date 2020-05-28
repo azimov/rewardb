@@ -44,35 +44,6 @@ exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
   createCohortReferences(conn)
 }
 
-runMetaAnalysis <- function(dbConn, ncores = parallel::detectCores() - 1) {
-  #registerDoParallel(cores = ncores)
-  print("compute meta-analysis")
-
-  # TODO is the I/O faster to read all results or to read results per computation
-  # Probably fastest to do the computation in the DB engine - but not with sqlite!
-  fullResults <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT * FROM RESULTS")
-  exposures <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT DISTINCT(TARGET_COHORT_ID) FROM TARGET")
-  outcomes <- DatabaseConnector::renderTranslateQuerySql(dbConn, "SELECT DISTINCT(OUTCOME_COHORT_ID) FROM OUTCOME")
-  
-  print("computing")
-  meta_table <- foreach(outcome=outcomes$OUTCOME_COHORT_ID, .combine = "rbind") %:%
-    foreach(treatment = exposures$TARGET_COHORT_ID, .combine = "rbind") %dopar% {
-      sub <- fullResults[fullResults$TARGET_COHORT_ID == treatment & fullResults$OUTCOME_COHORT_ID == outcome, ]
-      results <- meta::metainc(event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT,
-                               data = sub, sm = "IRR", model.glmm = "UM.RS")
-      c(SOURCE_ID = 99, TARGET_COHORT_ID = treatment, OUTCOME_COHORT_ID = outcome,
-               T_AT_RISK = sum(sub$T_AT_RISK), T_PT = sum(sub$T_PT), T_CASES = sum(sub$T_CASES),
-               C_AT_RISK = sum(sub$C_AT_RISK), C_PT = sum(sub$C_PT), C_CASES = sum(sub$C_CASES),
-               RR = exp(results$TE.random), LB_95 = exp(results$lower.random), UB_95 = exp(results$upper.random),
-               P_VALUE = results$pval.random, I2 = results$I2)
-    }
-  
-  write.csv(meta_table, paste(".meta_results", appContext$short_name, ".csv"), row.names=FALSE)
-  fullResults <- rbind(fullResults, meta_table)
-  write.csv(fullResults, paste(".full_results_with_meta", appContext$short_name, ".csv"), row.names=FALSE)
-  DatabaseConnector::dbWriteTable(dbConn, "results", fullResults, overwrite = TRUE)
-}
-
 buildFromConfig <- function(appContext, ignoreCache = FALSE) {
   connection <- DatabaseConnector::connect(appContext$connectionDetails)
   pdwConnection <- DatabaseConnector::connect(connectionDetails = appContext$resultsDatabase$cdmDataSource)
@@ -116,7 +87,6 @@ buildFromConfig <- function(appContext, ignoreCache = FALSE) {
   
   exportToDashboarDatabase(fullResults, connection, overwrite = TRUE)
   createExposureClasses(pdwConnection, connection)
-  runMetaAnalysis(connection)
 
   DatabaseConnector::disconnect(pdwConnection)
   DatabaseConnector::disconnect(connection)

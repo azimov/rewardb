@@ -72,16 +72,29 @@ server <- function(input, output, session) {
                                                                multiple = TRUE)
                                    })
 
+
+  dynamicMetaAnalysisTbl <- reactive({
+                                       s <- filteredTableSelected()
+                                       updateTabsetPanel(session, "mainPanel", "Detail")
+                                       treatment <- s$TARGET_COHORT_ID
+                                       outcome <- s$OUTCOME_COHORT_ID
+                                       sql <- "SELECT * FROM results WHERE OUTCOME_COHORT_ID = @outcome AND TARGET_COHORT_ID = @treatment ORDER BY SOURCE_ID"
+                                       table <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, treatment = treatment, outcome = outcome)
+
+                                       table$I2 <- NA
+                                       results <- meta::metainc(event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT, data = table, sm = "IRR", model.glmm = "UM.RS")
+
+                                       row <- data.frame(SOURCE_ID = 99, SOURCE_NAME = '*Meta Analysis*', TARGET_COHORT_ID = treatment, TARGET_COHORT_NAME = table$TARGET_COHORT_NAME[1], OUTCOME_COHORT_ID = outcome,
+                                                         OUTCOME_COHORT_NAME = table$OUTCOME_COHORT_NAME[1], T_AT_RISK = sum(table$T_AT_RISK), T_PT = sum(table$T_PT), T_CASES = sum(table$T_CASES),
+                                                         C_AT_RISK = sum(table$C_AT_RISK), C_PT = sum(table$C_PT), C_CASES = sum(table$C_CASES),
+                                                         RR = exp(results$TE.random), LB_95 = exp(results$lower.random), UB_95 = exp(results$upper.random), P_VALUE = results$pval.random, I2 = results$I2)
+
+                                       rbind(table, row)
+                                     })
+
   fullResultsTable <- function() {
     option = list(columnDefs = list(list(targets = c(8, 11), class = "dt-right")))
-    s <- filteredTableSelected()
-    updateTabsetPanel(session, "mainPanel", "Detail")
-    treatment <- s$TARGET_COHORT_ID
-    outcome <- s$OUTCOME_COHORT_ID
-
-    log_event(s)
-    sql <- "SELECT * FROM results WHERE OUTCOME_COHORT_ID = @outcome AND TARGET_COHORT_ID = @treatment ORDER BY SOURCE_ID"
-    table3 <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, treatment = treatment, outcome = outcome)
+    table3 <- dynamicMetaAnalysisTbl()
     table3$RR[table3$RR > 100] <- NA
     table3$C_PT <- format(table3$C_PT, digits = 0, format = "f")
     table3$T_PT <- format(table3$T_PT, digits = 0, format = "f")
@@ -90,8 +103,6 @@ server <- function(input, output, session) {
     table3$UB_95 <- formatC(table3$UB_95, digits = 2, format = "f")
     table3$P_VALUE <- formatC(table3$P_VALUE, digits = 2, format = "f")
     table3$I2 <- formatC(table3$I2, digits = 2, format = "f")
-    table3$C_PT <- formatC(table3$C_PT, digits = 0, format = "f")
-    table3$T_PT <- formatC(table3$T_PT, digits = 0, format = "f")
 
     for (n in names(niceColumnName)) {
       colnames(table3)[colnames(table3) == n] <- niceColumnName[n]
@@ -105,11 +116,7 @@ server <- function(input, output, session) {
   output$fullResultsTable <- DT::renderDataTable({ fullResultsTable() })
 
   output$forestPlot <- renderPlot({
-                                    selectedInput <- filteredTableSelected()
-                                    treatment <- selectedInput$TARGET_COHORT_ID
-                                    outcome <- selectedInput$OUTCOME_COHORT_ID
-                                    sql <- "SELECT * FROM results WHERE TARGET_COHORT_ID = @target AND OUTCOME_COHORT_ID = @outcome ORDER BY SOURCE_ID";
-                                    df <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = treatment, outcome = outcome)
+                                    df <- dynamicMetaAnalysisTbl()
                                     forestPlot(df)
                                   })
 
