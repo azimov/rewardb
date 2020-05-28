@@ -20,13 +20,8 @@ createExposureClasses <- function(pdwConnection, connection) {
 }
 
 exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
-  # add heterogenity field - needed for meta analysis
-  if (!("I2" %in% names(dataFrame))) {
-    dataFrame[, "I2"] <- NA
-  }
-
   resultsColumns <- c("OUTCOME_COHORT_ID", "TARGET_COHORT_ID", "SOURCE_ID", "C_AT_RISK", "C_CASES", "C_PT", "LB_95",
-                      "P_VALUE", "RR", "T_AT_RISK", "T_CASES", "T_PT", "UB_95", "I2")
+                      "P_VALUE", "RR", "T_AT_RISK", "T_CASES", "T_PT", "UB_95")
   DatabaseConnector::dbWriteTable(conn, "results", dataFrame[, resultsColumns], overwrite = overwrite)
 
   outcomesRefs <- dplyr::distinct(dataFrame[, c("OUTCOME_COHORT_ID", "OUTCOME_COHORT_NAME")])
@@ -34,12 +29,7 @@ exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
 
   DatabaseConnector::dbWriteTable(conn, "outcome", outcomesRefs, overwrite = overwrite)
   DatabaseConnector::dbWriteTable(conn, "target", targetRefs, overwrite = overwrite)
-  
-  # TODO: Import exposure classes for medications
-  if ("EXPOSURE_CLASS" %in% names(dataFrame)) {
-    exposureClasses <- dplyr::distinct(dataFrame[, c("TARGET_COHORT_ID", "EXPOSURE_CLASS")])
-    DatabaseConnector::dbWriteTable(conn, "treatment_classes", exposureClasses, overwrite = overwrite)
-  }
+
   # Add table for cohort - concept id references
   createCohortReferences(conn)
 }
