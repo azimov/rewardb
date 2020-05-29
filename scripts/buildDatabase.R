@@ -1,9 +1,6 @@
-library(foreach)
-library(doParallel)
-
 # This function will change a lot as the method for storing cohorts change
 createCohortReferences <- function(conn) {
-  sql <- "SELECT TARGET_COHORT_ID, cast(TARGET_COHORT_ID / 1000 AS INT) AS DRUG_CONCEPT_ID FROM TARGET"
+  sql <- "SELECT TARGET_COHORT_ID, cast(TARGET_COHORT_ID / 1000 AS INT) AS TARGET_CONCEPT_ID FROM TARGET"
   df <- DatabaseConnector::renderTranslateQuerySql(conn, sql)
   DatabaseConnector::dbWriteTable(conn, "target_concept", df, overwrite = TRUE)
 
@@ -13,10 +10,10 @@ createCohortReferences <- function(conn) {
 }
 
 
-createExposureClasses <- function(pdwConnection, connection) {
-  dtf <- DatabaseConnector::renderTranslateQuerySql(pdwConnection, "SELECT * FROM scratch.dkern2.Rxnorm_ATC_map_unique")
-  
-  DatabaseConnector::dbWriteTable(connection, "exposure_classes", dtf)
+createExposureClasses <- function(connection) {
+  # "SELECT CONCEPT_ID, ATC1_CONCEPT_NAME, ATC3_CONCEPT_NAME FROM scratch.dkern2.Rxnorm_ATC_map_unique"
+  dtf <- read_csv("extra/concept_classes.csv")
+  DatabaseConnector::dbWriteTable(connection, "exposure_classes", dtf, overwrite= TRUE)
 }
 
 exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
@@ -36,48 +33,56 @@ exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
 
 buildFromConfig <- function(appContext, ignoreCache = FALSE) {
   connection <- DatabaseConnector::connect(appContext$connectionDetails)
-  pdwConnection <- DatabaseConnector::connect(connectionDetails = appContext$resultsDatabase$cdmDataSource)
   
-  fullResultsCachePath = paste0(".full_results_", appContext$short_name, ".csv")
-  
-  if(ignoreCache || !file.exists(fullResultsCachePath)) {
+  if (appContext$development_db) {
     if (is.null(appContext$outcome_concept_ids)) {
-      print("extracting exposure results")
-      targetIds <- appContext$target_concept_ids
-      fullResults <- activesurveillancedev::getFullResultsSubsetTreatments(connection = pdwConnection,
+      fullResults <- read.csv("extra/devTargetSubset.csv")
+    }
+    else {
+      fullResults <- read.csv("extra/devOutcomeSubset.csv")
+    }
+
+  } else {
+    pdwConnection <- DatabaseConnector::connect(connectionDetails = appContext$resultsDatabase$cdmDataSource)
+    fullResultsCachePath = paste0(".full_results_", appContext$short_name, ".csv")
+    
+    if(ignoreCache || !file.exists(fullResultsCachePath)) {
+      if (is.null(appContext$outcome_concept_ids)) {
+        print("extracting exposure results")
+        targetIds <- appContext$target_concept_ids
+        fullResults <- activesurveillancedev::getFullResultsSubsetTreatments(connection = pdwConnection,
+                                                                             resultsDatabaseSchema = appContext$resultsDatabase$schema,
+                                                                             cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
+                                                                             outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
+                                                                             drugIngredientConceptList = targetIds,
+                                                                             asurvResultsTable = appContext$resultsDatabase$asurvResultsTable)
+      } else if (!is.null(appContext$outcome_concept_ids)) {
+        outcomeIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
+    
+        if (!is.null(appContext$custom_outcome_cohort_ids)) {
+          outcomeIds <- append(outcomeIds, appContext$custom_outcome_cohort_ids)
+        }
+    
+        print("extracting outcome results")
+        fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdwConnection,
                                                                            resultsDatabaseSchema = appContext$resultsDatabase$schema,
                                                                            cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
                                                                            outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
-                                                                           drugIngredientConceptList = targetIds,
+                                                                           customOutcomeCohortList = outcomeIds,
                                                                            asurvResultsTable = appContext$resultsDatabase$asurvResultsTable)
-    } else if (!is.null(appContext$outcome_concept_ids)) {
-      outcomeIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
-  
-      if (!is.null(appContext$custom_outcome_cohort_ids)) {
-        outcomeIds <- append(outcomeIds, appContext$custom_outcome_cohort_ids)
+      } else {
+        print("ERROR: check config - cannot create dataset without specifying either subset of outcomes or targets")
+        return(NULL)
       }
-  
-      print("extracting outcome results")
-      fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdwConnection,
-                                                                         resultsDatabaseSchema = appContext$resultsDatabase$schema,
-                                                                         cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
-                                                                         outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
-                                                                         customOutcomeCohortList = outcomeIds,
-                                                                         asurvResultsTable = appContext$resultsDatabase$asurvResultsTable)
+      #  Cache results
+      write.csv(fullResults, fullResultsCachePath, row.names=FALSE)
     } else {
-      print("ERROR: check config - cannot create dataset without specifying either subset of outcomes or targets")
-      return(NULL)
+      print(paste("using cached file", fullResultsCachePath))
+      fullResults <- read.csv(fullResultsCachePath)
     }
-    #  Cache results
-    write.csv(fullResults, fullResultsCachePath, row.names=FALSE)
-  } else {
-    print(paste("using cached file", fullResultsCachePath))
-    fullResults <- read.csv(fullResultsCachePath)
+    DatabaseConnector::disconnect(pdwConnection)
   }
-  
   exportToDashboarDatabase(fullResults, connection, overwrite = TRUE)
-  createExposureClasses(pdwConnection, connection)
-
-  DatabaseConnector::disconnect(pdwConnection)
+  createExposureClasses(connection)
   DatabaseConnector::disconnect(connection)
 }

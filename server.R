@@ -82,12 +82,26 @@ server <- function(input, output, session) {
                                        table <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, treatment = treatment, outcome = outcome)
 
                                        table$I2 <- NA
-                                       results <- meta::metainc(event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT, data = table, sm = "IRR", model.glmm = "UM.RS")
+                                       results <- meta::metainc(data = table, event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT, sm = "IRR", model.glmm = "UM.RS")
 
-                                       row <- data.frame(SOURCE_ID = 99, SOURCE_NAME = '*Meta Analysis*', TARGET_COHORT_ID = treatment, TARGET_COHORT_NAME = table$TARGET_COHORT_NAME[1], OUTCOME_COHORT_ID = outcome,
-                                                         OUTCOME_COHORT_NAME = table$OUTCOME_COHORT_NAME[1], T_AT_RISK = sum(table$T_AT_RISK), T_PT = sum(table$T_PT), T_CASES = sum(table$T_CASES),
-                                                         C_AT_RISK = sum(table$C_AT_RISK), C_PT = sum(table$C_PT), C_CASES = sum(table$C_CASES),
-                                                         RR = exp(results$TE.random), LB_95 = exp(results$lower.random), UB_95 = exp(results$upper.random), P_VALUE = results$pval.random, I2 = results$I2)
+                                       row <- data.frame(
+                                         SOURCE_ID = 99, 
+                                         SOURCE_NAME = '*Meta Analysis*', 
+                                         TARGET_COHORT_ID = treatment, 
+                                         TARGET_COHORT_NAME = table$TARGET_COHORT_NAME[1], 
+                                         OUTCOME_COHORT_ID = outcome,
+                                         OUTCOME_COHORT_NAME = table$OUTCOME_COHORT_NAME[1], 
+                                         T_AT_RISK = sum(table$T_AT_RISK), 
+                                         T_PT = sum(table$T_PT), 
+                                         T_CASES = sum(table$T_CASES),
+                                         C_AT_RISK = sum(table$C_AT_RISK), 
+                                         C_PT = sum(table$C_PT), 
+                                         C_CASES = sum(table$C_CASES),
+                                         RR = exp(results$TE.random), 
+                                         LB_95 = exp(results$lower.random), 
+                                         UB_95 = exp(results$upper.random), 
+                                         P_VALUE = results$pval.random, I2 = results$I2
+                                        )
 
                                        rbind(table, row)
                                      })
