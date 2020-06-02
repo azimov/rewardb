@@ -63,7 +63,7 @@ ui <- fluidPage(
   fluidRow(
     column(2,
            setSliderColor(c("#DDDDDD"), c(1)),
-           sliderInput("cutrange", "Relative Risk Effect size range:", min = 0.1, max = 2.5, value = c(0.5, 2.0)),
+           sliderInput("cutrange", "Relative Risk Effect size range:", min = 0.1, max = 2.5, step=0.1, value = c(0.5, 2.0)),
            actionButton("querySql", "Update Results"),
            uiOutput("selectTreatement"),
            uiOutput("selectOutcome"),

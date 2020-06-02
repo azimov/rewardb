@@ -13,9 +13,13 @@ server <- function(input, output, session) {
   mainTableRe <- eventReactive(input$querySql, {
     log_event(paste("filtering table - sql query"))
     mainTableSql <- readr::read_file("sql/mainTable.sql")
+    risk <- input$cutrange[2]
+    benefit <- input$cutrange[1]
+    riskTableName <- stringr::str_replace_all(paste0("RISK_TH", input$cutrange[2]), "[.]", "_")
+    benTableName <- stringr::str_replace_all(paste0("BEN_TH", input$cutrange[1]), "[.]", "_")
     df <- DatabaseConnector::renderTranslateQuerySql(dbConn, mainTableSql,
-                                                     benefitThreshold = input$cutrange[1],
-                                                     harmThreshold = input$cutrange[2])
+                                                     riskTable = riskTableName,
+                                                     benefitTable = benTableName)
     return(df)
   })
 
@@ -71,47 +75,21 @@ server <- function(input, output, session) {
                                                                options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
                                                                multiple = TRUE)
                                    })
-
-
+  
   dynamicMetaAnalysisTbl <- reactive({
                                        s <- filteredTableSelected()
                                        updateTabsetPanel(session, "mainPanel", "Detail")
                                        treatment <- s$TARGET_COHORT_ID
                                        outcome <- s$OUTCOME_COHORT_ID
-                                       sql <- "SELECT * FROM results WHERE OUTCOME_COHORT_ID = @outcome AND TARGET_COHORT_ID = @treatment ORDER BY SOURCE_ID"
-                                       table <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, treatment = treatment, outcome = outcome)
-
-                                       table$I2 <- NA
-                                       results <- meta::metainc(data = table, event.e = T_CASES, time.e = T_PT, event.c = C_CASES, time.c = C_PT, sm = "IRR", model.glmm = "UM.RS")
-
-                                       row <- data.frame(
-                                         SOURCE_ID = 99, 
-                                         SOURCE_NAME = '*Meta Analysis*', 
-                                         TARGET_COHORT_ID = treatment, 
-                                         TARGET_COHORT_NAME = table$TARGET_COHORT_NAME[1], 
-                                         OUTCOME_COHORT_ID = outcome,
-                                         OUTCOME_COHORT_NAME = table$OUTCOME_COHORT_NAME[1], 
-                                         T_AT_RISK = sum(table$T_AT_RISK), 
-                                         T_PT = sum(table$T_PT), 
-                                         T_CASES = sum(table$T_CASES),
-                                         C_AT_RISK = sum(table$C_AT_RISK), 
-                                         C_PT = sum(table$C_PT), 
-                                         C_CASES = sum(table$C_CASES),
-                                         RR = exp(results$TE.random), 
-                                         LB_95 = exp(results$lower.random), 
-                                         UB_95 = exp(results$upper.random), 
-                                         P_VALUE = results$pval.random, I2 = results$I2
-                                        )
-
-                                       rbind(table, row)
+                                       getMetaAnalysisData(dbConn, treatment, outcome)
                                      })
 
   fullResultsTable <- function() {
     option = list(columnDefs = list(list(targets = c(8, 11), class = "dt-right")))
     table3 <- dynamicMetaAnalysisTbl()
     table3$RR[table3$RR > 100] <- NA
-    table3$C_PT <- format(table3$C_PT, digits = 0, format = "f")
-    table3$T_PT <- format(table3$T_PT, digits = 0, format = "f")
+    table3$C_PT <- formatC(table3$C_PT, digits = 0, format = "f")
+    table3$T_PT <- formatC(table3$T_PT, digits = 0, format = "f")
     table3$RR <- formatC(table3$RR, digits = 2, format = "f")
     table3$LB_95 <- formatC(table3$LB_95, digits = 2, format = "f")
     table3$UB_95 <- formatC(table3$UB_95, digits = 2, format = "f")

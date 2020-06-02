@@ -9,11 +9,38 @@ createCohortReferences <- function(conn) {
   DatabaseConnector::dbWriteTable(conn, "outcome_concept", df, overwrite = TRUE)
 }
 
-
 createExposureClasses <- function(connection) {
   # "SELECT CONCEPT_ID, ATC1_CONCEPT_NAME, ATC3_CONCEPT_NAME FROM scratch.dkern2.Rxnorm_ATC_map_unique"
-  dtf <- read_csv("extra/concept_classes.csv")
-  DatabaseConnector::dbWriteTable(connection, "exposure_classes", dtf, overwrite= TRUE)
+  dtf <- read.csv("extra/concept_classes.csv")
+  DatabaseConnector::dbWriteTable(connection, "exposure_classes", dtf, overwrite = TRUE)
+}
+
+buildDataSources <- function(connection) {
+  DatabaseConnector::dbWriteTable(connection, "data_sources", read.csv("extra/databases.csv"), overwrite = TRUE)
+}
+
+preComputeSliderCounts <- function(connection) {
+  benefitsql <- "
+  SELECT OUTCOME_COHORT_ID, TARGET_COHORT_ID, count(*) AS thresh_count
+    FROM results WHERE RR <= @threshold AND p_value < @pthreshold
+  GROUP BY OUTCOME_COHORT_ID, TARGET_COHORT_ID
+  "
+  for (t in 1:9 * 0.1) {
+    data <- DatabaseConnector::renderTranslateQuerySql(connection, benefitsql, threshold = t, pthreshold = 0.05)
+    tableName <- stringr::str_replace_all(paste0("BEN_TH", t), "[.]", "_")
+    DatabaseConnector::dbWriteTable(connection, tableName, data, overwrite = TRUE)
+  }
+  
+  benefitsql <- "
+  SELECT OUTCOME_COHORT_ID, TARGET_COHORT_ID, count(*) AS thresh_count
+    FROM results WHERE RR >= @threshold AND p_value < @pthreshold
+  GROUP BY OUTCOME_COHORT_ID, TARGET_COHORT_ID
+  "
+  for (t in 11:25 * 0.1) {
+    data <- DatabaseConnector::renderTranslateQuerySql(connection, benefitsql, threshold = t, pthreshold = 0.05)
+    tableName <- stringr::str_replace_all(paste0("RISK_TH", t), "[.]", "_")
+    DatabaseConnector::dbWriteTable(connection, tableName, data, overwrite = TRUE)
+  }
 }
 
 exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
@@ -84,5 +111,7 @@ buildFromConfig <- function(appContext, ignoreCache = FALSE) {
   }
   exportToDashboarDatabase(fullResults, connection, overwrite = TRUE)
   createExposureClasses(connection)
+  buildDataSources(connection)
+  preComputeSliderCounts(connection)
   DatabaseConnector::disconnect(connection)
 }

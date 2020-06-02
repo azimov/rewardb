@@ -5,7 +5,6 @@ outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~ # These will not be multiplied by 100
 target_concept_ids: [739138]
 development_db: true
-
 connectionDetails:
   dbms: sqlite
   server: development.db
