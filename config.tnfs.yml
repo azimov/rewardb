@@ -18,3 +18,4 @@ resultsDatabase:
     server: JRDUSAPSCTL01
     port: 17001
 
+negative_control_outcome_list: 'extra/negative_controls/atnf_negative_controls.csv'

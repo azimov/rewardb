@@ -1,0 +1,20 @@
+name: 'Famotidine outcomes'
+short_name: tnf
+description: 'Dashboard for all outcomes for Famotidine and comparator exposures'
+outcome_concept_ids: ~
+custom_outcome_cohort_ids: ~
+target_concept_ids: [1149196000, 953076000, 961047000, 923645000, 21600081000, 21600095000, 21600109000]
+connectionDetails:
+  dbms: sqlite
+  server: Famotidine.db
+
+resultsDatabase:
+  schema: "scratch.dbo"
+  cohortDefinitionTable: "homer_cohort_definition_May2020"
+  outcomeCohortDefinitionTable: "homer_outcome_cohort_definition_May2020"
+  asurvResultsTable: "homer_AllbyAll_results_May2020"
+  cdmDataSource:
+    dbms: pdw
+    server: JRDUSAPSCTL01
+    port: 17001
+
