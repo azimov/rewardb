@@ -10,18 +10,18 @@ source("plots.R")
 server <- function(input, output, session) {
   log_event("server")
   # Query full results, only filter is Risk range parameters
-  mainTableRe <- eventReactive(input$querySql, {
-    log_event(paste("filtering table - sql query"))
-    mainTableSql <- readr::read_file("sql/mainTable.sql")
-    risk <- input$cutrange[2]
-    benefit <- input$cutrange[1]
-    riskTableName <- stringr::str_replace_all(paste0("RISK_TH", input$cutrange[2]), "[.]", "_")
-    benTableName <- stringr::str_replace_all(paste0("BEN_TH", input$cutrange[1]), "[.]", "_")
-    df <- DatabaseConnector::renderTranslateQuerySql(dbConn, mainTableSql,
-                                                     riskTable = riskTableName,
-                                                     benefitTable = benTableName)
-    return(df)
-  })
+  mainTableRe <- reactive({
+                            log_event(paste("filtering table - sql query"))
+                            mainTableSql <- readr::read_file("sql/mainTable.sql")
+                            risk <- input$cutrange2
+                            benefit <- input$cutrange1
+                            riskTableName <- stringr::str_replace_all(paste0("RISK_TH", input$cutrange2), "[.]", "_")
+                            benTableName <- stringr::str_replace_all(paste0("BEN_TH", input$cutrange1), "[.]", "_")
+                            df <- DatabaseConnector::renderTranslateQuerySql(dbConn, mainTableSql,
+                                                                             riskTable = riskTableName,
+                                                                             benefitTable = benTableName)
+                            return(df)
+                          })
 
   # Subset of results for harm, risk and treatement categories
   mainTableRiskHarmFilters <- reactive({
@@ -75,13 +75,16 @@ server <- function(input, output, session) {
                                                                options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
                                                                multiple = TRUE)
                                    })
-  
+
   dynamicMetaAnalysisTbl <- reactive({
                                        s <- filteredTableSelected()
-                                       updateTabsetPanel(session, "mainPanel", "Detail")
-                                       treatment <- s$TARGET_COHORT_ID
-                                       outcome <- s$OUTCOME_COHORT_ID
-                                       getMetaAnalysisData(dbConn, treatment, outcome)
+                                       if (!is.null(s$TARGET_COHORT_ID)) {
+                                         updateTabsetPanel(session, "mainPanel", "Detail")
+                                         treatment <- s$TARGET_COHORT_ID
+                                         outcome <- s$OUTCOME_COHORT_ID
+                                         return(getMetaAnalysisData(dbConn, treatment, outcome))
+                                       }
+                                       NULL
                                      })
 
   fullResultsTable <- function() {
@@ -109,7 +112,9 @@ server <- function(input, output, session) {
 
   output$forestPlot <- renderPlot({
                                     df <- dynamicMetaAnalysisTbl()
-                                    forestPlot(df)
+                                    if (!is.null(df)) {
+                                      return(forestPlot(df))
+                                    }
                                   })
 
   output$eOutcomeProb <- renderPlotly({

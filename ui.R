@@ -38,6 +38,11 @@ manhattanPlotPanel <- tabPanel("Plots",
 
 )
 
+irrTab <- tabPanel("IRR probability",
+                   plotly::plotlyOutput("eOutcomeProb", height = 800),
+                   div(strong("Figure 2."), paste("Kernel Density Estimates of IRR scores for all outcomes in data set for ", textOutput("targetStr")))
+)
+
 
 mainPanelOutput <- tabPanel("Main Results",
                             DT::dataTableOutput("mainTable"),
@@ -48,44 +53,42 @@ mainPanelOutput <- tabPanel("Main Results",
                                                          tabPanel("Forest plot",
                                                                   plotOutput("forestPlot", height = 500, hover = hoverOpts("plotHoverForestPlot")),
                                                                   div(strong("Figure 1."), "Forest plot of effect estimates from each database")
-                                                         ),
-                                                         tabPanel("IRR probability",
-                                                                  plotly::plotlyOutput("eOutcomeProb", height = 800),
-                                                                  div(strong("Figure 2."), paste("Kernel Density Estimates of IRR scores for all outcomes in data set for ", textOutput("targetStr")))
                                                          )
                                              )
                             )
 )
 
+sidePane <- fluidRow(
+  column(2,
+         sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
+         sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2.0),
+         uiOutput("selectTreatement"),
+         uiOutput("selectOutcome"),
+         pickerInput("exposureClasses", "Exposure Classes:",
+                     choices = exposureClasses$EXPOSURE_CLASS,
+                     selected = exposureClasses$EXPOSURE_CLASS,
+                     options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
+                     multiple = TRUE),
+         pickerInput("scBenefit", "Sources with self control benefit:",
+                     choices = scBenefitRisk, selected = "all",
+                     options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+                     multiple = TRUE),
+         pickerInput("scRisk", "Sources with self control risk:",
+                     choices = scBenefitRisk, selected = "none",
+                     options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+                     multiple = TRUE),
+         downloadButton("downloadtable", "Download file", style = "display: block; margin: 0 auto; width: 230px;color: blue;")
+  ),
+
+  column(9,
+
+         tabsetPanel(id = "mainPanel", mainPanelOutput)
+  )
+)
+
+
 ### UI Script ###
 ui <- fluidPage(
-  titlePanel(HTML(paste("<h1>REWARD-B Dashboard", appContext$name ,"</h1>")), windowTitle = paste("REWARD-B Dashboard - ", appContext$name)),
-  fluidRow(
-    column(2,
-           setSliderColor(c("#DDDDDD"), c(1)),
-           sliderInput("cutrange", "Relative Risk Effect size range:", min = 0.1, max = 2.5, step=0.1, value = c(0.5, 2.0)),
-           actionButton("querySql", "Update Results"),
-           uiOutput("selectTreatement"),
-           uiOutput("selectOutcome"),
-           pickerInput("exposureClasses", "Exposure Classes:",
-                       choices = exposureClasses$EXPOSURE_CLASS,
-                       selected = exposureClasses$EXPOSURE_CLASS,
-                       options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
-                       multiple = TRUE),
-           pickerInput("scBenefit", "Sources with self control benefit:",
-                       choices = scBenefitRisk, selected = "all",
-                       options = shinyWidgets::pickerOptions(actionsBox = TRUE),
-                       multiple = TRUE),
-           pickerInput("scRisk", "Sources with self control risk:",
-                       choices = scBenefitRisk, selected = "none",
-                       options = shinyWidgets::pickerOptions(actionsBox = TRUE),
-                       multiple = TRUE),
-           downloadButton("downloadtable", "Download file", style = "display: block; margin: 0 auto; width: 230px;color: blue;")
-    ),
-
-    column(9,
-
-           tabsetPanel(id = "mainPanel", mainPanelOutput)
-    )
-  )
+  titlePanel(HTML(paste("<h1>REWARD-B Dashboard", appContext$name, "</h1>")), windowTitle = paste("REWARD-B Dashboard - ", appContext$name)),
+  sidePane
 )

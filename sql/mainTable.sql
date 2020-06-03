@@ -23,5 +23,4 @@ FROM results fr
     INNER JOIN outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
     LEFT JOIN exposure_classes ec ON ec.CONCEPT_ID = tc.TARGET_CONCEPT_ID
     
-    
 GROUP BY fr.TARGET_COHORT_ID, fr.OUTCOME_COHORT_ID
