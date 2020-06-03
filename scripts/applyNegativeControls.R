@@ -69,5 +69,6 @@ manualNegativeControlCalculation <- function(appContext, connection, pdwConnecti
       }
     }
   }
+  # TODO: store results in db
   return (resultSet)
 }
