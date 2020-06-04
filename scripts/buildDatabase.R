@@ -59,8 +59,6 @@ exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
 }
 
 buildFromConfig <- function(appContext, ignoreCache = FALSE) {
-  connection <- DatabaseConnector::connect(appContext$connectionDetails)
-  
   if (appContext$development_db) {
     if (is.null(appContext$outcome_concept_ids)) {
       fullResults <- read.csv("extra/devTargetSubset.csv")
@@ -70,14 +68,13 @@ buildFromConfig <- function(appContext, ignoreCache = FALSE) {
     }
 
   } else {
-    pdwConnection <- DatabaseConnector::connect(connectionDetails = appContext$resultsDatabase$cdmDataSource)
     fullResultsCachePath = paste0(".full_results_", appContext$short_name, ".csv")
     
     if(ignoreCache || !file.exists(fullResultsCachePath)) {
       if (is.null(appContext$outcome_concept_ids)) {
         print("extracting exposure results")
         targetIds <- appContext$target_concept_ids
-        fullResults <- activesurveillancedev::getFullResultsSubsetTreatments(connection = pdwConnection,
+        fullResults <- activesurveillancedev::getFullResultsSubsetTreatments(connection = appContext$cdmConnection,
                                                                              resultsDatabaseSchema = appContext$resultsDatabase$schema,
                                                                              cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
                                                                              outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
@@ -91,7 +88,7 @@ buildFromConfig <- function(appContext, ignoreCache = FALSE) {
         }
     
         print("extracting outcome results")
-        fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = pdwConnection,
+        fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = appContext$cdmConnection,
                                                                            resultsDatabaseSchema = appContext$resultsDatabase$schema,
                                                                            cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
                                                                            outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
@@ -107,11 +104,9 @@ buildFromConfig <- function(appContext, ignoreCache = FALSE) {
       print(paste("using cached file", fullResultsCachePath))
       fullResults <- read.csv(fullResultsCachePath)
     }
-    DatabaseConnector::disconnect(pdwConnection)
   }
   exportToDashboarDatabase(fullResults, connection, overwrite = TRUE)
   createExposureClasses(connection)
   buildDataSources(connection)
   preComputeSliderCounts(connection)
-  DatabaseConnector::disconnect(connection)
 }

@@ -100,11 +100,11 @@ moreStats <- function(results) {
 
 
 appContext <- loadAppContext("config.tnfs.yml")
-pdwConnection <- DatabaseConnector::connect(appContext$resultsDatabase$cdmDataSource)
+`appContext$cdmConnection` <- DatabaseConnector::connect(appContext$resultsDatabase$cdmDataSource)
 
-res <- manualNegativeControlCalculation(appContext, pdwConnection)
+res <- manualNegativeControlCalculation(appContext, `appContext$cdmConnection`)
 
 appContext$negative_control_outcome_list <- "extra/negative_controls/atnf_negative_controls_no_filter.csv"
-resUnfiltred <- manualNegativeControlCalculation(appContext, pdwConnection)
+resUnfiltred <- manualNegativeControlCalculation(appContext, `appContext$cdmConnection`)
 
 
