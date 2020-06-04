@@ -2,11 +2,19 @@
 
 REal-World Assessment and Research of Drug Benefits.
 
+## Project structure
+
+The `dashboard` folder contains the shiny application.
+
+The remainder of the project is organised as an R package.
+
+## dashboard
+
 This repository includes the reward-b shiny application.
 Currently under development. To use, point your RStudio workspace at the directory with this 
 repository and run:
 
-    source("requirements.R") # Install required packgages
+    devtools::install(".")
     shiny::runApp()
     
  The development version uses a small subest of data in an SQlite database. This is for quick

@@ -106,7 +106,7 @@ buildFromConfig <- function(appContext, ignoreCache = FALSE) {
     }
   }
   exportToDashboarDatabase(fullResults, connection, overwrite = TRUE)
-  createExposureClasses(connection)
-  buildDataSources(connection)
-  preComputeSliderCounts(connection)
+  createExposureClasses(appContext$connection)
+  buildDataSources(appContext$connection)
+  preComputeSliderCounts(appContext$connection)
 }
