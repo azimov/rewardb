@@ -1,44 +1,53 @@
 -- REWARD-B dataset. Each app has its own dataset.
 
-CREATE TABLE IF NOT EXISTS result (
-    outcome_cohort_id INT NOT NULL,
-    target_cohort_id INT NOT NULL,
-    source_id INT NOT NULL,
-    calibrated BOOLEAN NOT NULL, -- is the result calibrated with empirical calibration?
-    rr NUMERIC,
-    log_se_rr NUMERIC,
-    c_pt NUMERIC,
-    t_pt NUMERIC,
-    t_at_risk NUMERIC,
-    c_at_risk NUMERIC,
-    t_cases NUMERIC,
-    lb_95 NUMERIC,
-    ub_95 NUMERIC,
-    p_value NUMERIC,
-    study_design VARCHAR, -- SCC or SCCS
+DROP TABLE IF EXISTS result;
+CREATE TABLE result (
+  source_id INT NOT NULL,
+  outcome_cohort_id BIGINT NOT NULL,
+  target_cohort_id BIGINT NOT NULL,
+  calibrated BOOLEAN NOT NULL DEFAULT FALSE, -- is the result calibrated with empirical calibration?
+  study_design VARCHAR -- SCC or SCCS
+  rr NUMERIC,
+  se_log_rr NUMERIC,
+  c_pt NUMERIC,
+  t_pt NUMERIC,
+  t_at_risk NUMERIC,
+  c_at_risk NUMERIC,
+  t_cases NUMERIC,
+  c_cases NUMERIC,
+  lb_95 NUMERIC,
+  ub_95 NUMERIC,
+  p_value NUMERIC,
 );
 
+-- Maps to CDM drug concept. Only one drug concept may be associated with a target cohort
 CREATE TABLE target (
-    target_cohort_id INT NOT NULL,
-    drug_concept_id INT NOT NULL,
-    name INT,
+    target_cohort_id BIGINT NOT NULL PRIMARY KEY,
+    drug_concept_id BIGINT NOT NULL,
+    cohort_name VARCHAR
 );
 
+-- Maps to CDM condition concept. Many condition concepts may be associated with an outcome cohort
 CREATE TABLE outcome_concept (
-   outcome_cohort_id INT,
-   condition_concept_id INT,
+   outcome_cohort_id BIGINT PRIMARY KEY,
+   condition_concept_id BIGINT
 );
 
+-- Maps outcomes to names and outcome types.
 CREATE TABLE outcome (
-    outcome_cohort_id INT,
+    outcome_cohort_id BIGINT,
     type_id INT,
-    name string
+    cohort_name VARCHAR
 );
 
 CREATE TABLE cohort_type (
-    cohort_type_id INT,
+    cohort_type_id INT PRIMARY KEY,
     description varchar -- e.g. Inpatient diagnosis, two diagnosis codes, ATLAS,
 );
+
+INSERT INTO cohort_type (cohort_type_id, description) values (0, 'Inpatient visit')
+INSERT INTO cohort_type (cohort_type_id, description) values (1, 'Two diagnosis codes')
+INSERT INTO cohort_type (cohort_type_id, description) values (2, 'ATLAS cohort')
 
 CREATE TABLE data_source (
     source_id INT PRIMARY KEY,
