@@ -6,7 +6,7 @@ CREATE TABLE result (
   outcome_cohort_id BIGINT NOT NULL,
   target_cohort_id BIGINT NOT NULL,
   calibrated BOOLEAN NOT NULL DEFAULT FALSE, -- is the result calibrated with empirical calibration?
-  study_design VARCHAR -- SCC or SCCS
+  study_design VARCHAR, -- SCC or SCCS
   rr NUMERIC,
   se_log_rr NUMERIC,
   c_pt NUMERIC,
@@ -17,7 +17,7 @@ CREATE TABLE result (
   c_cases NUMERIC,
   lb_95 NUMERIC,
   ub_95 NUMERIC,
-  p_value NUMERIC,
+  p_value NUMERIC
 );
 
 DROP TABLE IF EXISTS target;
@@ -36,7 +36,7 @@ CREATE TABLE outcome (
     cohort_name VARCHAR
 );
 
-DROP TABLE IF EXISTS outcome_target;
+DROP TABLE IF EXISTS outcome_concept;
 -- Maps to CDM condition concept. Many condition concepts may be associated with an outcome cohort
 CREATE TABLE outcome_concept (
    outcome_cohort_id BIGINT PRIMARY KEY,
@@ -49,15 +49,15 @@ CREATE TABLE cohort_type (
     description varchar -- e.g. Inpatient diagnosis, two diagnosis codes, ATLAS,
 );
 
-INSERT INTO cohort_type (cohort_type_id, description) values (0, 'Inpatient visit')
-INSERT INTO cohort_type (cohort_type_id, description) values (1, 'Two diagnosis codes')
-INSERT INTO cohort_type (cohort_type_id, description) values (2, 'ATLAS cohort')
+INSERT INTO cohort_type (cohort_type_id, description) values (0, 'Inpatient visit');
+INSERT INTO cohort_type (cohort_type_id, description) values (1, 'Two diagnosis codes');
+INSERT INTO cohort_type (cohort_type_id, description) values (2, 'ATLAS cohort');
 
 DROP TABLE IF EXISTS data_source;
 CREATE TABLE data_source (
     source_id INT PRIMARY KEY,
     source_name varchar,
-    source_key varchar,
+    source_key varchar
 );
 
 INSERT INTO data_source (source_id, source_name, source_key) values (10,'Optum SES','CDM_Optum_Extended_SES_v1156');
