@@ -99,12 +99,12 @@ moreStats <- function(results) {
 }
 
 
-appContext <- loadAppContext("config/config.tnfs.yml")
-appContext$cdmConnection <- DatabaseConnector::connect(appContext$resultsDatabase$cdmDataSource)
-
+appContext <- rewardB::loadAppContext("config/config.tnfs.yml")
 res <- manualNegativeControlCalculation(appContext, appContext$cdmConnection)
-
 appContext$negative_control_outcome_list <- "extra/negative_controls/atnf_negative_controls_no_filter.csv"
 resUnfiltred <- manualNegativeControlCalculation(appContext, appContext$cdmConnection)
+rbind(moreStats(res), resUnfiltred)
 
-
+# TODO: More raw number counts for drugs
+# Number of patients on each drug in each data source
+# Number of non-zero outcomes for each drug
