@@ -14,7 +14,9 @@ Imports:
     ggplot2,
     scales,
     DT,
-    shinyEventLogger
+    shinyEventLogger,
+    EmpiricalCalibration
 Suggests:
     doParallel,
-    forearch
+    forearch,
+    meta

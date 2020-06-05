@@ -58,6 +58,54 @@ exportToDashboarDatabase <- function(dataFrame, conn, overwrite = FALSE) {
   createCohortReferences(conn)
 }
 
+
+extractTargetCohortNames <- function (connection, cdmConnection, targetCohortIds=NULL) {
+  sql <- " SELECT t.cohort_definition_id AS target_cohort_id, t.cohort_definition_id/1000 AS drug_concept_id, t.short_name AS target_cohort_name
+      from @results_database_schema.@cohort_definition_table t";
+
+  if (!is.null(tartgetCohortIds)) {
+    sql <- paste(sql, "WHERE t.cohort_definition_id IN (@target_cohort_ids)")
+  }
+  nameSet <- DatabaseConnector::renderTranslateExecuteSql(cdmConnection, sql, target_cohort_id = targetCohortIds)
+
+  DatabaseConnector::dbAppendTable(connection, "target", nameSet)
+}
+
+extractResultsSubset <- function(connection, cdmConnection, targetIds=NULL, outcomeIds=NULL){
+
+  sql <- "
+    select
+      scca.source_id,
+      scca.target_cohort_id,
+      scca.outcome_cohort_id,
+      scca.t_at_risk,
+      scca.t_pt,
+      scca.t_cases,
+      scca.c_at_risk,
+      scca.c_pt,
+      scca.c_cases,
+      EXP(scca.log_rr) rr,
+      scca.lb_95,
+      scca.ub_95,
+      scca.se_log_rr
+      scca.p_value
+      from @results_database_schema.@scca_results scca
+      WHERE scca.log_rr IS NOT NULL
+  "
+
+  if(!is.null(targetIds)) {
+    sql <- paste(sql, "AND target_id in (@target_cohort_ids")
+  }
+
+  if(!is.null(outcomeCohortIds)) {
+    sql <- paste(sql, "AND outcome_chort_id in (@outcome_cohort_ids")
+  }
+
+  resultsSet <- DatabaseConnector::renderTranslateQuerySql(cdmConnection, sql, target_cohort_ids=targetIds, outcomeIds=outcomeIds)
+  DatabaseConnector::dbAppendTable(connection, "result", resultsSet)
+}
+
+
 buildFromConfig <- function(appContext, ignoreCache = FALSE) {
   if (appContext$development_db) {
     if (is.null(appContext$outcome_concept_ids)) {
@@ -74,7 +122,8 @@ buildFromConfig <- function(appContext, ignoreCache = FALSE) {
       if (is.null(appContext$outcome_concept_ids)) {
         print("extracting exposure results")
         targetIds <- appContext$target_concept_ids
-        fullResults <- activesurveillancedev::getFullResultsSubsetTreatments(connection = appContext$cdmConnection,
+
+        fullResults <- rewardb::getFullResultsSubsetTreatments(connection = appContext$cdmConnection,
                                                                              resultsDatabaseSchema = appContext$resultsDatabase$schema,
                                                                              cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
                                                                              outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
@@ -88,15 +137,14 @@ buildFromConfig <- function(appContext, ignoreCache = FALSE) {
         }
     
         print("extracting outcome results")
-        fullResults <- activesurveillancedev::getFullResultsSubsetOutcomes(connection = appContext$cdmConnection,
+        fullResults <- rewardb::getFullResultsSubsetOutcomes(connection = appContext$cdmConnection,
                                                                            resultsDatabaseSchema = appContext$resultsDatabase$schema,
-                                                                           cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
+                                                                            cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
                                                                            outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
                                                                            customOutcomeCohortList = outcomeIds,
                                                                            asurvResultsTable = appContext$resultsDatabase$asurvResultsTable)
       } else {
-        print("ERROR: check config - cannot create dataset without specifying either subset of outcomes or targets")
-        return(NULL)
+        stop("ERROR: check config - cannot create dataset without specifying either subset of outcomes or targets")
       }
       #  Cache results
       write.csv(fullResults, fullResultsCachePath, row.names=FALSE)
