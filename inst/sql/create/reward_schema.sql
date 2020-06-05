@@ -20,6 +20,7 @@ CREATE TABLE result (
   p_value NUMERIC,
 );
 
+DROP TABLE IF EXISTS target;
 -- Maps to CDM drug concept. Only one drug concept may be associated with a target cohort
 CREATE TABLE target (
     target_cohort_id BIGINT NOT NULL PRIMARY KEY,
@@ -27,12 +28,7 @@ CREATE TABLE target (
     cohort_name VARCHAR
 );
 
--- Maps to CDM condition concept. Many condition concepts may be associated with an outcome cohort
-CREATE TABLE outcome_concept (
-   outcome_cohort_id BIGINT PRIMARY KEY,
-   condition_concept_id BIGINT
-);
-
+DROP TABLE IF EXISTS outcome;
 -- Maps outcomes to names and outcome types.
 CREATE TABLE outcome (
     outcome_cohort_id BIGINT,
@@ -40,6 +36,14 @@ CREATE TABLE outcome (
     cohort_name VARCHAR
 );
 
+DROP TABLE IF EXISTS outcome_target;
+-- Maps to CDM condition concept. Many condition concepts may be associated with an outcome cohort
+CREATE TABLE outcome_concept (
+   outcome_cohort_id BIGINT PRIMARY KEY,
+   condition_concept_id BIGINT
+);
+
+DROP TABLE IF EXISTS cohort_type;
 CREATE TABLE cohort_type (
     cohort_type_id INT PRIMARY KEY,
     description varchar -- e.g. Inpatient diagnosis, two diagnosis codes, ATLAS,
@@ -49,6 +53,7 @@ INSERT INTO cohort_type (cohort_type_id, description) values (0, 'Inpatient visi
 INSERT INTO cohort_type (cohort_type_id, description) values (1, 'Two diagnosis codes')
 INSERT INTO cohort_type (cohort_type_id, description) values (2, 'ATLAS cohort')
 
+DROP TABLE IF EXISTS data_source;
 CREATE TABLE data_source (
     source_id INT PRIMARY KEY,
     source_name varchar,
@@ -60,6 +65,11 @@ INSERT INTO data_source (source_id, source_name, source_key) values (11,'IBM CCA
 INSERT INTO data_source (source_id, source_name, source_key) values (12,'IBM MDCD','CDM_IBM_MDCD_v1153');
 INSERT INTO data_source (source_id, source_name, source_key) values (13,'IBM MDCR','CDM_IBM_MDCR_v1152');
 
+DROP TABLE IF EXISTS reward_version;
 create table reward_version(
-    version NUMERIC
+   id bool PRIMARY KEY DEFAULT TRUE,
+   version text,
+   CONSTRAINT uni CHECK (id)
 );
+
+INSERT INTO reward_version (version) values ('0.0.1');
