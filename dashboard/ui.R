@@ -1,10 +1,10 @@
 library(shiny)
 library(shinyWidgets)
 
-filterSql <- "SELECT DISTINCT(OUTCOME_COHORT_ID), OUTCOME_COHORT_NAME FROM outcome"
+filterSql <- "SELECT DISTINCT(OUTCOME_COHORT_ID), COHORT_NAME AS OUTCOME_COHORT_NAME FROM outcome"
 outcomes <- DatabaseConnector::renderTranslateQuerySql(dbConn, filterSql)
 
-filterSql <- "SELECT DISTINCT(TARGET_COHORT_ID), TARGET_COHORT_NAME FROM target"
+filterSql <- "SELECT DISTINCT(TARGET_COHORT_ID), COHORT_NAME AS TARGET_COHORT_NAME FROM target"
 treatments <- DatabaseConnector::renderTranslateQuerySql(dbConn, filterSql)
 
 exposureClassesSql <- "SELECT DISTINCT(EXPOSURE_CLASS) FROM TREATMENT_CLASSES ORDER BY EXPOSURE_CLASS"
