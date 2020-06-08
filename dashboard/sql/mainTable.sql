@@ -7,7 +7,7 @@ WITH benefit_t AS(
 ), harm_t AS (
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS THRESH_COUNT
     FROM result
-    WHERE RR >= @harmThreshold
+    WHERE RR >= @riskThreshold
         AND P_VALUE < 0.05
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 )
@@ -18,14 +18,14 @@ SELECT fr.TARGET_COHORT_ID, t.COHORT_NAME as TARGET_COHORT_NAME, fr.OUTCOME_COHO
         WHEN harm_t.THRESH_COUNT = 1 THEN 'one'
         WHEN harm_t.THRESH_COUNT >= 4 THEN 'all'
         WHEN harm_t.THRESH_COUNT > 1 THEN 'most'
-        ELSE harm_t.THRESH_COUNT
+        ELSE 'na'
     END AS sc_risk,
     CASE
         WHEN benefit_t.THRESH_COUNT IS NULL THEN 'none'
         WHEN benefit_t.THRESH_COUNT = 1 THEN 'one'
         WHEN benefit_t.THRESH_COUNT >= 4 THEN 'all'
         WHEN benefit_t.THRESH_COUNT > 1 THEN 'most'
-        ELSE benefit_t.THRESH_COUNT
+        ELSE 'na'
     END AS sc_benefit
 FROM result fr
     
@@ -35,5 +35,3 @@ FROM result fr
     INNER JOIN target t ON t.target_cohort_id = fr.target_cohort_id
     INNER JOIN outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
     --LEFT JOIN exposure_classes ec ON ec.CONCEPT_ID = tc.TARGET_CONCEPT_ID
-    
-GROUP BY fr.TARGET_COHORT_ID, fr.OUTCOME_COHORT_ID

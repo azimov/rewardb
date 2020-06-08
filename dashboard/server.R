@@ -14,9 +14,7 @@ server <- function(input, output, session) {
         mainTableSql <- readr::read_file("sql/mainTable.sql")
         risk <- input$cutrange2
         benefit <- input$cutrange1
-        riskTableName <- stringr::str_replace_all(paste0("RISK_TH", input$cutrange2), "[.]", "_")
-        benTableName <- stringr::str_replace_all(paste0("BEN_TH", input$cutrange1), "[.]", "_")
-        df <- DatabaseConnector::renderTranslateQuerySql(dbConn, mainTableSql, riskTable = riskTableName, benefitTable = benTableName)
+        df <- DatabaseConnector::renderTranslateQuerySql(dbConn, mainTableSql, riskThreshold = risk, benefitThreshold = benefit)
         return(df)
     })
     

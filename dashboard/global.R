@@ -4,7 +4,7 @@ set_logging_session()
 log_event("Loading data")
 library(rewardb)
 
-appContext <- loadAppContext("../config/config.dev.yml")
+appContext <- loadAppContext("../config/config.dev.yml", createConnection = FALSE)
 dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
 
 # CONST Exact strings used in SQL query
