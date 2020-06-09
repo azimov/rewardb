@@ -1,31 +1,31 @@
 WITH benefit_t AS(
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS THRESH_COUNT
     FROM result
-    WHERE RR <= @benefitThreshold
+    WHERE RR <= @benefit
         AND P_VALUE < 0.05
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 ), harm_t AS (
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS THRESH_COUNT
     FROM result
-    WHERE RR >= @riskThreshold
+    WHERE RR >= @risk
         AND P_VALUE < 0.05
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 )
 
-SELECT fr.TARGET_COHORT_ID, t.COHORT_NAME as TARGET_COHORT_NAME, fr.OUTCOME_COHORT_ID, o.COHORT_NAME AS OUTCOME_COHORT_NAME,
+SELECT DISTINCT fr.TARGET_COHORT_ID, t.COHORT_NAME as TARGET_COHORT_NAME, fr.OUTCOME_COHORT_ID, o.COHORT_NAME AS OUTCOME_COHORT_NAME,
     CASE
         WHEN harm_t.THRESH_COUNT IS NULL THEN 'none'
         WHEN harm_t.THRESH_COUNT = 1 THEN 'one'
         WHEN harm_t.THRESH_COUNT >= 4 THEN 'all'
         WHEN harm_t.THRESH_COUNT > 1 THEN 'most'
-        ELSE 'na'
+        ELSE 'none'
     END AS sc_risk,
     CASE
         WHEN benefit_t.THRESH_COUNT IS NULL THEN 'none'
         WHEN benefit_t.THRESH_COUNT = 1 THEN 'one'
         WHEN benefit_t.THRESH_COUNT >= 4 THEN 'all'
         WHEN benefit_t.THRESH_COUNT > 1 THEN 'most'
-        ELSE 'na'
+        ELSE 'none'
     END AS sc_benefit
 FROM result fr
     

@@ -9,12 +9,13 @@ library(rewardb)
 server <- function(input, output, session) {
     log_event("server")
     # Query full results, only filter is Risk range parameters
+
     mainTableRe <- reactive({
-        log_event(paste("filtering table - sql query"))
-        mainTableSql <- readr::read_file("sql/mainTable.sql")
         risk <- input$cutrange2
         benefit <- input$cutrange1
-        df <- DatabaseConnector::renderTranslateQuerySql(dbConn, mainTableSql, riskThreshold = risk, benefitThreshold = benefit)
+        log_event(paste("filtering table - sql query", risk, benefit))
+        mainTableSql <- readr::read_file("sql/mainTable.sql")
+        df <- queryDb(mainTableSql, risk = risk, benefit = benefit)
         return(df)
     })
     
@@ -69,7 +70,27 @@ server <- function(input, output, session) {
             updateTabsetPanel(session, "mainPanel", "Detail")
             treatment <- s$TARGET_COHORT_ID
             outcome <- s$OUTCOME_COHORT_ID
-            return(getMetaAnalysisData(dbConn, treatment, outcome))
+
+            sql <- "
+              SELECT
+                    r.SOURCE_ID,
+                    ds.SOURCE_NAME,
+                    r.C_AT_RISK,
+                    r.C_PT,
+                    r.C_CASES,
+                    r.RR,
+                    r.LB_95,
+                    r.UB_95,
+                    r.P_VALUE,
+                    r.T_AT_RISK,
+                    r.T_PT,
+                    r.T_CASES
+                FROM result r
+                INNER JOIN data_source ds ON ds.source_id = r.source_id
+                WHERE r.OUTCOME_COHORT_ID = @outcome AND r.TARGET_COHORT_ID = @treatment
+                ORDER BY r.SOURCE_ID"
+            table <- queryDb(sql, treatment = treatment, outcome = outcome)
+            return(getMetaAnalysisData(table))
         }
         NULL
     })
@@ -111,17 +132,16 @@ server <- function(input, output, session) {
         target <- selectedInput$TARGET_COHORT_ID
         outcome <- selectedInput$OUTCOME_COHORT_ID
         sql <- "SELECT * FROM results WHERE TARGET_COHORT_ID = @target AND OUTCOME_COHORT_ID = @outcome ORDER BY SOURCE_ID"
-        dfScores <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = target, outcome = outcome)
+        dfScores <- queryDb( sql, target = target, outcome = outcome)
         sql <- "SELECT * FROM results WHERE TARGET_COHORT_ID = @target"
-        df <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target = target)
+        df <- queryDb(sql, target = target)
         plot <- outcomeDistribution(df, dfScores, target, outcome)
     })
     
     manhattanRes <- eventReactive(input$querySql, {
         shinyEventLogger::log_output(paste("filtering m plot - sql query"))
         manhattanSql <- readr::read_file("sql/plots.sql")
-        df <- DatabaseConnector::renderTranslateQuerySql(dbConn, manhattanSql, benefitThreshold = input$cutrange[1], 
-            harmThreshold = input$cutrange[2])
+        df <- queryDb(manhattanSql, benefitThreshold = input$cutrange1, harmThreshold = input$cutrange2)
         return(df)
     })
     

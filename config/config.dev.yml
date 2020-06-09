@@ -10,7 +10,8 @@ connectionDetails:
   server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
   port: 5432
   user: "reward_admin"
-  password: "intentionally wrong"
+  password: "***REMOVED***"
+  schema: dev
 
 resultsDatabase:
   schema: "scratch.dbo"

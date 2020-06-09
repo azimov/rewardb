@@ -5,7 +5,13 @@ log_event("Loading data")
 library(rewardb)
 
 appContext <- loadAppContext("../config/config.dev.yml", createConnection = FALSE)
-dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+
+queryDb <- function (query, ...) {
+    dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+    df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, ...)
+    DatabaseConnector::disconnect(dbConn)
+    return (df)
+}
 
 # CONST Exact strings used in SQL query
 scBenefitRisk <- c("none", "one", "most", "all")
