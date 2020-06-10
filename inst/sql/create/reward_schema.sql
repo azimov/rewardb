@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS target;
 -- Maps to CDM drug concept. Only one drug concept may be associated with a target cohort
 CREATE TABLE target (
     target_cohort_id BIGINT NOT NULL PRIMARY KEY,
-    drug_concept_id BIGINT NOT NULL,
+    target_concept_id BIGINT NOT NULL,
     cohort_name VARCHAR
 );
 
@@ -49,8 +49,8 @@ CREATE TABLE cohort_type (
     description varchar -- e.g. Inpatient diagnosis, two diagnosis codes, ATLAS,
 );
 
-INSERT INTO cohort_type (cohort_type_id, description) values (0, 'Inpatient visit');
-INSERT INTO cohort_type (cohort_type_id, description) values (1, 'Two diagnosis codes');
+INSERT INTO cohort_type (cohort_type_id, description) values (0, 'Incident of outcome with inpatient visit');
+INSERT INTO cohort_type (cohort_type_id, description) values (1, 'Incident of outcome with two diagnosis codes');
 INSERT INTO cohort_type (cohort_type_id, description) values (2, 'ATLAS cohort');
 
 DROP TABLE IF EXISTS data_source;
@@ -73,3 +73,19 @@ create table reward_version(
 );
 
 INSERT INTO reward_version (version) values ('0.0.1');
+
+-- Valid negative controls target,outcome pairs
+DROP TABLE IF EXISTS negative_control;
+CREATE TABLE negative_control (
+    target_cohort_id BIGINT NOT NULL,
+    outcome_cohort_id BIGINT NOT NULL,
+    PRIMARY KEY (target_cohort_id, outcome_cohort_id)
+);
+
+-- For custom outcomes (e.g. phenotypes)
+DROP TABLE IF EXISTS custom_outcome_negative_control;
+CREATE TABLE custom_outcome_negative_control (
+    outcome_cohort_id_1 BIGINT NOT NULL,
+    outcome_cohort_id_2 BIGINT NOT NULL,
+    PRIMARY KEY (outcome_cohort_id_1, outcome_cohort_id_2)
+);

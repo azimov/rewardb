@@ -25,7 +25,7 @@ preComputeSliderCounts <- function(connection) {
 
 
 extractTargetCohortNames <- function (appContext) {
-  sql <- " SELECT t.cohort_definition_id AS target_cohort_id, t.cohort_definition_id/1000 AS drug_concept_id, t.short_name AS cohort_name
+  sql <- " SELECT t.cohort_definition_id AS target_cohort_id, t.cohort_definition_id/1000 AS target_concept_id, t.short_name AS cohort_name
       from @results_database_schema.@cohort_definition_table t";
 
   if (!is.null(appContext$target_concept_ids)) {

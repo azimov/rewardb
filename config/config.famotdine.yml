@@ -1,12 +1,15 @@
 name: 'Famotidine outcomes'
-short_name: tnf
+short_name: famatodine
 description: 'Dashboard for all outcomes for Famotidine and comparator exposures'
 outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~
 target_concept_ids: [1149196000, 953076000, 961047000, 923645000, 21600081000, 21600095000, 21600109000]
 connectionDetails:
-  dbms: sqlite
-  server: Famotidine.db
+  dbms: "postgresql"
+  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
+  port: 5432
+  user: "reward_admin"
+  password: ""
 
 resultsDatabase:
   schema: "scratch.dbo"
