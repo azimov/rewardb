@@ -85,7 +85,7 @@ extractResultsSubset <- function(appContext){
   }
   
   
-  outcomeCohortIds <- append(append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1), appContext$custom_outcome_cohort_ids)
+  outcomeCohortIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
   if (length(outcomeCohortIds)) {
     sql <- paste(sql, "AND outcome_cohort_id in (@outcome_cohort_ids)")
   }
