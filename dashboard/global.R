@@ -9,7 +9,7 @@ dbConn <- NULL
 # Postgres + DatabaseConnector has problems with connections hanging around
 queryDb <- function (query, ...) {
     dbConn <<- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-    df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = appContext$dbSchema, ...)
+    df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = appContext$short_name, ...)
     DatabaseConnector::disconnect(dbConn)
     return (df)
 }

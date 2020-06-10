@@ -1,29 +1,3 @@
-preComputeSliderCounts <- function(connection) {
-  benefitsql <- "
-  SELECT OUTCOME_COHORT_ID, TARGET_COHORT_ID, count(*) AS thresh_count
-    FROM results WHERE RR <= @threshold AND p_value < @pthreshold
-  GROUP BY OUTCOME_COHORT_ID, TARGET_COHORT_ID
-  "
-  for (t in 1:9 * 0.1) {
-    data <- DatabaseConnector::renderTranslateQuerySql(connection, benefitsql, threshold = t, pthreshold = 0.05)
-    tableName <- stringr::str_replace_all(paste0("BEN_TH", t), "[.]", "_")
-    DatabaseConnector::dbWriteTable(connection, tableName, data, overwrite = TRUE)
-  }
-  
-  benefitsql <- "
-  SELECT OUTCOME_COHORT_ID, TARGET_COHORT_ID, count(*) AS thresh_count
-    FROM results WHERE RR >= @threshold AND p_value < @pthreshold
-  GROUP BY OUTCOME_COHORT_ID, TARGET_COHORT_ID
-  "
-  for (t in 11:25 * 0.1) {
-    data <- DatabaseConnector::renderTranslateQuerySql(connection, benefitsql, threshold = t, pthreshold = 0.05)
-    tableName <- stringr::str_replace_all(paste0("RISK_TH", t), "[.]", "_")
-    DatabaseConnector::dbWriteTable(connection, tableName, data, overwrite = TRUE)
-  }
-}
-
-
-
 extractTargetCohortNames <- function (appContext) {
   sql <- " SELECT t.cohort_definition_id AS target_cohort_id, t.cohort_definition_id/1000 AS target_concept_id, t.short_name AS cohort_name
       from @results_database_schema.@cohort_definition_table t";
@@ -39,7 +13,7 @@ extractTargetCohortNames <- function (appContext) {
                                                             results_database_schema=appContext$resultsDatabase$schema)
   }
 
-  DatabaseConnector::dbAppendTable(appContext$connection, "target", nameSet)
+  DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target"), nameSet)
 }
 
 extractOutcomeCohortNames <- function (appContext) {
@@ -80,7 +54,7 @@ extractOutcomeCohortNames <- function (appContext) {
                                                             )
   }
   
-  DatabaseConnector::dbAppendTable(appContext$connection, "outcome", nameSet)
+  DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".outcome"), nameSet)
 }
 
 extractResultsSubset <- function(appContext){
@@ -106,28 +80,38 @@ extractResultsSubset <- function(appContext){
   "
   
   targetCohorts <- appContext$target_concept_ids * 1000
-  if(!is.null(targetCohorts)) {
+  if(length(targetCohorts)) {
     sql <- paste(sql, "AND target_cohort_id in (@target_cohort_ids)")
   }
-
+  
+  
+  outcomeCohortIds <- append(append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1), appContext$custom_outcome_cohort_ids)
+  if (length(outcomeCohortIds)) {
+    sql <- paste(sql, "AND outcome_cohort_id in (@outcome_cohort_ids)")
+  }
+  
   resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
-                                                           target_cohort_ids =targetCohorts,
+                                                           target_cohort_ids = targetCohorts,
+                                                           outcome_cohort_ids = outcomeCohortIds,
                                                            scca_results = appContext$resultsDatabase$asurvResultsTable,
                                                            results_database_schema = appContext$resultsDatabase$schema)
   
   resultSet$study_design <- "scc"
-  DatabaseConnector::dbAppendTable(appContext$connection, "result", resultSet)
+  DatabaseConnector::dbAppendTable(appContext$connection,paste0(appContext$short_name, ".result"), resultSet)
 }
 
 
 createTables <- function (appContext) {
   pathToSqlFile <- system.file("sql/create", "reward_schema.sql", package = "rewardb")
   sql <- SqlRender::readSql(pathToSqlFile)
+  sql <- SqlRender::render(sql, schema=appContext$short_name)
   DatabaseConnector::executeSql(appContext$connection, sql = sql)
 }
 
 
-buildFromConfig <- function(appContext) {
+buildFromConfig <- function(filePath) {
+  appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
+  DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA IF NOT EXISTS", appContext$short_name))
   createTables(appContext)
   extractResultsSubset(appContext)
   extractTargetCohortNames(appContext)
