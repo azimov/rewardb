@@ -1,5 +1,5 @@
 name: development dashboard
-short_name: dev
+short_name: dev # This is the name of the database schema!
 description: Example description text
 outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~ # These will not be multiplied by 100
@@ -7,11 +7,10 @@ target_concept_ids: [739138]
 development_db: true
 connectionDetails:
   dbms: "postgresql"
-  server: "localhost/jamie"
+  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
   port: 5432
-  user: "jamie"
-  password: "hangman252"
-dbSchema: dev
+  user: "reward_admin"
+  password: ""
 
 resultsDatabase:
   schema: "scratch.dbo"
