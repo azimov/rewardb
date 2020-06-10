@@ -7,11 +7,11 @@ target_concept_ids: [739138]
 development_db: true
 connectionDetails:
   dbms: "postgresql"
-  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
+  server: "localhost/jamie"
   port: 5432
-  user: "reward_admin"
-  password: "***REMOVED***"
-  schema: dev
+  user: "jamie"
+  password: "hangman252"
+dbSchema: dev
 
 resultsDatabase:
   schema: "scratch.dbo"

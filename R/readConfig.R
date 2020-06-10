@@ -18,13 +18,13 @@ cleanUpAppContext <- function(appContext) {
 #' @export
 #' @examples
 #' loadAppContext('config/config.dev.yml')
-loadAppContext <- function(filePath, createConnection = TRUE, useCdm = TRUE) {
+loadAppContext <- function(filePath, createConnection = FALSE, useCdm = FALSE) {
     appContext <- yaml::read_yaml(filePath)
-    
+
     if (createConnection) {
       appContext$connection <- DatabaseConnector::connect(appContext$connectionDetails)
     }
-    
+
     if (useCdm) {
       appContext$cdmConnection <- DatabaseConnector::connect(appContext$resultsDatabase$cdmDataSource)
     }

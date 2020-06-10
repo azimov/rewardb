@@ -1,0 +1,1 @@
+SELECT target_cohort_id, target_concept_id FROM target WHERE target_concept_id IN (@target_ids);
