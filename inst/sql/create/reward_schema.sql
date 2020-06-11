@@ -5,7 +5,7 @@ CREATE TABLE @schema.result (
   source_id INT NOT NULL,
   outcome_cohort_id BIGINT NOT NULL,
   target_cohort_id BIGINT NOT NULL,
-  calibrated BOOLEAN NOT NULL DEFAULT FALSE, -- is the result calibrated with empirical calibration?
+  calibrated INT NOT NULL DEFAULT 0, -- is the result calibrated with empirical calibration?
   study_design VARCHAR, -- SCC or SCCS
   rr NUMERIC,
   se_log_rr NUMERIC,
