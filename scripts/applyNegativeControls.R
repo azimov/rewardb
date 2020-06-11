@@ -1,3 +1,30 @@
+dbControlCounts <- function (appContext, controlOutcomes) {
+  
+  targetIds <- appContext$target_concept_ids * 1000
+  
+  rcount <- data.frame()
+  for (targetId in targetIds) {
+    
+    cl = controlOutcomes$OUTCOME_COHORT_ID %% 100 == 0
+    cl2 = controlOutcomes$OUTCOME_COHORT_ID %% 100 == 1
+    rcount <- rbind(rcount,
+        data.frame(
+          target_id = targetId/1000,
+          Optum_0 = nrow(controlOutcomes[cl & controlOutcomes$SOURCE_ID == 10 & controlOutcomes$TARGET_COHORT_ID == targetId,]),
+          CCAE_0 = nrow(controlOutcomes[cl & controlOutcomes$SOURCE_ID == 11 & controlOutcomes$TARGET_COHORT_ID == targetId,]),
+          MDCD_0 = nrow(controlOutcomes[cl & controlOutcomes$SOURCE_ID == 12 & controlOutcomes$TARGET_COHORT_ID == targetId,]),
+          MDCR_0 = nrow(controlOutcomes[cl &controlOutcomes$SOURCE_ID == 13 & controlOutcomes$TARGET_COHORT_ID == targetId,]),
+          Optum_1 = nrow(controlOutcomes[cl2 & controlOutcomes$SOURCE_ID == 10 & controlOutcomes$TARGET_COHORT_ID == targetId,]),
+          CCAE_1 = nrow(controlOutcomes[cl2 & controlOutcomes$SOURCE_ID == 11 & controlOutcomes$TARGET_COHORT_ID == targetId,]),
+          MDCD_1 = nrow(controlOutcomes[cl2 & controlOutcomes$SOURCE_ID == 12 & controlOutcomes$TARGET_COHORT_ID == targetId,]),
+          MDCR_1 = nrow(controlOutcomes[cl2 &controlOutcomes$SOURCE_ID == 13 & controlOutcomes$TARGET_COHORT_ID == targetId,])
+        )
+    )
+  }
+  
+  return(rcount)
+}
+
 manualNegativeControlCalculation <- function(appContext, pdwConnection) {
   
   if (is.null(appContext$negative_control_outcome_list)) {
@@ -86,7 +113,33 @@ manualNegativeControlCalculation <- function(appContext, pdwConnection) {
     }
   }
   # TODO: store results in db
-  return (list(results=resultSet, controlCounts=targetControlOutcomes))
+  return (list(results=resultSet, controlCounts=targetControlOutcomes, dbControlCounts=dbControlCounts(appContext, controlOutcomes)))
+}
+
+makeControlPlot <- function(appContext, pdwConnection, minExposure=30, outfile=NULL) {
+  
+  if (is.null(appContext$negative_control_outcome_list)) {
+    stop("no negative_control_outcome_list option specified in configuration")
+  }
+  
+  controlList <- read.csv(appContext$negative_control_outcome_list)
+  
+  controlOutcomeIds <- append(controlList$concept_id * 100, controlList$concept_id * 100 + 1)
+  targetIds <- appContext$target_concept_ids * 1000
+  
+  sql <- "SELECT * FROM @results_schema.@results_table 
+  WHERE OUTCOME_COHORT_ID IN (@outcomeIds) AND TARGET_COHORT_ID IN (@targetIds) AND LOG_RR IS NOT NULL
+  AND T_CASES >= @min_exposure
+  "
+  controlOutcomes <- DatabaseConnector::renderTranslateQuerySql(connection = pdwConnection, sql = sql, results_schema = appContext$resultsDatabase$schema,
+                                                                results_table = appContext$resultsDatabase$asurvResultsTable,
+                                                                outcomeIds = controlOutcomeIds, 
+                                                                targetIds = targetIds,
+                                                                min_exposure = minExposure
+                                                        )
+  
+  print(paste("Plotting #", nrow(controlOutcomes)))
+  return(EmpiricalCalibration::plotCalibrationEffect(controlOutcomes$LOG_RR, controlOutcomes$SE_LOG_RR));
 }
 
 moreStats <- function(results) {
@@ -98,13 +151,8 @@ moreStats <- function(results) {
   )
 }
 
-
-appContext <- rewardB::loadAppContext("config/config.tnfs.yml")
+appContext <- loadAppContext("config/config.tnfs.yml", TRUE, TRUE)
 res <- manualNegativeControlCalculation(appContext, appContext$cdmConnection)
-appContext$negative_control_outcome_list <- "extra/negative_controls/atnf_negative_controls_no_filter.csv"
-resUnfiltred <- manualNegativeControlCalculation(appContext, appContext$cdmConnection)
-rbind(moreStats(res), resUnfiltred)
 
-# TODO: More raw number counts for drugs
-# Number of patients on each drug in each data source
-# Number of non-zero outcomes for each drug
+appContext$negative_control_outcome_list <- "extra/negative_controls/anti_tnfi_full_atlas.csv"
+resAtlasFull <- manualNegativeControlCalculation(appContext, appContext$cdmConnection)
