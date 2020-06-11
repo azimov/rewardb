@@ -5,3 +5,4 @@
 *.db
 cache/*
 errorReport.txt
+errorReportSql.txt

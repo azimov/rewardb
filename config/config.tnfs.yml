@@ -9,7 +9,7 @@ connectionDetails:
   server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
   port: 5432
   user: "reward_admin"
-  password: ""
+  password: "***REMOVED***"
 
 resultsDatabase:
   schema: "scratch.dbo"
@@ -21,4 +21,4 @@ resultsDatabase:
     server: JRDUSAPSCTL01
     port: 17001
 
-negative_control_outcome_list: 'extra/negative_controls/atnf_negative_controls.csv'
+negative_control_outcome_list: 'extra/negative_controls/atnfi_full_atlas.csv'
