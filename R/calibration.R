@@ -8,7 +8,7 @@ getOutcomeControls <- function(appContext, targetCohortIds) {
     )
     INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
     WHERE r.TARGET_COHORT_ID IN (@target_cohort_ids)
-    AND r.calibrated = FALSE -- Using calibrated results makes no sense but flag just in case
+    AND r.calibrated = 0 -- Using calibrated results makes no sense but flag just in case
     AND o.type_id != 2 -- ATLAS cohorts excluded
   "
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
@@ -28,7 +28,7 @@ getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
       )
       INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
       WHERE r.TARGET_COHORT_ID IN (@target_cohort_ids)
-      AND r.calibrated = FALSE
+      AND r.calibrated = 0
       AND nc.target_cohort_id IS NULL -- We only want entries that are not negative controls
       AND o.type_id != 2 -- ATLAS cohorts excluded
   "
@@ -85,9 +85,9 @@ calibrateTargets <- function(appContext, targetCohortIds) {
             C_CASES = interest$C_CASES,
             C_PT = interest$C_PT,
             C_AT_RISK = interest$C_AT_RISK,
-            T_CASES = interest$C_CASES,
-            T_PT = interest$C_PT,
-            T_AT_RISK = interest$C_AT_RISK,
+            T_CASES = interest$T_CASES,
+            T_PT = interest$T_PT,
+            T_AT_RISK = interest$T_AT_RISK,
             STUDY_DESIGN = interest$STUDY_DESIGN
           )
 

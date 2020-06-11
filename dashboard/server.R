@@ -13,12 +13,12 @@ server <- function(input, output, session) {
         benefit <- input$cutrange1
         risk <- input$cutrange2
         mainTableSql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
-
+        calibrated <- ifelse(input$calibrated, 1, 0)
         bSelection <- paste0("'", paste0(input$scBenefit, sep="'"))
         rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
         st <- Sys.time()
         df <- queryDb(mainTableSql, risk = risk, benefit = benefit,
-                      risk_selection = rSelection, benefit_selection = bSelection)
+                      risk_selection = rSelection, benefit_selection = bSelection, calibrated=calibrated)
         log_message(paste("main table - sql query took", round(Sys.time() - st, 3), "for rows:", nrow(df)))
         return(df)
     })
@@ -61,28 +61,17 @@ server <- function(input, output, session) {
         s$TARGET_COHORT_NAME
     })
 
-    output$selectTreatement <- renderUI({
-        df <- mainTableRe()
-        widget <- shinyWidgets::pickerInput("targetCohorts", "Drug Exposures:", choices = unique(df$TARGET_COHORT_NAME),
-            selected = unique(df$TARGET_COHORT_NAME), options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
-            multiple = TRUE)
-    })
-
-    output$selectOutcome <- renderUI({
-        df <- mainTableRe()
-        shinyWidgets::pickerInput("outcomeCohorts", "Outcomes:", choices = unique(df$OUTCOME_COHORT_NAME), selected = unique(df$OUTCOME_COHORT_NAME),
-            options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE), multiple = TRUE)
-    })
-
     dynamicMetaAnalysisTbl <- reactive({
         s <- filteredTableSelected()
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
         if (length(outcome)) {
+            calibrated <- ifelse(input$calibrated, 1, 0)
             updateTabsetPanel(session, "mainPanel", "Detail")
+            log_message(paste("getting data and performing meta-analysis", calibrated))
             sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-            table <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=FALSE)
-            return(getMetaAnalysisData(table))
+            table <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=calibrated)
+            return(rewardb::getMetaAnalysisData(table))
         }
 
         return(data.frame())
@@ -118,7 +107,7 @@ server <- function(input, output, session) {
     output$forestPlot <- renderPlot({
         df <- dynamicMetaAnalysisTbl()
         if (nrow(df)) {
-            return(forestPlot(df))
+            return(rewardb::forestPlot(df))
         }
     })
 
