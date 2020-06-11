@@ -57,6 +57,16 @@ extractOutcomeCohortNames <- function (appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".outcome"), nameSet)
 }
 
+createOutcomeConceptMapping <- function (appContext) {
+  # TODO - somehow map custom cohorts to condition concepts?
+  #  Pull from WebApi then what? Could be thousands of concept codes
+  sql <- "INSERT INTO @schemaoutcome_concept (outcome_cohort_id, condition_concept_id)
+    SELECT outcome_cohort_id, outcome_cohort_id/100 AS condition_concept_id
+        FROM @schema.outcome WHERE type_id IN (0, 1);"
+
+  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema=appContext$short_name)
+}
+
 extractResultsSubset <- function(appContext){
 
   sql <- "
@@ -116,4 +126,5 @@ buildFromConfig <- function(filePath) {
   extractResultsSubset(appContext)
   extractTargetCohortNames(appContext)
   extractOutcomeCohortNames(appContext)
+  createOutcomeConceptMapping(appContext)
 }
