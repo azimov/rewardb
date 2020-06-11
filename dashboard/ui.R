@@ -2,7 +2,6 @@ library(shiny)
 library(shinyWidgets)
 
 
-
 filterSql <- "SELECT DISTINCT(OUTCOME_COHORT_ID), COHORT_NAME AS OUTCOME_COHORT_NAME FROM @schema.outcome"
 outcomes <- queryDb(filterSql)
 
@@ -61,55 +60,56 @@ metaResultsPanel <- conditionalPanel(
 mainPanelOutput <- tabPanel("Main Results", DT::dataTableOutput("mainTable"), metaResultsPanel)
 
 sidePane <- fluidRow(
-  column(2,
-         sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
-         sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2),
-         checkboxInput("calibrated", "Use calibrated results", FALSE),
-         pickerInput(
-           "targetCohorts",
-           "Drug Exposures:",
-           choices = treatments$TARGET_COHORT_NAME,
-           selected = treatments$TARGET_COHORT_NAME,
-           options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
-           multiple = TRUE
-         ),
-         pickerInput(
-           "outcomeCohorts",
-           "Outcomes:",
-           choices = outcomes$OUTCOME_COHORT_NAME,
-           selected = outcomes$OUTCOME_COHORT_NAME,
-           options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
-           multiple = TRUE
-         ),
-         pickerInput(
-           "exposureClasses",
-           "Exposure Classes:",
-           choices = exposureClasses$EXPOSURE_CLASS,
-           selected = exposureClasses$EXPOSURE_CLASS,
-           options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
-           multiple = TRUE
-         ),
-         pickerInput(
-           "scBenefit",
-           "Sources with self control benefit:",
-           choices = scBenefitRisk,
-           selected = "all",
-           options = shinyWidgets::pickerOptions(actionsBox = TRUE),
-           multiple = TRUE
-         ),
-         pickerInput(
-           "scRisk",
-           "Sources with self control risk:",
-           choices = scBenefitRisk,
-           selected = "none",
-           options = shinyWidgets::pickerOptions(actionsBox = TRUE),
-           multiple = TRUE
-         ),
-         downloadButton(
-           "downloadtable",
-           "Download file",
-           style = "display: block; margin: 0 auto; color: blue;"
-         )
+  column(
+    2,
+    sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
+    sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2),
+    checkboxInput("calibrated", "Use calibrated results", FALSE),
+    pickerInput(
+      "targetCohorts",
+      "Drug Exposures:",
+      choices = treatments$TARGET_COHORT_NAME,
+      selected = treatments$TARGET_COHORT_NAME,
+      options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
+      multiple = TRUE
+    ),
+    pickerInput(
+      "outcomeCohorts",
+      "Outcomes:",
+      choices = outcomes$OUTCOME_COHORT_NAME,
+      selected = outcomes$OUTCOME_COHORT_NAME,
+      options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
+      multiple = TRUE
+    ),
+    pickerInput(
+      "exposureClasses",
+      "Exposure Classes:",
+      choices = exposureClasses$EXPOSURE_CLASS,
+      selected = exposureClasses$EXPOSURE_CLASS,
+      options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
+      multiple = TRUE
+    ),
+    pickerInput(
+      "scBenefit",
+      "Sources with self control benefit:",
+      choices = scBenefitRisk,
+      selected = "all",
+      options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+      multiple = TRUE
+    ),
+    pickerInput(
+      "scRisk",
+      "Sources with self control risk:",
+      choices = scBenefitRisk,
+      selected = "none",
+      options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+      multiple = TRUE
+    ),
+    downloadButton(
+      "downloadtable",
+      "Download file",
+      style = "display: block; margin: 0 auto; color: blue;"
+    )
   ),
   column(9, tabsetPanel(id = "mainPanel", mainPanelOutput))
 )
