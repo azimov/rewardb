@@ -3,7 +3,7 @@ set_logging()
 set_logging_session()
 library(rewardb)
 
-appContext <- loadAppContext("../config/config.tnfs.yml")
+appContext <- loadAppContext("../config/config.dev.yml")
 dbConn <- NULL
 # Simple wrapper for always ensuring that database connection is opened and closed
 # Postgres + DatabaseConnector has problems with connections hanging around

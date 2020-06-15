@@ -185,8 +185,3 @@ addManualNegativeOutcomeControls <- function (appContext) {
 
   DatabaseConnector::disconnect(dbConn)
 }
-
-#' Input should specify a csv file with the columns target_concept_id and outcome_cohort_id
-#' This script will then work out the target cohorts for the specified outcome cohort id
-addCustomCohortNegativeControls <- function (appContext, csvFilePath) {
-}
