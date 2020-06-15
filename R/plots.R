@@ -13,29 +13,23 @@ manhattanPlot <- function(dfFunc, xCol, yFunc) {
 #'@export
 forestPlot <- function(table) {
 
-  label <- paste0("IRR= ", round(table$`RR` * 1, 2), "; 95% CI= (", round(table$`LB_95`, 2), " - ", round(table$`UB_95`, 2), ")")
-  plot <- ggplot2::ggplot(data = table, aes(y = factor(SOURCE_NAME, level = rev(SOURCE_NAME)), x = RR, xmin = LB_95, xmax = UB_95, label = label)) +
-    # Add data points and color them black
-    geom_point(aes(shape = SOURCE_NAME, color = SOURCE_NAME, size = SOURCE_NAME)) +
-    scale_shape_manual(values = c(16, 16, 16, 16, 16)) +
-    scale_size_manual(values = c(3, 3, 3, 3, 3)) +
-    scale_color_manual(values = c("black", "black", "black", "black", "black")) +
-    geom_text(vjust = 0, nudge_y = 0.2) +
-    geom_errorbarh(height = 0.1) +
-    # Specify the limits of the x-axis and relabel it to something more meaningful
-    xlab("Incident Rate Ratio (95% CI)") +
-    ylab("Database") + # Add a vertical dashed line indicating an effect size of zero, for reference
-    geom_vline(xintercept = 1, color = "black", linetype = "dashed") +
-    scale_x_continuous(trans = log2_trans()) +
-    theme_bw() +
-    theme(
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(),
-      panel.border = element_blank(),
-      axis.line = element_line(),
-      text = element_text(family = "sans", size = 16),
-      plot.title = element_text(size = 13, face = "bold.italic"), legend.position = "none"
-    )
+  label <- paste0("IRR= ", round(table$`RR` * 1, 2),
+                  "; 95% CI= (", round(table$`LB_95`, 2), " - ", round(table$`UB_95`, 2), ")")
+  plot <- ggplot2::ggplot(
+    table,
+    aes(
+    y = factor(SOURCE_NAME, level = rev(SOURCE_NAME)),
+    x = RR,
+    xmin = LB_95,
+    xmax = UB_95,
+    label = label)
+  ) +
+    ggplot2::geom_pointrange() +
+    ggplot2::geom_text(vjust = 0, nudge_y = 0.2) +
+    ggplot2::geom_errorbarh(height = 0.1) +
+    ggplot2::geom_vline(xintercept = 1.0, linetype = 2) +
+    ggplot2::ylab("Database") +
+    ggplot2::xlab("Relative Risk")
   return(plot)
 }
 

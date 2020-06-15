@@ -52,7 +52,7 @@ metaResultsPanel <- conditionalPanel(
     tabPanel("Detailed results", DT::dataTableOutput("fullResultsTable")),
     tabPanel(
       "Forest plot",
-      plotOutput("forestPlot", height = 500, hover = hoverOpts("plotHoverForestPlot")),
+      plotOutput("forestPlot", height = 800, hover = hoverOpts("plotHoverForestPlot")),
       div(strong("Figure 1."), "Forest plot of effect estimates from each database")
     )
   )

@@ -25,9 +25,7 @@ server <- function(input, output, session) {
 
     # Subset of results for harm, risk and treatement categories
     mainTableRiskHarmFilters <- reactive({
-
         df <- mainTableRe()
-
         log_event("filtering table - ui")
         filtered <- df[df$OUTCOME_COHORT_NAME %in% input$outcomeCohorts
                          & df$TARGET_COHORT_NAME %in% input$targetCohorts, ]
@@ -39,7 +37,10 @@ server <- function(input, output, session) {
         df <- mainTableRiskHarmFilters()
         log_message(paste("filtering - sql query + df filter took", round(Sys.time() - st, 3)))
         st <- Sys.time()
-        table <- DT::datatable(df, selection = "single", rownames = FALSE, escape = FALSE )
+        table <- DT::datatable(
+          df, selection = "single",
+          rownames = FALSE
+        )
         log_message(paste("making data table", round(Sys.time() - st, 3)))
         return(table)
     })
@@ -66,14 +67,24 @@ server <- function(input, output, session) {
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
         if (length(outcome)) {
-            calibrated <- ifelse(input$calibrated, 1, 0)
             updateTabsetPanel(session, "mainPanel", "Detail")
-            log_message(paste("getting data and performing meta-analysis", calibrated))
             sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-            table <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=calibrated)
-            return(rewardb::getMetaAnalysisData(table))
-        }
+            uncalibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+            uncalibratedTable <- rewardb::getMetaAnalysisData(uncalibratedTable)
 
+            calibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=1)
+
+            if (nrow(calibratedTable)) {
+                calibratedTable <- rewardb::getMetaAnalysisData(calibratedTable)
+                calibratedTable$CALIBRATED = 1
+                uncalibratedTable$CALIBRATED = 0
+                calibratedTable$SOURCE_NAME <- paste(calibratedTable$SOURCE_NAME, "Calibrated")
+                uncalibratedTable$SOURCE_NAME <- paste(uncalibratedTable$SOURCE_NAME, "Uncalibrated")
+                table <- rbind(calibratedTable, uncalibratedTable)
+                return(table[order(table$SOURCE_ID, table$SOURCE_NAME),])
+            }
+            return(uncalibratedTable)
+        }
         return(data.frame())
     })
 
