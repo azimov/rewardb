@@ -3,6 +3,7 @@ WITH benefit_t AS(
     FROM @schema.result
     WHERE RR <= @benefit
         AND P_VALUE < 0.05
+        AND calibrated = @calibrated
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 ),
 
@@ -11,6 +12,7 @@ risk_t AS (
     FROM @schema.result
     WHERE RR >= @risk
         AND P_VALUE < 0.05
+        AND calibrated = @calibrated
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 )
 
@@ -37,9 +39,9 @@ FROM @schema.result fr
     INNER JOIN @schema.target t ON t.target_cohort_id = fr.target_cohort_id
     INNER JOIN @schema.outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
     --LEFT JOIN exposure_classes ec ON ec.CONCEPT_ID = tc.TARGET_CONCEPT_ID
-    -- WHERE benefit_count IN (@benefit_selection) AND risk_count IN (@risk_selection)
 
-    WHERE 1 = CASE
+    WHERE fr.calibrated = @calibrated
+    AND 1 = CASE
         WHEN risk_t.THRESH_COUNT IS NULL AND 'none' IN (@risk_selection) THEN 1
         WHEN risk_t.THRESH_COUNT = 1 AND 'one' in (@risk_selection) THEN 1
         WHEN risk_t.THRESH_COUNT >= 4 AND 'all' in (@risk_selection) THEN 1

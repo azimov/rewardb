@@ -17,7 +17,9 @@ resultsDatabase:
   cohortDefinitionTable: "homer_cohort_definition_May2020"
   outcomeCohortDefinitionTable: "homer_outcome_cohort_definition_May2020"
   asurvResultsTable: "homer_AllbyAll_results_May2020"
-  
+  cemSchema: "CEM_V2_0_0_20200226.dbo"
+  negativeControlTable: "matrix_summary"
+
   cdmDataSource:
     dbms: pdw
     server: JRDUSAPSCTL01

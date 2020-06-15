@@ -13,12 +13,12 @@ server <- function(input, output, session) {
         benefit <- input$cutrange1
         risk <- input$cutrange2
         mainTableSql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
-
+        calibrated <- ifelse(input$calibrated, 1, 0)
         bSelection <- paste0("'", paste0(input$scBenefit, sep="'"))
         rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
         st <- Sys.time()
         df <- queryDb(mainTableSql, risk = risk, benefit = benefit,
-                      risk_selection = rSelection, benefit_selection = bSelection)
+                      risk_selection = rSelection, benefit_selection = bSelection, calibrated=calibrated)
         log_message(paste("main table - sql query took", round(Sys.time() - st, 3), "for rows:", nrow(df)))
         return(df)
     })
@@ -39,7 +39,10 @@ server <- function(input, output, session) {
         df <- mainTableRiskHarmFilters()
         log_message(paste("filtering - sql query + df filter took", round(Sys.time() - st, 3)))
         st <- Sys.time()
-        table <- DT::datatable(df, selection = "single", rownames = FALSE, escape = FALSE )
+        table <- DT::datatable(
+          df, selection = "single",
+          rownames = FALSE
+        )
         log_message(paste("making data table", round(Sys.time() - st, 3)))
         return(table)
     })
@@ -61,19 +64,6 @@ server <- function(input, output, session) {
         s$TARGET_COHORT_NAME
     })
 
-    output$selectTreatement <- renderUI({
-        df <- mainTableRe()
-        widget <- shinyWidgets::pickerInput("targetCohorts", "Drug Exposures:", choices = unique(df$TARGET_COHORT_NAME),
-            selected = unique(df$TARGET_COHORT_NAME), options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
-            multiple = TRUE)
-    })
-
-    output$selectOutcome <- renderUI({
-        df <- mainTableRe()
-        shinyWidgets::pickerInput("outcomeCohorts", "Outcomes:", choices = unique(df$OUTCOME_COHORT_NAME), selected = unique(df$OUTCOME_COHORT_NAME),
-            options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE), multiple = TRUE)
-    })
-
     dynamicMetaAnalysisTbl <- reactive({
         s <- filteredTableSelected()
         treatment <- s$TARGET_COHORT_ID
@@ -81,10 +71,22 @@ server <- function(input, output, session) {
         if (length(outcome)) {
             updateTabsetPanel(session, "mainPanel", "Detail")
             sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-            table <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=FALSE)
-            return(getMetaAnalysisData(table))
-        }
+            uncalibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+            uncalibratedTable <- rewardb::getMetaAnalysisData(uncalibratedTable)
 
+            calibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=1)
+
+            if (nrow(calibratedTable)) {
+                calibratedTable <- rewardb::getMetaAnalysisData(calibratedTable)
+                calibratedTable$CALIBRATED = 1
+                uncalibratedTable$CALIBRATED = 0
+                calibratedTable$SOURCE_NAME <- paste(calibratedTable$SOURCE_NAME, "Calibrated")
+                uncalibratedTable$SOURCE_NAME <- paste(uncalibratedTable$SOURCE_NAME, "Uncalibrated")
+                table <- rbind(calibratedTable, uncalibratedTable)
+                return(table[order(table$SOURCE_ID, table$SOURCE_NAME),])
+            }
+            return(uncalibratedTable)
+        }
         return(data.frame())
     })
 
@@ -118,7 +120,7 @@ server <- function(input, output, session) {
     output$forestPlot <- renderPlot({
         df <- dynamicMetaAnalysisTbl()
         if (nrow(df)) {
-            return(forestPlot(df))
+            return(rewardb::forestPlot(df))
         }
     })
 

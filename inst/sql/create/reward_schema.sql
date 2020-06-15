@@ -81,11 +81,3 @@ CREATE TABLE @schema.negative_control (
     outcome_cohort_id BIGINT NOT NULL,
     PRIMARY KEY (target_cohort_id, outcome_cohort_id)
 );
-
--- For custom outcomes (e.g. phenotypes)
-DROP TABLE IF EXISTS @schema.custom_outcome_negative_control;
-CREATE TABLE @schema.custom_outcome_negative_control (
-    outcome_cohort_id_1 BIGINT NOT NULL,
-    outcome_cohort_id_2 BIGINT NOT NULL,
-    PRIMARY KEY (outcome_cohort_id_1, outcome_cohort_id_2)
-);
