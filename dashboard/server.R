@@ -25,7 +25,9 @@ server <- function(input, output, session) {
 
     # Subset of results for harm, risk and treatement categories
     mainTableRiskHarmFilters <- reactive({
+
         df <- mainTableRe()
+
         log_event("filtering table - ui")
         filtered <- df[df$OUTCOME_COHORT_NAME %in% input$outcomeCohorts
                          & df$TARGET_COHORT_NAME %in% input$targetCohorts, ]
