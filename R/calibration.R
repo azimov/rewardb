@@ -19,7 +19,6 @@ getOutcomeControls <- function(appContext, targetCohortIds) {
   return(negatives)
 }
 
-
 getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
   sql <- "
       SELECT r.*, o.type_id as outcome_type FROM @schema.result r
@@ -39,6 +38,24 @@ getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
 
   return(positives)
 }
+
+getUncalibratedAtlasCohorts <- function(appContext, targetCohortIds) {
+  sql <- "
+      SELECT r.*, o.type_id as outcome_type
+      FROM @schema.result r
+      INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
+      WHERE r.TARGET_COHORT_ID IN (@target_cohort_ids)
+      AND r.calibrated = 0
+      AND o.type_id = 2 -- ATLAS cohorts only
+  "
+  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target_cohort_ids = targetCohortIds,
+                                                          schema=appContext$short_name)
+  DatabaseConnector::disconnect(dbConn)
+
+  return(positives)
+}
+
 
 #'@export
 calibrateTargets <- function(appContext, targetCohortIds) {
@@ -97,6 +114,52 @@ calibrateTargets <- function(appContext, targetCohortIds) {
         }
       }
     }
+  }
+
+  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
+  DatabaseConnector::disconnect(dbConn)
+}
+
+#'@export
+calibrateCustomCohorts <- function(appContext, targetCohortIds) {
+  # get negative control data rows
+  controlOutcomes <- getOutcomeControls(appContext, targetCohortIds)
+  positives <- getUncalibratedAtlasCohorts(appContext, targetCohortIds)
+
+  resultSet <- data.frame()
+  dataSources = unique(positives$SOURCE_ID)
+  for(dataSource in dataSources) {
+      negatives <- controlOutcomes[ controlOutcomes$SOURCE_ID == dataSource,]
+      interest <- positives[positives$SOURCE_ID == dataSource,]
+
+      nullDist <- EmpiricalCalibration::fitNull(logRr = log(negatives$RR), seLogRr = negatives$SE_LOG_RR)
+          calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(interest$RR), interest$SE_LOG_RR)
+          errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
+          ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(interest$RR), interest$SE_LOG_RR, errorModel)
+      if (nrow(negatives) > 0) {
+          result <- data.frame(
+            SOURCE_ID = dataSource,
+            TARGET_COHORT_ID = interest$TARGET_COHORT_ID,
+            CALIBRATED = 1,
+            OUTCOME_COHORT_ID = interest$OUTCOME_COHORT_ID,
+            P_VALUE = calibratedPValue,
+            UB_95 = exp(ci$logUb95Rr),
+            LB_95 = exp(ci$logLb95Rr),
+            RR = exp(ci$logRr),
+            SE_LOG_RR = ci$seLogRr,
+            C_CASES = interest$C_CASES,
+            C_PT = interest$C_PT,
+            C_AT_RISK = interest$C_AT_RISK,
+            T_CASES = interest$T_CASES,
+            T_PT = interest$T_PT,
+            T_AT_RISK = interest$T_AT_RISK,
+            STUDY_DESIGN = interest$STUDY_DESIGN
+          )
+          resultSet <- rbind(resultSet, result)
+      } else {
+        print("Error no negative controls mapped")
+      }
   }
 
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
