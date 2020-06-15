@@ -60,7 +60,7 @@ extractOutcomeCohortNames <- function (appContext) {
 createOutcomeConceptMapping <- function (appContext) {
   # TODO - somehow map custom cohorts to condition concepts?
   #  Pull from WebApi then what? Could be thousands of concept codes
-  sql <- "INSERT INTO @schemaoutcome_concept (outcome_cohort_id, condition_concept_id)
+  sql <- "INSERT INTO @schema.outcome_concept (outcome_cohort_id, condition_concept_id)
     SELECT outcome_cohort_id, outcome_cohort_id/100 AS condition_concept_id
         FROM @schema.outcome WHERE type_id IN (0, 1);"
 
