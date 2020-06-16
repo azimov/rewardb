@@ -1,9 +1,6 @@
-library(shinyEventLogger)
-set_logging()
-set_logging_session()
 library(rewardb)
 
-appContext <- loadAppContext("../config/config.dev.yml")
+appContext <- loadAppContext("../config/config.famotdine.yml")
 dbConn <- NULL
 # Simple wrapper for always ensuring that database connection is opened and closed
 # Postgres + DatabaseConnector has problems with connections hanging around

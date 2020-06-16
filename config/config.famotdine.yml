@@ -1,6 +1,6 @@
 name: 'Famotidine outcomes'
-short_name: famatodine
-description: 'Dashboard for all outcomes for Famotidine and comparator exposures'
+short_name: famotidine
+description: 'Dashboard for all outcomes for famotidine and comparator exposures'
 outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~
 target_concept_ids: [1149196, 953076, 961047, 923645, 21600081, 21600095, 21600109]

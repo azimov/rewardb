@@ -1,7 +1,6 @@
 library(shiny)
 library(shinyWidgets)
 
-
 filterSql <- "SELECT DISTINCT(OUTCOME_COHORT_ID), COHORT_NAME AS OUTCOME_COHORT_NAME FROM @schema.outcome"
 outcomes <- queryDb(filterSql)
 
@@ -10,38 +9,6 @@ treatments <- queryDb(filterSql)
 
 exposureClassesSql <- "SELECT DISTINCT(EXPOSURE_CLASS) FROM TREATMENT_CLASSES ORDER BY EXPOSURE_CLASS"
 exposureClasses <- c()  # DatabaseConnector::renderTranslateQuerySql(dbConn, exposureClassesSql)
-
-manhattanPlotPanel <- tabPanel(
-  "Plots",
-  HTML("<h4> Plot configuration </h4>"),
-  fluidRow(
-    column(2,
-           pickerInput("mplotType", "Plot type",
-                       choices = c("Manhattan", "Distribution")
-           )
-    ),
-    column(2,
-           pickerInput("yFunc", "Y Function",
-                       choices = c("RR", "log(RR)", "1/RR", "-1 * RR", "-1 * log(RR)", "P_VALUE", "LB_95", "UB_95")
-           )
-    ),
-    column(2, uiOutput("selectMx")),
-    column(2, uiOutput("selectDataSource")),
-  ),
-  plotly::plotlyOutput("mplot"),
-  div(strong("Figure 3."), textOutput("mplotFigureTitle")
-  )
-)
-
-irrTab <- tabPanel(
-  "IRR probability",
-  plotly::plotlyOutput("eOutcomeProb", height = 800),
-  div(
-    strong("Figure 2."),
-    paste("Kernel Density Estimates of IRR scores for all outcomes in data set for ", textOutput("targetStr"))
-  )
-)
-
 
 metaDisplayCondtion <- "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0"
 metaResultsPanel <- conditionalPanel(
