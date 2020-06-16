@@ -68,6 +68,7 @@ server <- function(input, output, session) {
                 calibratedTable$I2 <- NA
                 calibratedTable$CALIBRATED = 1
                 uncalibratedTable$CALIBRATED = 0
+                uncalibratedTable$SOURCE_NAME <- paste(uncalibratedTable$SOURCE_NAME, "Uncalibrated")
                 calibratedTable$SOURCE_NAME <- paste(calibratedTable$SOURCE_NAME, "Calibrated")
                 table <- rbind(calibratedTable, uncalibratedTable)
                 return(table[order(table$SOURCE_ID, table$SOURCE_NAME),])
