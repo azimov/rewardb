@@ -7,6 +7,14 @@ cleanUpAppContext <- function(appContext) {
     return(appContext)
 }
 
+getPasswordSecurely <- function() {
+    pass <- Sys.getenv("REWARD_B_PASSWORD")
+    if(pass == "") {
+        return(askpass::askpass("Please enter the reward b database password"))
+    }
+    return(pass)
+}
+
 #' Loads the application configuration and creates an application object
 #' By default, loads the database connections in to this object
 #'
@@ -20,7 +28,7 @@ cleanUpAppContext <- function(appContext) {
 #' loadAppContext('config/config.dev.yml')
 loadAppContext <- function(filePath, createConnection = FALSE, useCdm = FALSE) {
     appContext <- yaml::read_yaml(filePath)
-
+    appContext$connectionDetails$password <- getPasswordSecurely()
     if (createConnection) {
       appContext$connection <- DatabaseConnector::connect(appContext$connectionDetails)
     }
