@@ -4,6 +4,7 @@ WITH benefit_t AS(
     WHERE RR <= @benefit
         AND P_VALUE < 0.05
         AND calibrated = @calibrated
+        AND SOURCE_ID >= 0
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 ),
 
@@ -13,6 +14,7 @@ risk_t AS (
     WHERE RR >= @risk
         AND P_VALUE < 0.05
         AND calibrated = @calibrated
+        AND SOURCE_ID >= 0 -- NEGATIVE SOURCE IDS are reserved for
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 )
 

@@ -1,6 +1,6 @@
 library(rewardb)
 
-appContext <- loadAppContext("../config/config.famotdine.yml")
+appContext <- loadAppContext("../config/config.dev.yml")
 dbConn <- NULL
 # Simple wrapper for always ensuring that database connection is opened and closed
 # Postgres + DatabaseConnector has problems with connections hanging around
@@ -11,7 +11,6 @@ queryDb <- function (query, ...) {
     return (df)
 }
 
-# CONST Exact strings used in SQL query
 scBenefitRisk <- c("none", "one", "most", "all")
 niceColumnName <- list(SOURCE_NAME = "Database", RR = "Relative Risk", C_AT_RISK = "N Unexposed", T_AT_RISK = "N Exposed", 
     C_PT = "Unexposed time (years)", T_PT = "Exposed time (years)", C_CASES = "Unexposed cases", T_CASES = "Exposed cases", 

@@ -8,16 +8,22 @@ getOutcomeControls <- function(appContext, targetCohortIds) {
     )
     INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
     WHERE r.TARGET_COHORT_ID IN (@target_cohort_ids)
-    AND r.calibrated = 0 -- Using calibrated results makes no sense but flag just in case
+    AND r.calibrated = 0
     AND o.type_id != 2 -- ATLAS cohorts always excluded
   "
+
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  negatives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target_cohort_ids = targetCohortIds,
-                                                          schema=appContext$short_name)
+  negatives <- DatabaseConnector::renderTranslateQuerySql(
+    dbConn,
+    sql,
+    target_cohort_ids = targetCohortIds,
+    schema=appContext$short_name
+  )
   DatabaseConnector::disconnect(dbConn)
 
   return(negatives)
 }
+
 
 getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
   sql <- "
@@ -62,11 +68,9 @@ computeCalibratedRows <- function (negatives, interest) {
   errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
   ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(interest$RR), interest$SE_LOG_RR, errorModel)
 
+  # Row matches fields in the database excluding the ids, used in dplyr, group_by with keep_true
   result <- data.frame(
-      SOURCE_ID = interest$SOURCE_ID,
-      TARGET_COHORT_ID = interest$TARGET_COHORT_ID,
       CALIBRATED = 1,
-      OUTCOME_COHORT_ID = interest$OUTCOME_COHORT_ID,
       P_VALUE = calibratedPValue,
       UB_95 = exp(ci$logUb95Rr),
       LB_95 = exp(ci$logLb95Rr),
@@ -89,37 +93,19 @@ calibrateTargets <- function(appContext, targetCohortIds) {
   controlOutcomes <- getOutcomeControls(appContext, targetCohortIds)
   # get positives
   positives <- getUncalibratedOutcomes(appContext, targetCohortIds)
-
-  resultSet <- data.frame()
-  dataSources = unique(positives$SOURCE_ID)
-  outcomeTypes = unique(positives$OUTCOME_TYPE)
-
   print(paste("calibrating", nrow(positives) ,"outcomes"))
-  for (outcomeType in outcomeTypes) {
-    for (targetId in targetCohortIds) {
-      for (dataSource in dataSources) {
-        negatives <- controlOutcomes[
-          controlOutcomes$OUTCOME_TYPE == outcomeType &
-            controlOutcomes$SOURCE_ID == dataSource &
-            controlOutcomes$TARGET_COHORT_ID == targetId,]
+  library(dplyr)
 
-        interest <- positives[
-            positives$OUTCOME_TYPE == outcomeType &
-            positives$TARGET_COHORT_ID == targetId &
-            positives$SOURCE_ID == dataSource,]
-
-        if (nrow(negatives) > 0) {
-          result <- computeCalibratedRows(negatives, interest)
-          resultSet <- rbind(resultSet, result)
-        } else {
-          print(paste("No negative control outcomes for ", targetId, "were found on source", dataSource))
-        }
-      }
-    }
-  }
-
+  # Get all outcomes for a given target, source and outcome type
+  resultSet <- positives %>%
+    group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID)  %>%
+    group_modify(~ computeCalibratedRows(.x, controlOutcomes[
+      controlOutcomes$OUTCOME_TYPE == .x$OUTCOME_TYPE[1] &
+      controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
+      controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
+    ]), keep=TRUE)
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
+  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
   DatabaseConnector::disconnect(dbConn)
 }
 
@@ -129,22 +115,21 @@ calibrateCustomCohorts <- function(appContext, targetCohortIds) {
   controlOutcomes <- getOutcomeControls(appContext, targetCohortIds)
   positives <- getUncalibratedAtlasCohorts(appContext, targetCohortIds)
 
-  resultSet <- data.frame()
-  dataSources = unique(positives$SOURCE_ID)
-  for(dataSource in dataSources) {
-      # We only calibrate on the 2DX outcomes
-      negatives <- controlOutcomes[controlOutcomes$SOURCE_ID == dataSource & controlOutcomes$outcome_type == 0,]
-      interest <- positives[positives$SOURCE_ID == dataSource,]
-      if (nrow(negatives) > 0) {
-          result <- computeCalibratedRows(negatives, interest)
-          resultSet <- rbind(resultSet, result)
-      } else {
-        print("Error no negative controls mapped")
-      }
-  }
+  print(paste("calibrating", nrow(positives) ,"outcomes"))
+  library(dplyr)
+
+  # Get all outcomes for a given target, source for outcome type 0
+  # Compute calibrated results
+  resultSet <- positives %>%
+    group_by(SOURCE_ID, TARGET_COHORT_ID, OUTCOME_COHORT_ID)  %>%
+    group_modify(~ computeCalibratedRows(.x, controlOutcomes[
+      controlOutcomes$OUTCOME_TYPE == 0 &
+      controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
+      controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
+    ]), keep=TRUE)
 
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
+  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
   DatabaseConnector::disconnect(dbConn)
 }
 
