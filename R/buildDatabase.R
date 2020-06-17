@@ -40,12 +40,14 @@ extractOutcomeCohortNames <- function (appContext) {
     
     outcome_ids <- append(appContext$outcome_cohort_ids * 100, appContext$outcome_cohort_ids * 100 + 1)
     sql <- paste(sql, "AND o.cohort_definition_id IN (@outcome_cohort_ids)")
-    nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
-                                                            outcome_cohort_ids = outcomes,
-                                                            custom_outcome_ids = appContext$custom_outcome_cohort_ids,
-                                                            outcome_cohort_definition_table=appContext$resultsDatabase$outcomeCohortDefinitionTable,
-                                                            results_database_schema=appContext$resultsDatabase$schema
-                                                            )
+    nameSet <- DatabaseConnector::renderTranslateQuerySql(
+      appContext$cdmConnection, 
+      sql, 
+      outcome_cohort_ids = outcomes,
+      custom_outcome_ids = appContext$custom_outcome_cohort_ids,
+      outcome_cohort_definition_table=appContext$resultsDatabase$outcomeCohortDefinitionTable,
+      results_database_schema=appContext$resultsDatabase$schema
+    )
   } else {
     nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
                                                             custom_outcome_ids = appContext$custom_outcome_cohort_ids,
@@ -122,7 +124,7 @@ addCemNagativeControls <- function(appContext) {
   cdmConnection <- appContext$cdmConnection
 
   outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                           "SELECT condition_concept_id FROM outcome_concept",
+                                                           "SELECT condition_concept_id FROM @schema.outcome_concept",
                                                            schema=appContext$short_name)$CONDITION_CONCEPT_ID
 
   targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
@@ -144,68 +146,90 @@ addCemNagativeControls <- function(appContext) {
     schema = appContext$resultsDatabase$cemSchema,
     summary_table = appContext$resultsDatabase$negativeControlTable
   )
+  print(paste("Found ", nrow(negativeControlsConcepts), "negative controls"))
 
   DatabaseConnector::dbWriteTable(appContext$connection, paste0(appContext$short_name,".#ncc_ids"), negativeControlsConcepts, overwrite=TRUE)
 
   sql <- "
-    INSERT INTO negative_control (outcome_cohort_id, target_cohort_id)
+    INSERT INTO @schema.negative_control (outcome_cohort_id, target_cohort_id)
       SELECT outcome_cohort_id, target_cohort_id
       FROM @schema.#ncc_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
       INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
   "
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql,
-                                               schema=appContext$short_name,
-                                               negative_control_concepts=negativeControlsConcepts)
-  DatabaseConnector::disconnect(appContext$connection)
-  DatabaseConnector::disconnect(cdmConnection)
+                                               schema=appContext$short_name)
+}
+
+metaAnalysis <- function(table) {
+  # Compute meta analysis with random effects model
+  results <- meta::metainc(
+    data = table,
+    event.e = T_CASES,
+    time.e = T_PT,
+    event.c = C_CASES,
+    time.c = C_PT,
+    sm = "IRR",
+    model.glmm = "UM.RS"
+  )
+  
+  row <- data.frame(
+    SOURCE_ID = -99,
+    T_AT_RISK = sum(table$T_AT_RISK),
+    T_PT = sum(table$T_PT),
+    T_CASES = sum(table$T_CASES),
+    C_AT_RISK = sum(table$C_AT_RISK),
+    C_PT = sum(table$C_PT),
+    C_CASES = sum(table$C_CASES),
+    RR = exp(results$TE.random),
+    SE_LOG_RR = log(results$seTE.random),
+    LB_95 = exp(results$lower.random),
+    UB_95 = exp(results$upper.random),
+    P_VALUE = results$pval.random,
+    I2 = results$I2
+  )
+  
+  return(row)
 }
 
 performMetaAnalysis <- function(appContext) {
-
-  tOpairs <- DatabaseConnector::renderTranslateQuerySql(
-    appContext$connection, "SELECT DISTINCT target_cohort_id, outcome_cohort_id FROM @schema.result", schema=appContext$short_name
+  library(dplyr)
+  fullResults <- DatabaseConnector::renderTranslateQuerySql(
+    appContext$connection,
+    "SELECT * FROM @schema.result",
+    schema=appContext$short_name
   )
 
-# For each distinct pair: (target, outcome) get all data sources
-# Run meta analysis
-# Write uncalibrated table
-# Calibrate meta analysis results
-  results <- data.frame()
-  for (target in tOpairs$TARGET_COHORT_ID) {
-    for (outcome in tOpairs$OUTCOME_COHORT_ID) {
-      sql <- "
-        SELECT * FROM @schema.result
-        WHERE outcome_cohort_id = @outcome_id
-        AND target_cohort_id
-        AND calibrated = 0
-        AND study_design = 'scc'
-      "
-      table <- DatabaseConnector::renderTranslateQuerySql(
-        appContext$connection, sql, target_id=target, outcome_id=outcome, schema=appContext$short_name
-      )
-      metaRow <- rewardb::getMetaAnalysisData(table)
-      results <- rbind(results, metaRow)
-    }
-  }
-
+  # For each distinct pair: (target, outcome) get all data sources
+  # Run meta analysis
+  # Write uncalibrated table
+  # Calibrate meta analysis results
+  results <- fullResults %>%
+    group_by(TARGET_COHORT_ID, OUTCOME_COHORT_ID) %>%
+    group_modify(~ metaAnalysis(.x))
+  
   results$STUDY_DESIGN <- "scc"
   results$CALIBRATED <- 0
 
   resultsTable <- paste(appContext$short_name, ".result")
-  DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, results)
+  DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, data.frame(results))
 }
 
 buildFromConfig <- function(filePath) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA IF NOT EXISTS", appContext$short_name))
   createTables(appContext)
+  
+  print("Extracting results from CDM data source")
   extractResultsSubset(appContext)
+  print("Extracting cohort names")
   extractTargetCohortNames(appContext)
   extractOutcomeCohortNames(appContext)
   createOutcomeConceptMapping(appContext)
-  performMetaAnalysis(appContext)
+  print("Adding negative controls from CEM")
   addCemNagativeControls(appContext)
+  print("Running meta analysis")
+  performMetaAnalysis(appContext) 
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
 }

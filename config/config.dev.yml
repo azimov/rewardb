@@ -2,7 +2,7 @@ name: development dashboard
 short_name: dev # This is the name of the database schema!
 description: Example description text
 outcome_concept_ids: ~
-custom_outcome_cohort_ids: ~ # These will not be multiplied by 100
+custom_outcome_cohort_ids: [7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822, 7823, 10357,11073, 2538, 10593, 10605, 15078, 10607, 11643] # These will not be multiplied by 100
 target_concept_ids: [739138]
 
 connectionDetails:
