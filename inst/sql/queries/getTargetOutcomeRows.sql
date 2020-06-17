@@ -9,7 +9,8 @@ SELECT r.SOURCE_ID,
     r.P_VALUE,
     r.T_AT_RISK,
     r.T_PT,
-    r.T_CASES
+    r.T_CASES,
+    r.SE_LOG_RR
 FROM @schema.result r
 INNER JOIN @schema.data_source ds ON ds.source_id = r.source_id
     WHERE r.OUTCOME_COHORT_ID = @outcome

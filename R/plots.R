@@ -17,12 +17,12 @@ forestPlot <- function(table) {
                   "; 95% CI= (", round(table$`LB_95`, 2), " - ", round(table$`UB_95`, 2), ")")
   plot <- ggplot2::ggplot(
     table,
-    aes(
-    y = factor(SOURCE_NAME, level = rev(SOURCE_NAME)),
-    x = RR,
-    xmin = LB_95,
-    xmax = UB_95,
-    label = label)
+    ggplot2::aes(
+      y = factor(SOURCE_NAME, level = rev(SOURCE_NAME)),
+      x = RR,
+      xmin = LB_95,
+      xmax = UB_95,
+      label = label)
   ) +
     ggplot2::geom_pointrange() +
     ggplot2::geom_text(vjust = 0, nudge_y = 0.2) +
@@ -66,7 +66,6 @@ getMetaAnalysisData <- function(table) {
 
   row <- data.frame(
     SOURCE_ID = -99,
-    SOURCE_NAME = "Meta Analysis",
     T_AT_RISK = sum(table$T_AT_RISK),
     T_PT = sum(table$T_PT),
     T_CASES = sum(table$T_CASES),
@@ -80,5 +79,5 @@ getMetaAnalysisData <- function(table) {
     I2 = results$I2
   )
 
-  rbind(row, table)
+  return(row)
 }

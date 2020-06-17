@@ -61,7 +61,8 @@ server <- function(input, output, session) {
             updateTabsetPanel(session, "mainPanel", "Detail")
             sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
             uncalibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
-            uncalibratedTable <- rewardb::getMetaAnalysisData(uncalibratedTable)
+            metaAnalysis <- rewardb::getMetaAnalysisData(uncalibratedTable)
+            metaAnalysis$SOURCE_NAME <- "Meta Analysis"
             calibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=1)
 
             if (nrow(calibratedTable)) {
@@ -70,7 +71,7 @@ server <- function(input, output, session) {
                 uncalibratedTable$CALIBRATED = 0
                 uncalibratedTable$SOURCE_NAME <- paste(uncalibratedTable$SOURCE_NAME, "Uncalibrated")
                 calibratedTable$SOURCE_NAME <- paste(calibratedTable$SOURCE_NAME, "Calibrated")
-                table <- rbind(calibratedTable, uncalibratedTable)
+                table <- rbind(calibratedTable, uncalibratedTable, metaAnalysis)
                 return(table[order(table$SOURCE_ID, table$SOURCE_NAME),])
             }
             return(uncalibratedTable)

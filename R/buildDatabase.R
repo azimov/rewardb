@@ -118,6 +118,83 @@ createTables <- function (appContext) {
   DatabaseConnector::executeSql(appContext$connection, sql = sql)
 }
 
+addCemNagativeControls <- function(appContext) {
+  cdmConnection <- appContext$cdmConnection
+
+  outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
+                                                           "SELECT condition_concept_id FROM outcome_concept",
+                                                           schema=appContext$short_name)$CONDITION_CONCEPT_ID
+
+  targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
+                                                          "SELECT target_concept_id FROM @schema.target",
+                                                          schema=appContext$short_name)$TARGET_CONCEPT_ID
+
+  sql <- "
+  SELECT evi.INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+    FROM @schema.@summary_table evi
+    WHERE evi.evidence_exists = 0
+    AND evi.ingredient_concept_id IN (@target_ids)
+    AND evi.condition_concept_id IN (@outcome_ids)
+  "
+  negativeControlsConcepts <- DatabaseConnector::renderTranslateQuerySql(
+    cdmConnection,
+    sql,
+    target_ids = targetIds,
+    outcome_ids = outcomeIds,
+    schema = appContext$resultsDatabase$cemSchema,
+    summary_table = appContext$resultsDatabase$negativeControlTable
+  )
+
+  DatabaseConnector::dbWriteTable(appContext$connection, paste0(appContext$short_name,".#ncc_ids"), negativeControlsConcepts, overwrite=TRUE)
+
+  sql <- "
+    INSERT INTO negative_control (outcome_cohort_id, target_cohort_id)
+      SELECT outcome_cohort_id, target_cohort_id
+      FROM @schema.#ncc_ids ncc
+      INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
+      INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
+  "
+  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql,
+                                               schema=appContext$short_name,
+                                               negative_control_concepts=negativeControlsConcepts)
+  DatabaseConnector::disconnect(appContext$connection)
+  DatabaseConnector::disconnect(cdmConnection)
+}
+
+performMetaAnalysis <- function(appContext) {
+
+  tOpairs <- DatabaseConnector::renderTranslateQuerySql(
+    appContext$connection, "SELECT DISTINCT target_cohort_id, outcome_cohort_id FROM @schema.result", schema=appContext$short_name
+  )
+
+# For each distinct pair: (target, outcome) get all data sources
+# Run meta analysis
+# Write uncalibrated table
+# Calibrate meta analysis results
+  results <- data.frame()
+  for (target in tOpairs$TARGET_COHORT_ID) {
+    for (outcome in tOpairs$OUTCOME_COHORT_ID) {
+      sql <- "
+        SELECT * FROM @schema.result
+        WHERE outcome_cohort_id = @outcome_id
+        AND target_cohort_id
+        AND calibrated = 0
+        AND study_design = 'scc'
+      "
+      table <- DatabaseConnector::renderTranslateQuerySql(
+        appContext$connection, sql, target_id=target, outcome_id=outcome, schema=appContext$short_name
+      )
+      metaRow <- rewardb::getMetaAnalysisData(table)
+      results <- rbind(results, metaRow)
+    }
+  }
+
+  results$STUDY_DESIGN <- "scc"
+  results$CALIBRATED <- 0
+
+  resultsTable <- paste(appContext$short_name, ".result")
+  DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, results)
+}
 
 buildFromConfig <- function(filePath) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
@@ -127,4 +204,8 @@ buildFromConfig <- function(filePath) {
   extractTargetCohortNames(appContext)
   extractOutcomeCohortNames(appContext)
   createOutcomeConceptMapping(appContext)
+  performMetaAnalysis(appContext)
+  addCemNagativeControls(appContext)
+  DatabaseConnector::disconnect(appContext$connection)
+  DatabaseConnector::disconnect(appContext$cdmConnection)
 }

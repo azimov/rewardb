@@ -17,7 +17,8 @@ CREATE TABLE @schema.result (
   c_cases NUMERIC,
   lb_95 NUMERIC,
   ub_95 NUMERIC,
-  p_value NUMERIC
+  p_value NUMERIC,
+  I2 NUMERIC
 );
 
 DROP TABLE IF EXISTS @schema.target;
@@ -64,6 +65,7 @@ INSERT INTO @schema.data_source (source_id, source_name, source_key) values (10,
 INSERT INTO @schema.data_source (source_id, source_name, source_key) values (11,'IBM CCAE','CDM_IBM_CCAE_V1151');
 INSERT INTO @schema.data_source (source_id, source_name, source_key) values (12,'IBM MDCD','CDM_IBM_MDCD_v1153');
 INSERT INTO @schema.data_source (source_id, source_name, source_key) values (13,'IBM MDCR','CDM_IBM_MDCR_v1152');
+INSERT INTO @schema.data_source (source_id, source_name, source_key) values (-99,'Meta Analysis','Meta Analysis');
 
 DROP TABLE IF EXISTS @schema.reward_version;
 create table @schema.reward_version(
