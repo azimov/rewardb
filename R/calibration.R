@@ -62,7 +62,7 @@ getUncalibratedAtlasCohorts <- function(appContext, targetCohortIds) {
   return(positives)
 }
 
-computeCalibratedRows <- function (negatives, interest) {
+computeCalibratedRows <- function (interest, negatives) {
   nullDist <- EmpiricalCalibration::fitNull(logRr = log(negatives$RR), seLogRr = negatives$SE_LOG_RR)
   calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(interest$RR), interest$SE_LOG_RR)
   errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
@@ -71,6 +71,7 @@ computeCalibratedRows <- function (negatives, interest) {
   # Row matches fields in the database excluding the ids, used in dplyr, group_by with keep_true
   result <- data.frame(
       CALIBRATED = 1,
+      OUTCOME_COHORT_ID = interest$OUTCOME_COHORT_ID,
       P_VALUE = calibratedPValue,
       UB_95 = exp(ci$logUb95Rr),
       LB_95 = exp(ci$logLb95Rr),
@@ -98,12 +99,13 @@ calibrateTargets <- function(appContext, targetCohortIds) {
 
   # Get all outcomes for a given target, source and outcome type
   resultSet <- positives %>%
-    group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID, OUTCOME_COHORT_ID)  %>%
+    group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID)  %>%
     group_modify(~ computeCalibratedRows(.x, controlOutcomes[
       controlOutcomes$OUTCOME_TYPE == .x$OUTCOME_TYPE[1] &
       controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
       controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
-    ]), keep=TRUE)
+    ]), .keep=TRUE)
+  resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
   DatabaseConnector::disconnect(dbConn)
@@ -121,15 +123,16 @@ calibrateCustomCohorts <- function(appContext, targetCohortIds) {
   # Get all outcomes for a given target, source for outcome type 0
   # Compute calibrated results
   resultSet <- positives %>%
-    group_by(SOURCE_ID, TARGET_COHORT_ID, OUTCOME_COHORT_ID)  %>%
+    group_by(SOURCE_ID, TARGET_COHORT_ID)  %>%
     group_modify(~ computeCalibratedRows(.x, controlOutcomes[
       controlOutcomes$OUTCOME_TYPE == 0 &
       controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
       controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
-    ]), keep=TRUE)
+    ]), .keep=TRUE)
 
+  resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
+  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
   DatabaseConnector::disconnect(dbConn)
 }
 

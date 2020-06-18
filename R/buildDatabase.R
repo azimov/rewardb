@@ -182,7 +182,7 @@ metaAnalysis <- function(table) {
     C_PT = sum(table$C_PT),
     C_CASES = sum(table$C_CASES),
     RR = exp(results$TE.random),
-    SE_LOG_RR = log(results$seTE.random),
+    SE_LOG_RR = results$seTE.random,
     LB_95 = exp(results$lower.random),
     UB_95 = exp(results$upper.random),
     P_VALUE = results$pval.random,
@@ -196,7 +196,7 @@ performMetaAnalysis <- function(appContext) {
   library(dplyr)
   fullResults <- DatabaseConnector::renderTranslateQuerySql(
     appContext$connection,
-    "SELECT * FROM @schema.result",
+    "SELECT * FROM @schema.result WHERE source_id != -99;",
     schema=appContext$short_name
   )
 
@@ -215,7 +215,7 @@ performMetaAnalysis <- function(appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, data.frame(results))
 }
 
-buildFromConfig <- function(filePath) {
+buildFromConfig <- function(filePath, calibrateTargets = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA IF NOT EXISTS", appContext$short_name))
   createTables(appContext)
@@ -232,4 +232,10 @@ buildFromConfig <- function(filePath) {
   performMetaAnalysis(appContext) 
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
+
+  if (calibrateTargets) {
+    print("Calibrating targets")
+    rewardb::calibrateTargets(appContext, appContext$target_cohort_ids)
+    rewardb::calibrateCustomCohorts(appContext, appContext$target_cohort_ids)
+  }
 }
