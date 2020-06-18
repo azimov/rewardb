@@ -99,9 +99,26 @@ server <- function(input, output, session) {
         }
     }
 
-    resultsDownload <- function () {
+    fullDataDownload <- reactive({
+        benefit <- input$cutrange1
+        risk <- input$cutrange2
+        mainTableSql <- readr::read_file(system.file("sql/queries/", "fullResultsTable.sql", package = "rewardb"))
+        calibrated <- ifelse(input$calibrated, 1, 0)
+        bSelection <- paste0("'", paste0(input$scBenefit, sep="'"))
+        rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
+        df <- queryDb(mainTableSql, risk = risk, benefit = benefit,
+                      risk_selection = rSelection, benefit_selection = bSelection, calibrated=calibrated)
+        return(df)
+    })
 
-    }
+    output$downloadData <- downloadHandler(
+      filename = function() {
+        paste0(appContext$short_name, '-full_results', input$cutrange1, '-', input$cutrange2, '.csv')
+      },
+      content = function(file) {
+        write.csv(fullDataDownload(), file, row.names = FALSE)
+      }
+    )
 
     output$fullResultsTable <- DT::renderDataTable({
         fullResultsTable()

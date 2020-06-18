@@ -31,7 +31,7 @@ sidePane <- fluidRow(
     2,
     sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
     sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2),
-    checkboxInput("calibrated", "Use calibrated results", FALSE),
+    checkboxInput("calibrated", "Threshold with calibrated results", FALSE),
     pickerInput(
       "targetCohorts",
       "Drug Exposures:",
@@ -73,8 +73,8 @@ sidePane <- fluidRow(
       multiple = TRUE
     ),
     downloadButton(
-      "downloadtable",
-      "Download file",
+      "downloadData",
+      "Download full file",
       style = "display: block; margin: 0 auto; color: blue;"
     )
   ),
