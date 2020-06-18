@@ -98,7 +98,7 @@ calibrateTargets <- function(appContext, targetCohortIds) {
 
   # Get all outcomes for a given target, source and outcome type
   resultSet <- positives %>%
-    group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID)  %>%
+    group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID, OUTCOME_COHORT_ID)  %>%
     group_modify(~ computeCalibratedRows(.x, controlOutcomes[
       controlOutcomes$OUTCOME_TYPE == .x$OUTCOME_TYPE[1] &
       controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
