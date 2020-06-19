@@ -1,19 +1,15 @@
 extractTargetCohortNames <- function (appContext) {
   sql <- "
   SELECT
-    DISTINCT
     t.cohort_definition_id AS target_cohort_id,
     t.cohort_definition_id/1000 AS target_concept_id,
     t.short_name AS cohort_name,
-    c2.concept_name AS atc_3_class,
     CASE
       WHEN c1.concept_class_id = 'ATC 4th' THEN 1
       ELSE 0
     END AS is_atc_4
   FROM @results_database_schema.@cohort_definition_table t
   INNER JOIN @cdm_vocabulary.concept c1 ON t.cohort_definition_id/1000 = c1.concept_id
-  LEFT JOIN @cdm_vocabulary.concept_ancestor ca on ca.descendant_concept_id = c1.concept_id
-  LEFT JOIN @cdm_vocabulary.concept c2 on (c2.concept_id = ca.ancestor_concept_id AND c2.concept_class_id = 'ATC 3rd')
       ";
 
   if (!is.null(appContext$target_concept_ids)) {
