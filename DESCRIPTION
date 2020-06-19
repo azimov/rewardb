@@ -13,7 +13,6 @@ Imports:
     ggplot2,
     scales,
     DT,
-    shinyEventLogger,
     EmpiricalCalibration
 Suggests:
     doParallel,
