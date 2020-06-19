@@ -27,8 +27,7 @@ CREATE TABLE @schema.target (
     target_cohort_id BIGINT NOT NULL PRIMARY KEY,
     target_concept_id BIGINT NOT NULL,
     cohort_name VARCHAR,
-    is_atc_4 INT,
-    atc_3_class VARCHAR
+    is_atc_4 INT
 );
 
 DROP TABLE IF EXISTS @schema.outcome;

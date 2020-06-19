@@ -136,21 +136,21 @@ addCemNagativeControls <- function(appContext) {
   cdmConnection <- appContext$cdmConnection
 
   outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                           "SELECT condition_concept_id FROM @schema.outcome_concept",
-                                                           schema=appContext$short_name)$CONDITION_CONCEPT_ID
+                                                           "SELECT DISTINCT condition_concept_id FROM @schema.outcome_concept",
+                                                           schema=appContext$short_name)
 
   targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                          "SELECT target_concept_id, is_atc_4 FROM @schema.target",
+                                                          "SELECT DISTINCT target_concept_id, is_atc_4 FROM @schema.target",
                                                           schema=appContext$short_name)
 
-  DatabaseConnector::dbWriteTable(appContext$cdmConnection, paste0(appContext$resultsDatabase$cemSchema,".#outcome_nc_tmp"), outcomeIds, overwrite=TRUE)
-  DatabaseConnector::dbWriteTable(appContext$cdmConnection, paste0(appContext$resultsDatabase$cemSchema,".#target_nc_tmp"), targetIds, overwrite=TRUE)
+  DatabaseConnector::insertTable(appContext$cdmConnection, "#outcome_nc_tmp", outcomeIds, tempTable=TRUE)
+  DatabaseConnector::insertTable(appContext$cdmConnection, "#target_nc_tmp", targetIds, tempTable=TRUE)
 
   sql <- "
   SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
     FROM @schema.@summary_table evi
-    INNER JOIN @schema.#target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
-    INNER JOIN @schema.#outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+    INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
+    INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
     WHERE ttmp.is_atc_4 = 0
     AND evi.evidence_exists = 0
 
@@ -158,9 +158,9 @@ addCemNagativeControls <- function(appContext) {
   -- GET all ATC level 4 concept mappings
   SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
     FROM @schema.@summary_table evi
-    INNER JOIN @schema.#outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+    INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
     INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
-    INNER JOIN @schema.#target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
+    INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
     INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
     WHERE ttmp.is_atc_4 = 1
     AND evi.evidence_exists = 0
@@ -168,41 +168,23 @@ addCemNagativeControls <- function(appContext) {
   negativeControlsConcepts <- DatabaseConnector::renderTranslateQuerySql(
     cdmConnection,
     sql,
-    outcome_ids = outcomeIds,
     schema = appContext$resultsDatabase$cemSchema,
     vocab_schema = appContext$resultsDatabase$vocabularySchema,
     summary_table = appContext$resultsDatabase$negativeControlTable
   )
   print(paste("Found ", nrow(negativeControlsConcepts), "negative controls"))
 
-  DatabaseConnector::dbWriteTable(appContext$connection, paste0(appContext$short_name,".#ncc_ids"), negativeControlsConcepts, overwrite=TRUE)
+  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", negativeControlsConcepts, tempTable=TRUE)
 
   sql <- "
     INSERT INTO @schema.negative_control (outcome_cohort_id, target_cohort_id)
       SELECT outcome_cohort_id, target_cohort_id
-      FROM @schema.#ncc_ids ncc
+      FROM #ncc_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
       INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
   "
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql,
                                                schema=appContext$short_name)
-}
-
-addExposureClasses <- function (appContext) {
-  sql <- "
-    SELECT
-      c1.concept_id AS ATC_4_CONCEPT_ID,
-      c2.concept_id AS INGREDIENT_CONCEPT_ID,
-      c1.concept_name AS ATC_4_CLASS,
-      c2.concept_name AS INGREDIENT_CONCEPT_NAME
-    FROM @schema.concept_ancestor ca
-    INNER JOIN @schema.concept c1 ON c1.concept_id = ca.ancestor_concept_id
-    INNER JOIN @schema.concept c2 ON c2.concept_id = ca.descendant_concept_id
-    WHERE c1.concept_class_id = 'ATC 3rd'
-    AND c2.concept_class_id = 'Ingredient'"
-
-
-
 }
 
 metaAnalysis <- function(table) {
@@ -268,7 +250,9 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE) {
   extractResultsSubset(appContext)
   print("Extracting cohort names")
   extractTargetCohortNames(appContext)
+  print("Extracting otcome cohort names")
   extractOutcomeCohortNames(appContext)
+  print("Extracting outcome cohort mapping")
   createOutcomeConceptMapping(appContext)
   print("Adding negative controls from CEM")
   addCemNagativeControls(appContext)
