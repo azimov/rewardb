@@ -7,9 +7,6 @@ outcomes <- queryDb(filterSql)
 filterSql <- "SELECT DISTINCT(TARGET_COHORT_ID), COHORT_NAME AS TARGET_COHORT_NAME FROM @schema.target"
 treatments <- queryDb(filterSql)
 
-exposureClassesSql <- "SELECT DISTINCT(EXPOSURE_CLASS) FROM TREATMENT_CLASSES ORDER BY EXPOSURE_CLASS"
-exposureClasses <- c()  # DatabaseConnector::renderTranslateQuerySql(dbConn, exposureClassesSql)
-
 metaDisplayCondtion <- "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0"
 metaResultsPanel <- conditionalPanel(
   condition = metaDisplayCondtion,
@@ -47,15 +44,7 @@ sidePane <- fluidRow(
       selected = outcomes$OUTCOME_COHORT_NAME,
       options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
       multiple = TRUE
-    ),
-    pickerInput(
-      "exposureClasses",
-      "Exposure Classes:",
-      choices = exposureClasses$EXPOSURE_CLASS,
-      selected = exposureClasses$EXPOSURE_CLASS,
-      options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
-      multiple = TRUE
-    ),
+    )
     pickerInput(
       "scBenefit",
       "Sources with self control benefit:",
