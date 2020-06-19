@@ -1,10 +1,26 @@
 extractTargetCohortNames <- function (appContext) {
-  sql <- " SELECT t.cohort_definition_id AS target_cohort_id, t.cohort_definition_id/1000 AS target_concept_id, t.short_name AS cohort_name
-      from @results_database_schema.@cohort_definition_table t";
+  sql <- "
+  SELECT
+    DISTINCT
+    t.cohort_definition_id AS target_cohort_id,
+    t.cohort_definition_id/1000 AS target_concept_id,
+    t.short_name AS cohort_name,
+    c2.concept_name AS atc_3_class,
+    CASE
+      WHEN c1.concept_class_id = 'ATC 4th' THEN 1
+      ELSE 0
+    END AS is_atc_4
+  FROM @results_database_schema.@cohort_definition_table t
+  INNER JOIN @cdm_vocabulary.concept c1 ON t.cohort_definition_id/1000 = c1.concept_id
+  LEFT JOIN @cdm_vocabulary.concept_ancestor ca on ca.descendant_concept_id = c1.concept_id
+  LEFT JOIN @cdm_vocabulary.concept c2 on (c2.concept_id = ca.ancestor_concept_id AND c2.concept_class_id = 'ATC 3rd')
+      ";
 
   if (!is.null(appContext$target_concept_ids)) {
     sql <- paste(sql, "WHERE t.cohort_definition_id IN (@target_cohort_ids)")
-    nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, target_cohort_ids = appContext$target_concept_ids * 1000, 
+    nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
+                                                            cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
+                                                            target_cohort_ids = appContext$target_concept_ids * 1000,
                                                             cohort_definition_table=appContext$resultsDatabase$cohortDefinitionTable,
                                                             results_database_schema=appContext$resultsDatabase$schema)
   } else {
@@ -128,22 +144,37 @@ addCemNagativeControls <- function(appContext) {
                                                            schema=appContext$short_name)$CONDITION_CONCEPT_ID
 
   targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                          "SELECT target_concept_id FROM @schema.target",
-                                                          schema=appContext$short_name)$TARGET_CONCEPT_ID
+                                                          "SELECT target_concept_id, is_atc_4 FROM @schema.target",
+                                                          schema=appContext$short_name)
+
+  DatabaseConnector::dbWriteTable(appContext$cdmConnection, paste0(appContext$resultsDatabase$cemSchema,".#outcome_nc_tmp"), outcomeIds, overwrite=TRUE)
+  DatabaseConnector::dbWriteTable(appContext$cdmConnection, paste0(appContext$resultsDatabase$cemSchema,".#target_nc_tmp"), targetIds, overwrite=TRUE)
 
   sql <- "
-  SELECT evi.INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
     FROM @schema.@summary_table evi
-    WHERE evi.evidence_exists = 0
-    AND evi.ingredient_concept_id IN (@target_ids)
-    AND evi.condition_concept_id IN (@outcome_ids)
+    INNER JOIN @schema.#target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
+    INNER JOIN @schema.#outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+    WHERE ttmp.is_atc_4 = 0
+    AND evi.evidence_exists = 0
+
+  UNION
+  -- GET all ATC level 4 concept mappings
+  SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+    FROM @schema.@summary_table evi
+    INNER JOIN @schema.#outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+    INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
+    INNER JOIN @schema.#target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
+    INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
+    WHERE ttmp.is_atc_4 = 1
+    AND evi.evidence_exists = 0
   "
   negativeControlsConcepts <- DatabaseConnector::renderTranslateQuerySql(
     cdmConnection,
     sql,
-    target_ids = targetIds,
     outcome_ids = outcomeIds,
     schema = appContext$resultsDatabase$cemSchema,
+    vocab_schema = appContext$resultsDatabase$vocabularySchema,
     summary_table = appContext$resultsDatabase$negativeControlTable
   )
   print(paste("Found ", nrow(negativeControlsConcepts), "negative controls"))
@@ -159,6 +190,23 @@ addCemNagativeControls <- function(appContext) {
   "
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql,
                                                schema=appContext$short_name)
+}
+
+addExposureClasses <- function (appContext) {
+  sql <- "
+    SELECT
+      c1.concept_id AS ATC_4_CONCEPT_ID,
+      c2.concept_id AS INGREDIENT_CONCEPT_ID,
+      c1.concept_name AS ATC_4_CLASS,
+      c2.concept_name AS INGREDIENT_CONCEPT_NAME
+    FROM @schema.concept_ancestor ca
+    INNER JOIN @schema.concept c1 ON c1.concept_id = ca.ancestor_concept_id
+    INNER JOIN @schema.concept c2 ON c2.concept_id = ca.descendant_concept_id
+    WHERE c1.concept_class_id = 'ATC 3rd'
+    AND c2.concept_class_id = 'Ingredient'"
+
+
+
 }
 
 metaAnalysis <- function(table) {
@@ -188,7 +236,7 @@ metaAnalysis <- function(table) {
     P_VALUE = results$pval.random,
     I2 = results$I2
   )
-  
+
   return(row)
 }
 
@@ -235,7 +283,7 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE) {
 
   if (calibrateTargets) {
     print("Calibrating targets")
-    rewardb::calibrateTargets(appContext, appContext$target_cohort_ids)
-    rewardb::calibrateCustomCohorts(appContext, appContext$target_cohort_ids)
+    rewardb::calibrateTargets(appContext, appContext$target_concept_ids * 1000)
+    rewardb::calibrateCustomCohorts(appContext, appContext$target_concept_ids * 1000)
   }
 }

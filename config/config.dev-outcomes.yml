@@ -14,6 +14,7 @@ connectionDetails:
 
 resultsDatabase:
   schema: "scratch.dbo"
+  vocabularySchema: "Vocabulary_20200525.dbo"
   cohortDefinitionTable: "homer_cohort_definition_May2020"
   outcomeCohortDefinitionTable: "homer_outcome_cohort_definition_May2020"
   asurvResultsTable: "homer_AllbyAll_results_May2020"
