@@ -13,7 +13,6 @@ server <- function(input, output, session) {
         calibrated <- ifelse(input$calibrated, 1, 0)
         bSelection <- paste0("'", paste0(input$scBenefit, sep="'"))
         rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
-        st <- Sys.time()
         df <- queryDb(mainTableSql, risk = risk, benefit = benefit,
                       risk_selection = rSelection, benefit_selection = bSelection, calibrated=calibrated)
         return(df)
@@ -29,6 +28,16 @@ server <- function(input, output, session) {
 
     output$mainTable <- DT::renderDataTable({
         df <- mainTableRiskHarmFilters()
+
+        df$I2 <- formatC(df$I2, digits = 2, format = "f")
+        colnames(df)[colnames(df) == "I2"] <- "I-squared"
+        colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
+        colnames(df)[colnames(df) == "BENEFIT_COUNT"] <- "Sources with scc benefit"
+        colnames(df)[colnames(df) == "OUTCOME_COHORT_NAME"] <- "Outcome cohort name"
+        colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
+        colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
+        colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
+
         table <- DT::datatable(
           df, selection = "single",
           rownames = FALSE

@@ -42,7 +42,6 @@ FROM @schema.result fr
     
     INNER JOIN @schema.target t ON t.target_cohort_id = fr.target_cohort_id
     INNER JOIN @schema.outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
-    --LEFT JOIN exposure_classes ec ON ec.CONCEPT_ID = tc.TARGET_CONCEPT_ID
 
     WHERE fr.calibrated = @calibrated
     AND 1 = CASE

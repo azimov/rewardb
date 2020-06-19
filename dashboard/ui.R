@@ -44,7 +44,7 @@ sidePane <- fluidRow(
       selected = outcomes$OUTCOME_COHORT_NAME,
       options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
       multiple = TRUE
-    )
+    ),
     pickerInput(
       "scBenefit",
       "Sources with self control benefit:",

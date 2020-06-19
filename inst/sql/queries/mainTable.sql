@@ -32,7 +32,8 @@ SELECT
         WHEN benefit_t.THRESH_COUNT = 1 THEN 'one'
         WHEN benefit_t.THRESH_COUNT >= 4 THEN 'all'
         WHEN benefit_t.THRESH_COUNT > 1 THEN 'most'
-    END AS benefit_count
+    END AS benefit_count,
+    mr.I2 as I2
 FROM @schema.result fr
     
     LEFT JOIN benefit_t ON benefit_t.TARGET_COHORT_ID = fr.TARGET_COHORT_ID AND benefit_t.OUTCOME_COHORT_ID = fr.OUTCOME_COHORT_ID
@@ -41,7 +42,12 @@ FROM @schema.result fr
     INNER JOIN @schema.target t ON t.target_cohort_id = fr.target_cohort_id
     INNER JOIN @schema.outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
     --LEFT JOIN exposure_classes ec ON ec.CONCEPT_ID = tc.TARGET_CONCEPT_ID
-
+    LEFT JOIN @schema.result mr ON (
+        fr.outcome_cohort_id = mr.outcome_cohort_id AND
+        fr.target_cohort_id = mr.target_cohort_id AND
+        mr.calibrated = 0 AND -- BUG NO META ANALYSIS I2 fo calibrated data, but it should be the same
+        mr.source_id = -99
+    )
     WHERE fr.calibrated = @calibrated
     AND 1 = CASE
         WHEN risk_t.THRESH_COUNT IS NULL AND 'none' IN (@risk_selection) THEN 1
