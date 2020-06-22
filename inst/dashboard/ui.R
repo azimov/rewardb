@@ -71,7 +71,7 @@ body <- dashboardBody(
       aboutTab
     ),
     tabItem(
-      tabName = "dashboard",
+      tabName = "",
       fluidRow(
         box(
           width = 6,
@@ -90,7 +90,7 @@ body <- dashboardBody(
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem("About", tabName = "about", icon = icon("list-alt")),
-    menuItem("Results", tabName = "dashboard", icon = icon("dashboard")),
+    menuItem("Results", tabName = "", icon = icon("")),
     sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
     sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2),
     checkboxInput("calibrated", "Threshold with empirically calibrated results", TRUE),
