@@ -56,17 +56,12 @@ Then we want to create the database schema and perform empirical calibration.
 
     appContext <- rewardb::buildFromConfig("config/config.my-study.yml")
 
-### Viewing the dashboard
-Then you want to edit the dashboard file `dashboard/global.R` and edit the line that reads:
-
-    appContext <- rewardb::loadAppContext("../config/config.tnfs.yml")
- 
-point at your new config file, e.g. `../config/config.my-study.yml`. 
-The path must be relative to where `global.R` is found.
+### Viewing the dashboard 
+point at your new config file, e.g. `config/config.my-study.yml` relative to the current working directory.
 
 Then to run the shiny application, inside R:
 
-    shiny::runApp("dashboard")
+    rewardb::launchDashboard("config/config.tnfs.yml")
 
 ## Deploying to shared shiny server
 
