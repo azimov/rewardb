@@ -1,6 +1,3 @@
-library(rewardb)
-appContext <- rewardb::loadAppContext("../config/config.tnfs.yml")
-
 dbConn <- NULL
 # Simple wrapper for always ensuring that database connection is opened and closed
 # Postgres + DatabaseConnector has problems with connections hanging around

@@ -52,14 +52,9 @@ The same applies for the CDM data source that the results were generated in:
         asurvResultsTable: "homer_AllbyAll_results_May2020"
 
 ### Making the database 
-Then we want to create the database schema and perform empirical calibration if . 
-Note that running this is required if 
+Then we want to create the database schema and perform empirical calibration.
 
-    appContext <- rewardb::buildDatabase("config/config.my-study.yml")
-    
-### Running empirical calibration
-
-    TODO
+    appContext <- rewardb::buildFromConfig("config/config.my-study.yml")
 
 ### Viewing the dashboard
 Then you want to edit the dashboard file `dashboard/global.R` and edit the line that reads:

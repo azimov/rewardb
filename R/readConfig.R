@@ -20,14 +20,14 @@ getPasswordSecurely <- function() {
 #'
 #' The idea is to allow shared configuration settings between the web app and any data processing tools
 #' TODO: make S3 class with getter and setter functions for db connections handling things more cleanly
-#' @param filePath is a yaml file for the application configuration
+#' @param configPath is a yaml file for the application configuration
 #' @param create the database connections for this app - defaults to true
 #' @keywords appContext
 #' @export
 #' @examples
 #' loadAppContext('config/config.dev.yml')
-loadAppContext <- function(filePath, createConnection = FALSE, useCdm = FALSE) {
-    appContext <- yaml::read_yaml(filePath)
+loadAppContext <- function(configPath, createConnection = FALSE, useCdm = FALSE) {
+    appContext <- yaml::read_yaml(configPath)
     appContext$connectionDetails$password <- getPasswordSecurely()
     if (createConnection) {
       appContext$connection <- DatabaseConnector::connect(appContext$connectionDetails)
