@@ -1,9 +1,9 @@
 #' Launch the REWARD-B Shiny app
 #'
-#' @param configuaration path
+#' @param configPath path to configuration file
 #'
 #' @details
-#' Launches a Shiny app that allows the user to explore a cohort of interest.
+#' Launches a Shiny app for a given configuration file
 #'
 #' @export
 launchDashboard <- function (configPath) {

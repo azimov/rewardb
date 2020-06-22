@@ -10,6 +10,7 @@ Imports:
     DatabaseConnector,
     shiny,
     shinyWidgets,
+    shinydashboard,
     ggplot2,
     scales,
     DT,
