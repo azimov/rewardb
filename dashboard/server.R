@@ -5,6 +5,7 @@ library(DT)
 library(rewardb)
 
 server <- function(input, output, session) {
+
     # Query full results, only filter is Risk range parameters
     mainTableRe <- reactive({
         benefit <- input$cutrange1
@@ -15,7 +16,39 @@ server <- function(input, output, session) {
         rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
         df <- queryDb(mainTableSql, risk = risk, benefit = benefit,
                       risk_selection = rSelection, benefit_selection = bSelection, calibrated=calibrated)
+
         return(df)
+    })
+
+    allOutcomeCohortNames <- reactive({ queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME") })
+    allOutcomeTargetNames <- reactive({ queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.TARGET ORDER BY COHORT_NAME") })
+
+    output$outcomeCohorts <- renderUI(
+    {
+        df <- allOutcomeCohortNames()
+        picker <- pickerInput(
+          "outcomeCohorts",
+          "Disease outcomes:",
+          choices = df$COHORT_NAME,
+          selected = df$COHORT_NAME,
+          options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
+          multiple = TRUE
+        )
+        return(picker)
+    })
+
+    output$targetCohorts <- renderUI(
+    {
+        df <- allOutcomeTargetNames()
+        picker <- pickerInput(
+          "targetCohorts",
+          "Drug exposures:",
+          choices = df$COHORT_NAME,
+          selected = df$COHORT_NAME,
+          options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
+          multiple = TRUE
+        )
+        return(picker)
     })
 
     # Subset of results for harm, risk and treatement categories
@@ -28,21 +61,28 @@ server <- function(input, output, session) {
 
     output$mainTable <- DT::renderDataTable({
         df <- mainTableRiskHarmFilters()
+        tryCatch(
+            {
+            df$I2 <- formatC(df$I2, digits = 2, format = "f")
+            colnames(df)[colnames(df) == "I2"] <- "I-squared"
+            colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
+            colnames(df)[colnames(df) == "BENEFIT_COUNT"] <- "Sources with scc benefit"
+            colnames(df)[colnames(df) == "OUTCOME_COHORT_NAME"] <- "Outcome cohort name"
+            colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
+            colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
+            colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
 
-        df$I2 <- formatC(df$I2, digits = 2, format = "f")
-        colnames(df)[colnames(df) == "I2"] <- "I-squared"
-        colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
-        colnames(df)[colnames(df) == "BENEFIT_COUNT"] <- "Sources with scc benefit"
-        colnames(df)[colnames(df) == "OUTCOME_COHORT_NAME"] <- "Outcome cohort name"
-        colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
-        colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
-        colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
-
-        table <- DT::datatable(
-          df, selection = "single",
-          rownames = FALSE
+            table <- DT::datatable(
+              df, selection = "single",
+              rownames = FALSE
+            )
+            return(table)
+        },
+        # Handles messy response
+        error = function(e) {
+            return(DT::datatable(data.frame()))
+        }
         )
-        return(table)
     })
 
     filteredTableSelected <- reactive({
@@ -103,7 +143,7 @@ server <- function(input, output, session) {
             }
 
             headers <- names(niceColumnNameInv)
-            table4 <- DT::datatable(table3[, headers], rownames = FALSE, escape = FALSE)
+            table4 <- DT::datatable(table3[, headers], rownames = FALSE, escape = FALSE, )
             return(table4)
         }
     }
@@ -129,9 +169,17 @@ server <- function(input, output, session) {
       }
     )
 
-    output$fullResultsTable <- DT::renderDataTable({
-        fullResultsTable()
-    })
+    output$fullResultsTable <- DT::renderDataTable(
+      expr = {
+          tryCatch(
+            expr = {
+                return(fullResultsTable())
+            },
+            error = function(e) {
+                return(data.frame())
+            })
+      }
+    )
 
     output$forestPlot <- renderPlot({
         df <- dynamicMetaAnalysisTbl()
