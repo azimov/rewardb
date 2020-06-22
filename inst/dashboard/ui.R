@@ -2,6 +2,7 @@ library(shiny)
 library(shinyWidgets)
 library(shinydashboard)
 
+scBenefitRisk <- c("none", "one", "most", "all")
 # This hides the outcome exporues/result pairing
 metaDisplayCondtion <- "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0"
 

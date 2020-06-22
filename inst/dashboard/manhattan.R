@@ -1,3 +1,4 @@
+manhattanPlotServer <- function(input, output, session) {
     output$eOutcomeProb <- renderPlotly({
         selectedInput <- filteredTableSelected()
         target <- selectedInput$TARGET_COHORT_ID
@@ -67,10 +68,9 @@
             return(plotly::ggplotly(distPlot))
         }
     })
-
+}
 ##### UI ######
-
-    manhattanPlotPanel <- tabPanel(
+manhattanPlotPanel <- tabPanel(
   "Plots",
   HTML("<h4> Plot configuration </h4>"),
   fluidRow(
