@@ -84,3 +84,11 @@ CREATE TABLE @schema.negative_control (
     outcome_cohort_id BIGINT NOT NULL,
     PRIMARY KEY (target_cohort_id, outcome_cohort_id)
 );
+
+-- Indication mapping
+DROP TABLE IF EXISTS @schema.positive_indication;
+CREATE TABLE @schema.positive_indication (
+    target_cohort_id BIGINT NOT NULL,
+    outcome_cohort_id BIGINT NOT NULL,
+    PRIMARY KEY (target_cohort_id, outcome_cohort_id)
+);

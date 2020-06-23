@@ -187,6 +187,62 @@ addCemNagativeControls <- function(appContext) {
                                                schema=appContext$short_name)
 }
 
+addCemIndications <- function(appContext) {
+  cdmConnection <- appContext$cdmConnection
+
+  outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
+                                                           "SELECT DISTINCT condition_concept_id FROM @schema.outcome_concept",
+                                                           schema=appContext$short_name)
+
+  targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
+                                                          "SELECT DISTINCT target_concept_id, is_atc_4 FROM @schema.target",
+                                                          schema=appContext$short_name)
+
+  DatabaseConnector::insertTable(appContext$cdmConnection, "#outcome_indication_tmp", outcomeIds, tempTable=TRUE)
+  DatabaseConnector::insertTable(appContext$cdmConnection, "#target_indication_tmp", targetIds, tempTable=TRUE)
+
+  sql <- "
+  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+    FROM @schema.@summary_table evi
+    INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
+    INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+    WHERE ttmp.is_atc_4 = 0
+    AND evi.evidence_exists = 1
+
+  UNION
+  -- GET all ATC level 4 concept mappings
+  SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+    FROM @schema.@summary_table evi
+    INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+    INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
+    INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
+    INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
+    WHERE ttmp.is_atc_4 = 1
+    AND evi.evidence_exists = 1
+  "
+  negativeControlsConcepts <- DatabaseConnector::renderTranslateQuerySql(
+    cdmConnection,
+    sql,
+    schema = appContext$resultsDatabase$cemSchema,
+    vocab_schema = appContext$resultsDatabase$vocabularySchema,
+    summary_table = appContext$resultsDatabase$negativeControlTable
+  )
+  print(paste("Found ", nrow(negativeControlsConcepts), "negative controls"))
+
+  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", negativeControlsConcepts, tempTable=TRUE)
+
+  sql <- "
+    INSERT INTO @schema.positive_indication (outcome_cohort_id, target_cohort_id)
+      SELECT outcome_cohort_id, target_cohort_id
+      FROM #ncc_ids ncc
+      INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
+      INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
+  "
+  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql,
+                                               schema=appContext$short_name)
+}
+
+
 metaAnalysis <- function(table) {
   # Compute meta analysis with random effects model
   results <- meta::metainc(
