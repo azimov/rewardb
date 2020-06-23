@@ -227,14 +227,14 @@ addCemIndications <- function(appContext) {
     vocab_schema = appContext$resultsDatabase$vocabularySchema,
     summary_table = appContext$resultsDatabase$negativeControlTable
   )
-  print(paste("Found ", nrow(negativeControlsConcepts), "negative controls"))
+  print(paste("Found ", nrow(negativeControlsConcepts), "mapped indications"))
 
-  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", negativeControlsConcepts, tempTable=TRUE)
+  DatabaseConnector::insertTable(appContext$connection, "#indication_ids", negativeControlsConcepts, tempTable=TRUE)
 
   sql <- "
     INSERT INTO @schema.positive_indication (outcome_cohort_id, target_cohort_id)
       SELECT outcome_cohort_id, target_cohort_id
-      FROM #ncc_ids ncc
+      FROM #indication_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
       INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
   "
