@@ -1,4 +1,4 @@
-dashboardUi  <- function (appContext) {
+dashboardUi  <- function () {
   library(shiny)
   library(shinyWidgets)
   library(shinydashboard)
