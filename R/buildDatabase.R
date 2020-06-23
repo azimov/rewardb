@@ -312,6 +312,8 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE) {
   createOutcomeConceptMapping(appContext)
   print("Adding negative controls from CEM")
   addCemNagativeControls(appContext)
+  print("Adding positive indications from CEM")
+  addCemIndications(appContext)
   print("Running meta analysis")
   performMetaAnalysis(appContext) 
   DatabaseConnector::disconnect(appContext$connection)
