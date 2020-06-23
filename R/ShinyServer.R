@@ -215,9 +215,8 @@ serverInstance <- function(input, output, session) {
 #' Launches a Shiny app for a given configuration file
 #'
 #' @export
-launchDashboard <- function (appContext) {
-  if(!is(appContext, "rewardb::appContext")) {
-      stop("Requires rewardb::appContext instance to be loaded in to environment")
-  }
-  shiny::shinyApp(server=serverInstance, dashboardUi(appContext))
+launchDashboard <- function (configPath) {
+  e <- environment()
+  e$appContext <- rewardb::loadAppContext(configPath)
+  shiny::shinyApp(server=serverInstance, dashboardUi())
 }
