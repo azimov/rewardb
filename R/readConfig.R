@@ -26,7 +26,7 @@ getPasswordSecurely <- function() {
 #' @export
 #' @examples
 #' loadAppContext('config/config.dev.yml')
-loadAppContext <- function(configPath, createConnection = FALSE, useCdm = FALSE) {
+loadAppContext <- function(configPath, createConnection = FALSE, useCdm = FALSE, .env=.GlobalEnv) {
     appContext <- yaml::read_yaml(configPath)
     appContext$connectionDetails$password <- getPasswordSecurely()
     if (createConnection) {
@@ -36,5 +36,7 @@ loadAppContext <- function(configPath, createConnection = FALSE, useCdm = FALSE)
     if (useCdm) {
       appContext$cdmConnection <- DatabaseConnector::connect(appContext$resultsDatabase$cdmDataSource)
     }
-    return(appContext)
+
+    class(appContext) <- append(class(appContext), "rewardb::appContext")
+    .env$appContext <- appContext
 }
