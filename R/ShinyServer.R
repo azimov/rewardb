@@ -1,10 +1,9 @@
-library(shiny)
-library(shinyWidgets)
-library(scales)
-library(DT)
-library(rewardb)
-
-server <- function(input, output, session) {
+#' Requires a server appContext instance to be loaded in environment see scoping of launchDashboard
+rb.serverInstance <- function(input, output, session) {
+    library(shiny)
+    library(shinyWidgets)
+    library(scales)
+    library(DT)
     # Simple wrapper for always ensuring that database connection is opened and closed
     # Postgres + DatabaseConnector has problems with connections hanging around
     queryDb <- function (query, ...) {
@@ -206,4 +205,17 @@ server <- function(input, output, session) {
             return(rewardb::forestPlot(df))
         }
     })
+}
+
+#' Launch the REWARD-B Shiny app
+#'
+#' @param configPath path to configuration file
+#'
+#' @details
+#' Launches a Shiny app for a given configuration file
+#'
+#' @export
+launchDashboard <- function (configPath) {
+  appContext <- rewardb::loadAppContext(configPath)
+  shiny::shinyApp(server=rb.serverInstance, dashboardUi(appContext))
 }
