@@ -30,13 +30,9 @@ getOutcomeControls <- function(appContext, targetCohortIds, minCohortSize=10) {
 getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
   sql <- "
       SELECT r.*, o.type_id as outcome_type FROM @schema.result r
-      LEFT JOIN @schema.negative_control nc ON (
-        r.target_cohort_id = nc.target_cohort_id AND nc.outcome_cohort_id = r.outcome_cohort_id
-      )
       INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
       WHERE r.TARGET_COHORT_ID IN (@target_cohort_ids)
       AND r.calibrated = 0
-      AND nc.target_cohort_id IS NULL -- We only want entries that are not negative controls
       AND o.type_id != 2 -- ATLAS cohorts excluded
   "
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
