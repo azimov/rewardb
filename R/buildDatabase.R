@@ -147,7 +147,8 @@ addCemNagativeControls <- function(appContext) {
   DatabaseConnector::insertTable(appContext$cdmConnection, "#target_nc_tmp", targetIds, tempTable=TRUE)
 
   sql <- "
-  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+  -- Top level conditions that match out hierarchy, we assume that siblings do not have evidence
+  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
     FROM @schema.@summary_table evi
     INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
     INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
@@ -155,15 +156,49 @@ addCemNagativeControls <- function(appContext) {
     AND evi.evidence_exists = 0
 
   UNION
+  (
+    -- Roll up any descendent conditions
+    SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
+      FROM @schema.@summary_table evi
+      INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
+      INNER JOIN @vocab_schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
+      INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = ca.descendant_concept_id
+      WHERE ttmp.is_atc_4 = 0
+      AND evi.evidence_exists = 0
+
+      EXCEPT
+        -- Any descendants that have evidence
+        SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
+          FROM @schema.@summary_table evi
+          INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
+          INNER JOIN @vocab_schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
+          INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = ca.descendant_concept_id
+          WHERE ttmp.is_atc_4 = 0
+          AND evi.evidence_exists = 1
+  )
+  UNION
   -- GET all ATC level 4 concept mappings
-  SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
-    FROM @schema.@summary_table evi
-    INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-    INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
-    INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
-    INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
-    WHERE ttmp.is_atc_4 = 1
-    AND evi.evidence_exists = 0
+  (
+    SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
+      FROM @schema.@summary_table evi
+      INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+      INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
+      INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
+      INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
+      WHERE ttmp.is_atc_4 = 1
+      AND evi.evidence_exists = 0
+
+      -- Any descendants that have evidence
+      EXCEPT
+        SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
+          FROM @schema.@summary_table evi
+          INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+          INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
+          INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
+          INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
+          WHERE ttmp.is_atc_4 = 1
+          AND evi.evidence_exists = 1
+   )
   "
   negativeControlsConcepts <- DatabaseConnector::renderTranslateQuerySql(
     cdmConnection,
@@ -178,7 +213,7 @@ addCemNagativeControls <- function(appContext) {
 
   sql <- "
     INSERT INTO @schema.negative_control (outcome_cohort_id, target_cohort_id)
-      SELECT outcome_cohort_id, target_cohort_id
+      SELECT DISTINCT outcome_cohort_id, target_cohort_id
       FROM #ncc_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
       INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
