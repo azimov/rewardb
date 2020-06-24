@@ -244,27 +244,17 @@ addCemIndications <- function(appContext) {
   AND evi.evidence_exists = 1
   
   UNION
-  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+  -- SELECTS THE DESCENDANT CONDITION
+  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, otmp.condition_concept_id
   FROM @schema.@summary_table evi
   INNER JOIN @schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
   INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
   INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = ca.descendant_concept_id
   WHERE ttmp.is_atc_4 = 0
   AND evi.evidence_exists = 1
-  
-  
+
   UNION
   -- GET all ATC level 4 concept mappings
-  SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
-  FROM @schema.@summary_table evi
-  INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-  INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
-  INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
-  INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
-  WHERE ttmp.is_atc_4 = 1
-  AND evi.evidence_exists = 1
-  
-  UNION
   SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
   FROM @schema.@summary_table evi
   INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
@@ -286,6 +276,8 @@ addCemIndications <- function(appContext) {
 
   DatabaseConnector::insertTable(appContext$connection, "#indication_ids", negativeControlsConcepts, tempTable=TRUE)
 
+  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, "DELETE FROM @schema.positive_indication",
+                                               schema=appContext$short_name)
   sql <- "
     INSERT INTO @schema.positive_indication (outcome_cohort_id, target_cohort_id)
       SELECT DISTINCT outcome_cohort_id, target_cohort_id

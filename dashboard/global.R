@@ -1,5 +1,5 @@
 library(rewardb)
-appContext <- rewardb::loadAppContext("../config/config.tnfs.yml")
+appContext <- rewardb::loadAppContext("../config/config.dev.yml")
 
 dbConn <- NULL
 # Simple wrapper for always ensuring that database connection is opened and closed
