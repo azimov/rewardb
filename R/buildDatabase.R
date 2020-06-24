@@ -228,32 +228,52 @@ addCemIndications <- function(appContext) {
   outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
                                                            "SELECT DISTINCT condition_concept_id FROM @schema.outcome_concept",
                                                            schema=appContext$short_name)
-
+  DatabaseConnector::insertTable(appContext$cdmConnection, "#oindtmp", outcomeIds, tempTable=TRUE)
+  
   targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
                                                           "SELECT DISTINCT target_concept_id, is_atc_4 FROM @schema.target",
                                                           schema=appContext$short_name)
-
-  DatabaseConnector::insertTable(appContext$cdmConnection, "#outcome_indication_tmp", outcomeIds, tempTable=TRUE)
-  DatabaseConnector::insertTable(appContext$cdmConnection, "#target_indication_tmp", targetIds, tempTable=TRUE)
+  DatabaseConnector::insertTable(appContext$cdmConnection, "#targetindtmp", targetIds, tempTable=TRUE)
 
   sql <- "
   SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
-    FROM @schema.@summary_table evi
-    INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
-    INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-    WHERE ttmp.is_atc_4 = 0
-    AND evi.evidence_exists = 1
-
+  FROM @schema.@summary_table evi
+  INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
+  INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+  WHERE ttmp.is_atc_4 = 0
+  AND evi.evidence_exists = 1
+  
+  UNION
+  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+  FROM @schema.@summary_table evi
+  INNER JOIN @schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
+  INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
+  INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = ca.descendant_concept_id
+  WHERE ttmp.is_atc_4 = 0
+  AND evi.evidence_exists = 1
+  
+  
   UNION
   -- GET all ATC level 4 concept mappings
   SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
-    FROM @schema.@summary_table evi
-    INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-    INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
-    INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
-    INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
-    WHERE ttmp.is_atc_4 = 1
-    AND evi.evidence_exists = 1
+  FROM @schema.@summary_table evi
+  INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+  INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
+  INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
+  INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
+  WHERE ttmp.is_atc_4 = 1
+  AND evi.evidence_exists = 1
+  
+  UNION
+  SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
+  FROM @schema.@summary_table evi
+  INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
+  INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
+  INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
+  INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
+  WHERE ttmp.is_atc_4 = 1
+  AND evi.evidence_exists = 1
+  
   "
   negativeControlsConcepts <- DatabaseConnector::renderTranslateQuerySql(
     cdmConnection,
@@ -268,7 +288,7 @@ addCemIndications <- function(appContext) {
 
   sql <- "
     INSERT INTO @schema.positive_indication (outcome_cohort_id, target_cohort_id)
-      SELECT outcome_cohort_id, target_cohort_id
+      SELECT DISTINCT outcome_cohort_id, target_cohort_id
       FROM #indication_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
       INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
