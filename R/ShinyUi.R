@@ -1,4 +1,4 @@
-dashboardUi  <- function () {
+dashboardUi  <- function (request) {
   library(shiny)
   library(shinyWidgets)
   library(shinydashboard)
@@ -69,7 +69,7 @@ dashboardUi  <- function () {
                 options = shinyWidgets::pickerOptions(actionsBox = TRUE),
                 multiple = TRUE
               ),
-              checkboxInput("excludeIndications", "Exclude mapped indications", TRUE),
+              checkboxInput("excludeIndications", "Exclude any mapped indications", TRUE),
               width = 6
             ),
             width = 12,
@@ -106,7 +106,8 @@ dashboardUi  <- function () {
         selected = "none",
         options = shinyWidgets::pickerOptions(actionsBox = TRUE),
         multiple = TRUE
-      )
+      ),
+      bookmarkButton()
     )
   )
 
