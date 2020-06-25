@@ -70,3 +70,4 @@ FROM @schema.result fr
         WHEN benefit_t.THRESH_COUNT > 1 AND 'most' in (@benefit_selection) THEN 1
         ELSE 0
     END
+    AND o.type_id IN (@outcome_types)

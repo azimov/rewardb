@@ -7,12 +7,13 @@ dashboardUi  <- function () {
   metaDisplayCondtion <- "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0"
 
   mainResults <- box(
-    width = 12,
     DT::dataTableOutput("mainTable"),
-    conditionalPanel(
+    width = 12
+  )
+
+  rPanel <- conditionalPanel(
       condition = metaDisplayCondtion,
       box(
-        width = 12,
         HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
         tabsetPanel(
           id = "tabsetPanelResults",
@@ -22,46 +23,26 @@ dashboardUi  <- function () {
             plotOutput("forestPlot", height = 800, hover = hoverOpts("plotHoverForestPlot")),
             div(strong("Figure 1."), "Forest plot of effect estimates from each database")
           )
-        )
+        ),
+        width = 12
       )
     )
-  )
 
   aboutTab <- fluidRow(
     box(
-      width = 6,
-      title=paste("About", appContext$name),
-      div(HTML(paste("<p>", appContext$description, ".</p>"))),
-      div(HTML("<p> Click the dashboard option to see the results.
-            The sidebar options allow filtering of results based on risk and benift IRR thresholds. </p>")),
+      p(appContext$description),
+      p("Click the dashboard option to see the results. The sidebar options allow filtering of results based on risk and benift IRR thresholds"),
       downloadButton(
         "downloadData",
         "Download filtered results as a csv"
-      )
+      ),
+      width = 6,
+      title=paste("About", appContext$name)
     ),
     box(
+      includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
       width = 6,
-      title=paste("About REWARD-B"),
-      p("These results are generated based developed by Observational Health Data Analytics (OHDA) at Janssen Research & Development.
-        Unless otherwise state, all data remain the commerical property of Janssen Research & Development and partners.
-      "),
-      p("for more information about this dashboard please contact the REWARD-B team."),
-      p("Observational Health Data Analytics:"),
-      HTML("
-        <ul>
-          <li> Patrick Ryan (PRyan4@its.jnj.com) </li>
-          <li> Christopher Knoll - (cknoll1@its.jnj.com) </li>
-          <li> James Gilbert - (jgilber2@its.jnj.com) </li>
-        </ul>"
-       ),
-       p("Epidemiology:"),
-      HTML("
-        <ul>
-          <li> Soledad Cepeda (SCepeda@its.jnj.com) </li>
-          <li> David Kern - (@its.jnj.com) </li>
-          <li> Rachel Teneralli - (RTeneral@its.jnj.com) </li>
-        </ul>
-      ")
+      title=paste("About REWARD-B")
     )
   )
 
@@ -72,16 +53,30 @@ dashboardUi  <- function () {
         aboutTab
       ),
       tabItem(
-        tabName = "",
+        tabName = "results",
         fluidRow(
           box(
-            width = 6,
+            box(
+              uiOutput("targetCohorts"),
+              uiOutput("outcomeCohorts")
+            ),
+            box(
+              pickerInput(
+              "outcomeCohortTypes",
+              "Outcome Cohort Types:",
+                choices = c("ATLAS", "Inpatient", "Two diagnosis codes"),
+                selected = c("ATLAS", "Inpatient", "Two diagnosis codes"),
+                options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+                multiple = TRUE
+              ),
+              width = 6
+            ),
+            width = 12,
             title = "Filter Cohorts",
-            collapsible = TRUE,
-            uiOutput("targetCohorts"),
-            uiOutput("outcomeCohorts"),
+            collapsible = TRUE
           ),
-          mainResults
+          mainResults,
+          rPanel
         )
       )
     )
@@ -91,7 +86,7 @@ dashboardUi  <- function () {
   sidebar <- dashboardSidebar(
     sidebarMenu(
       menuItem("About", tabName = "about", icon = icon("list-alt")),
-      menuItem("Results", tabName = "", icon = icon("")),
+      menuItem("Results", tabName = "results", icon = icon("table")),
       sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
       sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2),
       checkboxInput("calibrated", "Threshold with empirically calibrated results", TRUE),
@@ -99,7 +94,7 @@ dashboardUi  <- function () {
         "scBenefit",
         "Sources with self control benefit:",
         choices = scBenefitRisk,
-        selected = "all",
+        selected = c("all", "most"),
         options = shinyWidgets::pickerOptions(actionsBox = TRUE),
         multiple = TRUE
       ),
