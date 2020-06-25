@@ -40,7 +40,7 @@ dashboardUi  <- function (request) {
       title=paste("About", appContext$name)
     ),
     box(
-      includeHTML(system.file("HTML", "about_rewardb.html", package = "rewardb")),
+      includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
       width = 6,
       title=paste("About REWARD-B")
     )
