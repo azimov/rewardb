@@ -69,6 +69,7 @@ dashboardUi  <- function () {
                 options = shinyWidgets::pickerOptions(actionsBox = TRUE),
                 multiple = TRUE
               ),
+              checkboxInput("excludeIndications", "Exclude mapped indications", TRUE),
               width = 6
             ),
             width = 12,

@@ -4,7 +4,7 @@ WITH benefit_t AS(
     WHERE RR <= @benefit
         AND P_VALUE < 0.05
         AND calibrated = @calibrated
-        AND SOURCE_ID >= 0
+        AND SOURCE_ID >= 0 -- NEGATIVE SOURCE IDS are reserved for meta analysis
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 ),
 
@@ -14,7 +14,7 @@ risk_t AS (
     WHERE RR >= @risk
         AND P_VALUE < 0.05
         AND calibrated = @calibrated
-        AND SOURCE_ID >= 0 -- NEGATIVE SOURCE IDS are reserved for
+        AND SOURCE_ID >= 0 -- NEGATIVE SOURCE IDS are reserved for meta analysis
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
 )
 
@@ -34,12 +34,15 @@ SELECT
         WHEN benefit_t.THRESH_COUNT > 1 THEN 'most'
     END AS benefit_count,
     mr.I2 as I2,
-    ROUND(mr.RR, 2) as meta_RR
+    ROUND(mr.RR, 2) as meta_RR,
+    CASE
+        WHEN nc.outcome_cohort_id IS NULL THEN 1
+        ELSE 0
+    END AS is_nc
 FROM @schema.result fr
     
     LEFT JOIN benefit_t ON benefit_t.TARGET_COHORT_ID = fr.TARGET_COHORT_ID AND benefit_t.OUTCOME_COHORT_ID = fr.OUTCOME_COHORT_ID
     LEFT JOIN risk_t ON risk_t.TARGET_COHORT_ID = fr.TARGET_COHORT_ID AND risk_t.OUTCOME_COHORT_ID = fr.OUTCOME_COHORT_ID
-    
     INNER JOIN @schema.target t ON t.target_cohort_id = fr.target_cohort_id
     INNER JOIN @schema.outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
     {@exclude_indications == TRUE} ? {
@@ -47,6 +50,11 @@ FROM @schema.result fr
             pi.outcome_cohort_id = fr.outcome_cohort_id AND pi.target_cohort_id = fr.target_cohort_id
         )
     }
+
+    LEFT JOIN @schema.negative_control nc ON (
+        nc.outcome_cohort_id = fr.outcome_cohort_id AND nc.target_cohort_id = fr.target_cohort_id
+    )
+
     --LEFT JOIN exposure_classes ec ON ec.CONCEPT_ID = tc.TARGET_CONCEPT_ID
     LEFT JOIN @schema.result mr ON (
         fr.outcome_cohort_id = mr.outcome_cohort_id AND

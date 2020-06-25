@@ -38,7 +38,7 @@ serverInstance <- function(input, output, session) {
         calibrated <- ifelse(input$calibrated, 1, 0)
         bSelection <- paste0("'", paste0(input$scBenefit, sep="'"))
         rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
-        df <- queryDb(mainTableSql, risk = risk, benefit = benefit, exclude_indications = TRUE,
+        df <- queryDb(mainTableSql, risk = risk, benefit = benefit, exclude_indications = input$excludeIndications,
                       outcome_types = outcomeCohortTypes, risk_selection = rSelection,
                       benefit_selection = bSelection, calibrated=calibrated)
 
