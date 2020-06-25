@@ -42,9 +42,11 @@ FROM @schema.result fr
     
     INNER JOIN @schema.target t ON t.target_cohort_id = fr.target_cohort_id
     INNER JOIN @schema.outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
-    LEFT JOIN @schema.positive_indication pi ON (
-        pi.outcome_cohort_id = fr.outcome_cohort_id AND pi.target_cohort_id = fr.target_cohort_id
-    )
+    {@exclude_indications == TRUE} ? {
+        LEFT JOIN @schema.positive_indication pi ON (
+            pi.outcome_cohort_id = fr.outcome_cohort_id AND pi.target_cohort_id = fr.target_cohort_id
+        )
+    }
     --LEFT JOIN exposure_classes ec ON ec.CONCEPT_ID = tc.TARGET_CONCEPT_ID
     LEFT JOIN @schema.result mr ON (
         fr.outcome_cohort_id = mr.outcome_cohort_id AND
@@ -53,7 +55,7 @@ FROM @schema.result fr
         mr.source_id = -99
     )
     WHERE fr.calibrated = @calibrated
-    AND pi.outcome_cohort_id IS NULL
+    {@exclude_indications == TRUE} ? {AND pi.outcome_cohort_id IS NULL}
     AND 1 = CASE
         WHEN risk_t.THRESH_COUNT IS NULL AND 'none' IN (@risk_selection) THEN 1
         WHEN risk_t.THRESH_COUNT = 1 AND 'one' in (@risk_selection) THEN 1
