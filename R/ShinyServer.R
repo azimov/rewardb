@@ -5,6 +5,17 @@ serverInstance <- function(input, output, session) {
     library(scales)
     library(DT)
     library(foreach)
+
+    appCacheName <- paste0(appContext$short_name, "-cache.Rdata")
+    cacheEnv <- new.env()
+    tryCatch(
+        { cacheEnv <- readRDS(appCacheName) },
+        warning = function () {},
+        error = function(err) {
+            print("no cache found, will be written on first use")
+        }
+    )
+
     # Simple wrapper for always ensuring that database connection is opened and closed
     # Postgres + DatabaseConnector has problems with connections hanging around
     queryDb <- function (query, ...) {
@@ -12,6 +23,19 @@ serverInstance <- function(input, output, session) {
         df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = appContext$short_name, ...)
         DatabaseConnector::disconnect(dbConn)
         return (df)
+    }
+
+    # Used to cache queries in the shared R data object
+    cacheQueryDb <- function (key, query, ...) {
+
+        if (exists(key, envir = cacheEnv)) {
+            return(get(key, envir = cacheEnv))
+        }
+
+        result <- queryDb(query, ...)
+        assign(key, result, cacheEnv)
+        saveRDS(cacheEnv, file = appCacheName)
+        return(result)
     }
 
     niceColumnName <- list(SOURCE_NAME = "Database", RR = "Relative Risk", C_AT_RISK = "N Unexposed", T_AT_RISK = "N Exposed",
@@ -45,26 +69,25 @@ serverInstance <- function(input, output, session) {
         return(df)
     })
 
-    allOutcomeCohortNames <- reactive({ queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME") })
-    allOutcomeTargetNames <- reactive({ queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.TARGET ORDER BY COHORT_NAME") })
-
     output$outcomeCohorts <- renderUI(
     {
-        df <- allOutcomeCohortNames()
+        print("st")
+        df <- cacheQueryDb("outcomeNames","SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME")
         picker <- pickerInput(
           "outcomeCohorts",
           "Disease outcomes:",
           choices = df$COHORT_NAME,
           selected = df$COHORT_NAME,
-          options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
+          options = shinyWidgets::pickerOptions(actionsBox = TRUE),
           multiple = TRUE
         )
+        print("end")
         return(picker)
     })
 
     output$targetCohorts <- renderUI(
     {
-        df <- allOutcomeTargetNames()
+        df <- cacheQueryDb("targetNames", "SELECT DISTINCT COHORT_NAME FROM @schema.TARGET ORDER BY COHORT_NAME")
         picker <- pickerInput(
           "targetCohorts",
           "Drug exposures:",
@@ -97,6 +120,7 @@ serverInstance <- function(input, output, session) {
             colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
             colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
             colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
+            colnames(df)[colnames(df) == "IS_NC"] <- "Control Cohort"
 
             table <- DT::datatable(
               df, selection = "single",
