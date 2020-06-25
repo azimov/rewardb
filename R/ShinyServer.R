@@ -226,5 +226,5 @@ serverInstance <- function(input, output, session) {
 launchDashboard <- function (configPath) {
   e <- environment()
   e$appContext <- rewardb::loadAppContext(configPath)
-  shiny::shinyApp(server=serverInstance, dashboardUi())
+  shiny::shinyApp(server=serverInstance, dashboardUi, enableBookmarking = "server")
 }
