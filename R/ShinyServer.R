@@ -4,6 +4,7 @@ serverInstance <- function(input, output, session) {
     library(shinyWidgets)
     library(scales)
     library(DT)
+    library(foreach)
     # Simple wrapper for always ensuring that database connection is opened and closed
     # Postgres + DatabaseConnector has problems with connections hanging around
     queryDb <- function (query, ...) {
@@ -23,17 +24,23 @@ serverInstance <- function(input, output, session) {
         niceColumnNameInv[niceColumnName[[n]]] <- n
     }
 
-
     # Query full results, only filter is Risk range parameters
     mainTableRe <- reactive({
         benefit <- input$cutrange1
         risk <- input$cutrange2
+
+        cohortTypeMapping <- list( ATLAS = 2, Inpatient = 1, "Two diagnosis codes" = 0)
+        outcomeCohortTypes <- foreach(i=input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
+        if(!length(outcomeCohortTypes)) {
+            outcomeCohortTypes = -999
+        }
         mainTableSql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
         calibrated <- ifelse(input$calibrated, 1, 0)
         bSelection <- paste0("'", paste0(input$scBenefit, sep="'"))
         rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
-        df <- queryDb(mainTableSql, risk = risk, benefit = benefit,
-                      risk_selection = rSelection, benefit_selection = bSelection, calibrated=calibrated)
+        df <- queryDb(mainTableSql, risk = risk, benefit = benefit, exclude_indications = TRUE,
+                      outcome_types = outcomeCohortTypes, risk_selection = rSelection,
+                      benefit_selection = bSelection, calibrated=calibrated)
 
         return(df)
     })
@@ -83,6 +90,7 @@ serverInstance <- function(input, output, session) {
             {
             df$I2 <- formatC(df$I2, digits = 2, format = "f")
             colnames(df)[colnames(df) == "I2"] <- "I-squared"
+            colnames(df)[colnames(df) == "META_RR"] <- "IRR (meta analysis)"
             colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
             colnames(df)[colnames(df) == "BENEFIT_COUNT"] <- "Sources with scc benefit"
             colnames(df)[colnames(df) == "OUTCOME_COHORT_NAME"] <- "Outcome cohort name"
