@@ -71,17 +71,19 @@ serverInstance <- function(input, output, session) {
 
     output$outcomeCohorts <- renderUI(
     {
-        print("st")
         df <- cacheQueryDb("outcomeNames","SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME")
         picker <- pickerInput(
           "outcomeCohorts",
           "Disease outcomes:",
           choices = df$COHORT_NAME,
-          selected = df$COHORT_NAME,
-          options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+          selected = c(),
+          options = shinyWidgets::pickerOptions(
+            noneSelectedText = "Filter by subset",
+            actionsBox = TRUE,
+            liveSearch = TRUE
+          ),
           multiple = TRUE
         )
-        print("end")
         return(picker)
     })
 
@@ -92,18 +94,28 @@ serverInstance <- function(input, output, session) {
           "targetCohorts",
           "Drug exposures:",
           choices = df$COHORT_NAME,
-          selected = df$COHORT_NAME,
-          options = shinyWidgets::pickerOptions(actionsBox = TRUE, liveSearch = TRUE),
+          selected = c(),
+          options = shinyWidgets::pickerOptions(
+                noneSelectedText = "Filter by subset",
+                actionsBox = TRUE,
+                liveSearch = TRUE
+          ),
           multiple = TRUE
         )
         return(picker)
     })
 
     # Subset of results for harm, risk and treatement categories
+    # Logic: either select everything or select a user defined subset
     mainTableRiskHarmFilters <- reactive({
-        df <- mainTableRe()
-        filtered <- df[df$OUTCOME_COHORT_NAME %in% input$outcomeCohorts
-                         & df$TARGET_COHORT_NAME %in% input$targetCohorts, ]
+        filtered <- mainTableRe()
+        if (length(input$outcomeCohorts)) {
+            filtered <- filtered[filtered$OUTCOME_COHORT_NAME %in% input$outcomeCohorts, ]
+        }
+
+        if (length(input$targetCohorts)) {
+            filtered <- filtered[filtered$TARGET_COHORT_NAME %in% input$targetCohorts, ]
+        }
         return(filtered)
     })
 
