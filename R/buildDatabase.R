@@ -158,7 +158,7 @@ addCemNagativeControls <- function(appContext) {
   UNION
   (
     -- Roll up any descendent conditions
-    SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
+    SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, otmp.condition_concept_id AS condition_concept_id
       FROM @schema.@summary_table evi
       INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
       INNER JOIN @vocab_schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
@@ -168,7 +168,7 @@ addCemNagativeControls <- function(appContext) {
 
       EXCEPT
         -- Any descendants that have evidence
-        SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
+        SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, otmp.condition_concept_id AS condition_concept_id
           FROM @schema.@summary_table evi
           INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
           INNER JOIN @vocab_schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
