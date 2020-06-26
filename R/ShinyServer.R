@@ -47,14 +47,19 @@ serverInstance <- function(input, output, session) {
     for (n in names(niceColumnName)) {
         niceColumnNameInv[niceColumnName[[n]]] <- n
     }
-
+    getOutcomeCohortTypes <- reactive(
+        {
+            cohortTypeMapping <- list( ATLAS = 2, Inpatient = 1, "Two diagnosis codes" = 0)
+            rs <- foreach(i=input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
+            return(rs)
+        }
+    )
     # Query full results, only filter is Risk range parameters
     mainTableRe <- reactive({
         benefit <- input$cutrange1
         risk <- input$cutrange2
 
-        cohortTypeMapping <- list( ATLAS = 2, Inpatient = 1, "Two diagnosis codes" = 0)
-        outcomeCohortTypes <- foreach(i=input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
+        outcomeCohortTypes <- getOutcomeCohortTypes()
         if(!length(outcomeCohortTypes)) {
             outcomeCohortTypes = -999
         }
@@ -69,9 +74,13 @@ serverInstance <- function(input, output, session) {
         return(df)
     })
 
+
+    outcomeNames <- reactive({ cacheQueryDb("outcomeNames","SELECT DISTINCT COHORT_NAME, type_id  FROM @schema.OUTCOME ORDER BY COHORT_NAME") })
     output$outcomeCohorts <- renderUI(
     {
-        df <- cacheQueryDb("outcomeNames","SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME")
+        df <- outcomeNames()
+        outcomeTypes <- getOutcomeCohortTypes()
+        df <- df[df$TYPE_ID %in% outcomeTypes, ]
         picker <- pickerInput(
           "outcomeCohorts",
           "Disease outcomes:",

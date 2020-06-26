@@ -10,7 +10,8 @@ cleanUpAppContext <- function(appContext) {
 getPasswordSecurely <- function() {
     pass <- Sys.getenv("REWARD_B_PASSWORD")
     if(pass == "") {
-        return(askpass::askpass("Please enter the reward b database password"))
+        pass <- askpass::askpass("Please enter the reward b database password")
+        Sys.setenv("REWARD_B_PASSWORD" = pass)
     }
     return(pass)
 }
