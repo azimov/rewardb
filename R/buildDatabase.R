@@ -10,20 +10,17 @@ extractTargetCohortNames <- function (appContext) {
     END AS is_atc_4
   FROM @results_database_schema.@cohort_definition_table t
   INNER JOIN @cdm_vocabulary.concept c1 ON t.cohort_definition_id/1000 = c1.concept_id
+  {fixed_target_cohorts} ? {WHERE t.cohort_definition_id IN (@target_cohort_ids)}
       ";
 
-  if (!is.null(appContext$target_concept_ids)) {
-    sql <- paste(sql, "WHERE t.cohort_definition_id IN (@target_cohort_ids)")
-    nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
+
+  nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
                                                             cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
+                                                            fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
                                                             target_cohort_ids = appContext$target_concept_ids * 1000,
                                                             cohort_definition_table=appContext$resultsDatabase$cohortDefinitionTable,
                                                             results_database_schema=appContext$resultsDatabase$schema)
-  } else {
-    nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
-                                                            cohort_definition_table=appContext$resultsDatabase$cohortDefinitionTable,
-                                                            results_database_schema=appContext$resultsDatabase$schema)
-  }
+ 
 
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target"), nameSet)
 }
@@ -36,7 +33,7 @@ extractOutcomeCohortNames <- function (appContext) {
         o.cohort_definition_id % 100 as type_id
       from @results_database_schema.@outcome_cohort_definition_table o
       WHERE o.cohort_definition_id NOT IN (@custom_outcome_ids)
-      {@outcome_cohort_ids_length > 0} ? {AND o.cohort_definition_id IN (@outcome_cohort_ids)}
+      {@outcome_cohort_ids_length} ? {AND o.cohort_definition_id IN (@outcome_cohort_ids)}
     UNION
 
     SELECT 
@@ -55,7 +52,7 @@ extractOutcomeCohortNames <- function (appContext) {
       subset_outcomes = !is.null(appContext$outcome_cohort_ids),
       outcome_cohort_ids = outcome_ids,
       custom_outcome_ids = appContext$custom_outcome_cohort_ids,
-      outcome_cohort_ids_length = length(outcome_ids),
+      outcome_cohort_ids_length = length(outcome_ids) > 0,
       outcome_cohort_definition_table=appContext$resultsDatabase$outcomeCohortDefinitionTable,
       results_database_schema=appContext$resultsDatabase$schema
     )
@@ -92,17 +89,17 @@ extractResultsSubset <- function(appContext){
       scca.p_value
       from @results_database_schema.@scca_results scca
       WHERE scca.log_rr IS NOT NULL
-      {@target_cohort_ids_length > 0 } ? {AND target_cohort_id in (@target_cohort_ids)}
-      {@outcome_cohort_ids_length > 0} ? {AND outcome_cohort_id in (@outcome_cohort_ids)}
+      {@target_cohort_ids_length} ? {AND target_cohort_id in (@target_cohort_ids)}
+      {@outcome_cohort_ids_length} ? {AND outcome_cohort_id in (@outcome_cohort_ids)}
   "
   
   targetCohorts <- appContext$target_concept_ids * 1000
   outcomeCohortIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
   resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
                                                            target_cohort_ids = targetCohorts,
-                                                           target_cohort_ids_length = length(targetCohorts),
+                                                           target_cohort_ids_length = length(targetCohorts)  > 0,
                                                            outcome_cohort_ids = outcomeCohortIds,
-                                                           outcome_cohort_ids_length = length(outcomeCohortIds),
+                                                           outcome_cohort_ids_length = length(outcomeCohortIds)  > 0,
                                                            scca_results = appContext$resultsDatabase$asurvResultsTable,
                                                            results_database_schema = appContext$resultsDatabase$schema)
   
