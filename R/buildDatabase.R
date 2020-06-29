@@ -36,7 +36,7 @@ extractOutcomeCohortNames <- function (appContext) {
         o.cohort_definition_id % 100 as type_id
       from @results_database_schema.@outcome_cohort_definition_table o
       WHERE o.cohort_definition_id NOT IN (@custom_outcome_ids)
-
+      {@outcome_cohort_ids_length > 0} ? {AND o.cohort_definition_id IN (@outcome_cohort_ids)}
     UNION
 
     SELECT 
@@ -46,28 +46,19 @@ extractOutcomeCohortNames <- function (appContext) {
       FROM @results_database_schema.@outcome_cohort_definition_table o
       WHERE o.cohort_definition_id IN (@custom_outcome_ids)
   ";
-  
+  outcome_ids <- append(appContext$outcome_cohort_ids * 100, appContext$outcome_cohort_ids * 100 + 1)
   # TODO: Join to atlas cohorts and exclude their ids rather than having to always select all custom outcome cohorts
-  if (!is.null(appContext$outcome_cohort_ids)) {
-    
-    outcome_ids <- append(appContext$outcome_cohort_ids * 100, appContext$outcome_cohort_ids * 100 + 1)
-    sql <- paste(sql, "AND o.cohort_definition_id IN (@outcome_cohort_ids)")
-    nameSet <- DatabaseConnector::renderTranslateQuerySql(
-      appContext$cdmConnection, 
-      sql, 
-      outcome_cohort_ids = outcomes,
+
+  nameSet <- DatabaseConnector::renderTranslateQuerySql(
+      appContext$cdmConnection,
+      sql,
+      subset_outcomes = !is.null(appContext$outcome_cohort_ids),
+      outcome_cohort_ids = outcome_ids,
       custom_outcome_ids = appContext$custom_outcome_cohort_ids,
+      outcome_cohort_ids_length = length(outcome_ids),
       outcome_cohort_definition_table=appContext$resultsDatabase$outcomeCohortDefinitionTable,
       results_database_schema=appContext$resultsDatabase$schema
     )
-  } else {
-    nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
-                                                            custom_outcome_ids = appContext$custom_outcome_cohort_ids,
-                                                            outcome_cohort_definition_table=appContext$resultsDatabase$outcomeCohortDefinitionTable,
-                                                            results_database_schema=appContext$resultsDatabase$schema
-                                                            )
-  }
-  
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".outcome"), nameSet)
 }
 
@@ -101,22 +92,17 @@ extractResultsSubset <- function(appContext){
       scca.p_value
       from @results_database_schema.@scca_results scca
       WHERE scca.log_rr IS NOT NULL
+      {@target_cohort_ids_length > 0 } ? {AND target_cohort_id in (@target_cohort_ids)}
+      {@outcome_cohort_ids_length > 0} ? {AND outcome_cohort_id in (@outcome_cohort_ids)}
   "
   
   targetCohorts <- appContext$target_concept_ids * 1000
-  if(length(targetCohorts)) {
-    sql <- paste(sql, "AND target_cohort_id in (@target_cohort_ids)")
-  }
-
-
   outcomeCohortIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
-  if (length(outcomeCohortIds)) {
-    sql <- paste(sql, "AND outcome_cohort_id in (@outcome_cohort_ids)")
-  }
-
   resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
                                                            target_cohort_ids = targetCohorts,
+                                                           target_cohort_ids_length = length(targetCohorts),
                                                            outcome_cohort_ids = outcomeCohortIds,
+                                                           outcome_cohort_ids_length = length(outcomeCohortIds),
                                                            scca_results = appContext$resultsDatabase$asurvResultsTable,
                                                            results_database_schema = appContext$resultsDatabase$schema)
   
@@ -344,7 +330,7 @@ performMetaAnalysis <- function(appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, data.frame(results))
 }
 
-buildFromConfig <- function(filePath, calibrateTargets = FALSE) {
+buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposures = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA IF NOT EXISTS", appContext$short_name))
   createTables(appContext)
@@ -370,5 +356,10 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE) {
     print("Calibrating targets")
     rewardb::calibrateTargets(appContext, appContext$target_concept_ids * 1000)
     rewardb::calibrateCustomCohorts(appContext, appContext$target_concept_ids * 1000)
+  }
+
+  if (calibrateExposures) {
+     rewardb::calibrateOutcomes(appContext)
+     rewardb::calibrateOutcomesCustomCohorts(appContext)
   }
 }
