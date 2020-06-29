@@ -6,6 +6,40 @@ serverInstance <- function(input, output, session) {
     library(DT)
     library(foreach)
 
+    appCacheName <- paste0(appContext$short_name, "-cache.Rdata")
+    cacheEnv <- new.env()
+    tryCatch(
+        { cacheEnv <- readRDS(appCacheName) },
+        warning = function() { },
+        error = function(err) {
+            print("no cache found, will be written on first use")
+        }
+    )
+
+    # Simple wrapper for always ensuring that database connection is opened and closed
+    # Postgres + DatabaseConnector has problems with connections hanging around
+    queryDb <- function(query, ...) {
+        dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+        df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = appContext$short_name, ...)
+        DatabaseConnector::disconnect(dbConn)
+        return(df)
+    }
+
+    # Used to cache queries in the shared R data object
+    cacheQueryDb <- function(query, ...) {
+        key = openssl::sha1(query)
+
+        if (exists(key, envir = cacheEnv)) {
+            return(get(key, envir = cacheEnv))
+        }
+
+        result <- queryDb(query, ...)
+        assign(key, result, cacheEnv)
+        saveRDS(cacheEnv, file = appCacheName)
+        return(result)
+    }
+
+
     # Simple wrapper for always ensuring that database connection is opened and closed
     # Postgres + DatabaseConnector has problems with connections hanging around
     queryDb <- function (query, ...) {
@@ -52,7 +86,7 @@ serverInstance <- function(input, output, session) {
     })
 
 
-    outcomeNames <- reactive({ queryDb("SELECT DISTINCT COHORT_NAME, type_id  FROM @schema.OUTCOME ORDER BY COHORT_NAME") })
+    outcomeNames <- reactive({ cacheQueryDb("SELECT DISTINCT COHORT_NAME, type_id  FROM @schema.OUTCOME ORDER BY COHORT_NAME") })
     output$outcomeCohorts <- renderUI(
     {
         df <- outcomeNames()
