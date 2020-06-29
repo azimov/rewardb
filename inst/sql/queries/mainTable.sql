@@ -37,7 +37,7 @@ SELECT
     ROUND(mr.RR, 2) as meta_RR,
     CASE
         WHEN nc.outcome_cohort_id IS NULL THEN 0
-        ELSE 0
+        ELSE 1
     END AS is_nc
 FROM @schema.result fr
     
