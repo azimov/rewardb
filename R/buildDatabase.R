@@ -10,20 +10,17 @@ extractTargetCohortNames <- function (appContext) {
     END AS is_atc_4
   FROM @results_database_schema.@cohort_definition_table t
   INNER JOIN @cdm_vocabulary.concept c1 ON t.cohort_definition_id/1000 = c1.concept_id
+  {fixed_target_cohorts} ? {WHERE t.cohort_definition_id IN (@target_cohort_ids)}
       ";
 
-  if (!is.null(appContext$target_concept_ids)) {
-    sql <- paste(sql, "WHERE t.cohort_definition_id IN (@target_cohort_ids)")
-    nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
+
+  nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
                                                             cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
+                                                            fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
                                                             target_cohort_ids = appContext$target_concept_ids * 1000,
                                                             cohort_definition_table=appContext$resultsDatabase$cohortDefinitionTable,
                                                             results_database_schema=appContext$resultsDatabase$schema)
-  } else {
-    nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
-                                                            cohort_definition_table=appContext$resultsDatabase$cohortDefinitionTable,
-                                                            results_database_schema=appContext$resultsDatabase$schema)
-  }
+ 
 
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target"), nameSet)
 }
