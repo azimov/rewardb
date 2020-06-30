@@ -1,7 +1,7 @@
 dashboardUi  <- function (request) {
-  library(shiny)
-  library(shinyWidgets)
-  library(shinydashboard)
+  library(shiny, warn.conflicts=FALSE)
+  library(shinyWidgets, warn.conflicts=FALSE)
+  library(shinydashboard, warn.conflicts=FALSE)
   scBenefitRisk <- c("none", "one", "most", "all")
   # This hides the outcome exporues/result pairing
   metaDisplayCondtion <- "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0"
@@ -64,9 +64,12 @@ dashboardUi  <- function (request) {
               pickerInput(
               "outcomeCohortTypes",
               "Outcome Cohort Types:",
-                choices = c("ATLAS", "Inpatient", "Two diagnosis codes"),
-                selected = c("ATLAS", "Inpatient", "Two diagnosis codes"),
-                options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+                choices = c("ATLAS defined", "Inpatient", "Two diagnosis codes"),
+                selected = c(),
+                options = shinyWidgets::pickerOptions(
+                  actionsBox = TRUE,
+                  noneSelectedText = "Filter by subset"
+                ),
                 multiple = TRUE
               ),
               checkboxInput("excludeIndications", "Exclude any mapped indications", TRUE),
