@@ -43,7 +43,7 @@ extractOutcomeCohortNames <- function (appContext) {
       FROM @results_database_schema.@outcome_cohort_definition_table o
       WHERE o.cohort_definition_id IN (@custom_outcome_ids)
   ";
-  outcome_ids <- append(appContext$outcome_cohort_ids * 100, appContext$outcome_cohort_ids * 100 + 1)
+  outcome_ids <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
   # TODO: Join to atlas cohorts and exclude their ids rather than having to always select all custom outcome cohorts
 
   nameSet <- DatabaseConnector::renderTranslateQuerySql(

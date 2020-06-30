@@ -95,8 +95,7 @@ getUncalibratedAtlasCohorts <- function(appContext) {
       AND o.type_id = 2 -- ATLAS cohorts only
   "
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target_cohort_ids = targetCohortIds,
-                                                          schema=appContext$short_name)
+  positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, schema=appContext$short_name)
   DatabaseConnector::disconnect(dbConn)
 
   return(positives)
@@ -206,7 +205,7 @@ calibrateCustomCohorts <- function(appContext, targetCohortIds) {
 #'@export
 calibrateOutcomesCustomCohorts <- function(appContext) {
   # get negative control data rows -- type 0 outcomes only
-  controlExposures <- getExposureControls(appContext, appContext$custom_outcome_ids)
+  controlExposures <- getExposureControls(appContext, appContext$custom_outcome_cohort_ids)
   positives <- getUncalibratedAtlasCohorts(appContext)
 
   print(paste("calibrating", nrow(positives) ,"outcomes"))
