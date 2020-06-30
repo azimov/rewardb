@@ -45,7 +45,7 @@ FROM @schema.result fr
     LEFT JOIN risk_t ON risk_t.TARGET_COHORT_ID = fr.TARGET_COHORT_ID AND risk_t.OUTCOME_COHORT_ID = fr.OUTCOME_COHORT_ID
     INNER JOIN @schema.target t ON t.target_cohort_id = fr.target_cohort_id
     INNER JOIN @schema.outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
-    {@exclude_indications == TRUE} ? {
+    {@exclude_indications} ? {
         LEFT JOIN @schema.positive_indication pi ON (
             pi.outcome_cohort_id = fr.outcome_cohort_id AND pi.target_cohort_id = fr.target_cohort_id
         )
@@ -78,4 +78,4 @@ FROM @schema.result fr
         WHEN benefit_t.THRESH_COUNT > 1 AND 'most' in (@benefit_selection) THEN 1
         ELSE 0
     END
-    AND o.type_id IN (@outcome_types)
+    {@filter_outcome_types} ? {AND o.type_id IN (@outcome_types)}
