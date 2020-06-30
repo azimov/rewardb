@@ -10,7 +10,7 @@ extractTargetCohortNames <- function (appContext) {
     END AS is_atc_4
   FROM @results_database_schema.@cohort_definition_table t
   INNER JOIN @cdm_vocabulary.concept c1 ON t.cohort_definition_id/1000 = c1.concept_id
-  {fixed_target_cohorts} ? {WHERE t.cohort_definition_id IN (@target_cohort_ids)}
+  {@fixed_target_cohorts} ? {WHERE t.cohort_definition_id IN (@target_cohort_ids)}
       ";
 
 
@@ -49,7 +49,6 @@ extractOutcomeCohortNames <- function (appContext) {
   nameSet <- DatabaseConnector::renderTranslateQuerySql(
       appContext$cdmConnection,
       sql,
-      subset_outcomes = !is.null(appContext$outcome_cohort_ids),
       outcome_cohort_ids = outcome_ids,
       custom_outcome_ids = appContext$custom_outcome_cohort_ids,
       outcome_cohort_ids_length = length(outcome_ids) > 0,
