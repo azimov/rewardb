@@ -32,10 +32,11 @@ extractOutcomeCohortNames <- function (appContext) {
         o.short_name AS cohort_name, 
         o.cohort_definition_id % 100 as type_id
       from @results_database_schema.@outcome_cohort_definition_table o
-      WHERE o.cohort_definition_id NOT IN (@custom_outcome_ids)
+      LEFT JOIN @results_database_schema.@atlas_cohort_definition_table acd ON acd.atlas_cohort_id = o.cohort_definition_id
+      WHERE acd.atlas_cohort_id IS NULL
       {@outcome_cohort_ids_length} ? {AND o.cohort_definition_id IN (@outcome_cohort_ids)}
     UNION
-
+    -- Only pull specified subset of atlas cohorts
     SELECT 
         o.cohort_definition_id AS outcome_cohort_id,
         o.short_name AS cohort_name, 
@@ -50,6 +51,7 @@ extractOutcomeCohortNames <- function (appContext) {
       appContext$cdmConnection,
       sql,
       outcome_cohort_ids = outcome_ids,
+      atlas_cohort_definition_table=appContext$resultsDatabase$atlasCohorts,
       custom_outcome_ids = appContext$custom_outcome_cohort_ids,
       outcome_cohort_ids_length = length(outcome_ids) > 0,
       outcome_cohort_definition_table=appContext$resultsDatabase$outcomeCohortDefinitionTable,
@@ -59,13 +61,33 @@ extractOutcomeCohortNames <- function (appContext) {
 }
 
 createOutcomeConceptMapping <- function (appContext) {
-  # TODO - somehow map custom cohorts to condition concepts?
-  #  Pull from WebApi then what? Could be thousands of concept codes
   sql <- "INSERT INTO @schema.outcome_concept (outcome_cohort_id, condition_concept_id)
     SELECT outcome_cohort_id, outcome_cohort_id/100 AS condition_concept_id
         FROM @schema.outcome WHERE type_id IN (0, 1);"
 
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema=appContext$short_name)
+
+  sql <- "SELECT acd.atlas_id as outcome_cohort_id, acd.concept_id as condition_concept_id
+  FROM @results_database_schema.@atlas_cohort_definition_table acd
+  WHERE acd.atlas_cohort_id IN (@atlas_cohort_ids)
+
+  UNION
+
+  SELECT acd.atlas_id as outcome_cohort_id, ca.descendant_concept_id as condition_concept_id
+  FROM @results_database_schema.@atlas_cohort_definition_table acd
+  INNER JOIN @cdm_vocabulary.concept_ancestor ca ON ca.ancestor_concept_id = acd.concept_id
+  WHERE acd.descendants = 1 AND acd.atlas_cohort_id IN (@atlas_cohort_ids)
+  "
+
+  data <- DatabaseConnector::renderTranslateQuerySql(
+    appContext$cdmConnection,
+    sql,
+    cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
+    results_database_schema=appContext$resultsDatabase$schema,
+    atlas_cohort_definition_table=appContext$resultsDatabase$atlasCohorts,
+    atlas_cohort_ids=appContext$custom_outcome_cohort_ids
+  )
+  DatabaseConnector::dbAppendTable(appContext$connection, paste(appContext$short_name, ".outcome_concept"), data)
 }
 
 extractResultsSubset <- function(appContext){
