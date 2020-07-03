@@ -9,7 +9,6 @@ getOutcomeControls <- function(appContext, targetCohortIds, minCohortSize=10) {
     INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
     WHERE r.TARGET_COHORT_ID IN (@target_cohort_ids)
     AND r.calibrated = 0
-    AND o.type_id != 2 -- ATLAS cohorts always excluded
     AND T_CASES >= @min_cohort_size
   "
 
@@ -37,7 +36,6 @@ getExposureControls <- function(appContext, outcomeCohortIds, minCohortSize=10) 
     INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
     WHERE r.OUTCOME_COHORT_ID IN (@outcome_cohort_ids)
     AND r.calibrated = 0
-    AND o.type_id != 2 -- ATLAS cohorts always excluded
     AND T_CASES >= @min_cohort_size
   "
 

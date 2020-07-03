@@ -32,8 +32,8 @@ extractOutcomeCohortNames <- function (appContext) {
         o.short_name AS cohort_name, 
         o.cohort_definition_id % 100 as type_id
       from @results_database_schema.@outcome_cohort_definition_table o
-      LEFT JOIN @results_database_schema.@atlas_cohort_definition_table acd ON acd.atlas_cohort_id = o.cohort_definition_id
-      WHERE acd.atlas_cohort_id IS NULL
+      LEFT JOIN @results_database_schema.@atlas_cohort_definition_table acd ON acd.atlas_id = o.cohort_definition_id
+      WHERE acd.atlas_id IS NULL
       {@outcome_cohort_ids_length} ? {AND o.cohort_definition_id IN (@outcome_cohort_ids)}
     UNION
     -- Only pull specified subset of atlas cohorts
@@ -67,16 +67,17 @@ createOutcomeConceptMapping <- function (appContext) {
 
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema=appContext$short_name)
 
-  sql <- "SELECT acd.atlas_id as outcome_cohort_id, acd.concept_id as condition_concept_id
+  sql <- "
+  SELECT acd.atlas_id as outcome_cohort_id, acd.concept_id as condition_concept_id
   FROM @results_database_schema.@atlas_cohort_definition_table acd
-  WHERE acd.atlas_cohort_id IN (@atlas_cohort_ids)
+  WHERE acd.atlas_id IN (@atlas_cohort_ids)
 
   UNION
 
   SELECT acd.atlas_id as outcome_cohort_id, ca.descendant_concept_id as condition_concept_id
   FROM @results_database_schema.@atlas_cohort_definition_table acd
   INNER JOIN @cdm_vocabulary.concept_ancestor ca ON ca.ancestor_concept_id = acd.concept_id
-  WHERE acd.descendants = 1 AND acd.atlas_cohort_id IN (@atlas_cohort_ids)
+  WHERE acd.descendants = 1 AND acd.atlas_id IN (@atlas_cohort_ids)
   "
 
   data <- DatabaseConnector::renderTranslateQuerySql(
@@ -87,7 +88,7 @@ createOutcomeConceptMapping <- function (appContext) {
     atlas_cohort_definition_table=appContext$resultsDatabase$atlasCohorts,
     atlas_cohort_ids=appContext$custom_outcome_cohort_ids
   )
-  DatabaseConnector::dbAppendTable(appContext$connection, paste(appContext$short_name, ".outcome_concept"), data)
+  DatabaseConnector::dbAppendTable(appContext$connection, paste(appContext$short_name, ".outcome_concept"), unique(data))
 }
 
 extractResultsSubset <- function(appContext){
@@ -326,7 +327,7 @@ metaAnalysis <- function(table) {
 }
 
 performMetaAnalysis <- function(appContext) {
-  library(dplyr)
+  library(dplyr, warn.conflicts = FALSE)
   fullResults <- DatabaseConnector::renderTranslateQuerySql(
     appContext$connection,
     "SELECT * FROM @schema.result WHERE source_id != -99;",
@@ -350,7 +351,9 @@ performMetaAnalysis <- function(appContext) {
 
 buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposures = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
-  DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA IF NOT EXISTS", appContext$short_name))
+  print("Creating schema")
+  DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name))
+  DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA ", appContext$short_name))
   createTables(appContext)
   
   print("Extracting results from CDM data source")
