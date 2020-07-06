@@ -352,7 +352,7 @@ performMetaAnalysis <- function(appContext) {
 buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposures = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   print("Creating schema")
-  DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name))
+  DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
   DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA ", appContext$short_name))
   createTables(appContext)
   
