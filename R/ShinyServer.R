@@ -15,9 +15,23 @@ serverInstance <- function(input, output, session) {
         return (df)
     }
 
-    niceColumnName <- list(SOURCE_NAME = "Database", RR = "Relative Risk", C_AT_RISK = "N Unexposed", T_AT_RISK = "N Exposed",
-    C_PT = "Unexposed time (years)", T_PT = "Exposed time (years)", C_CASES = "Unexposed cases", T_CASES = "Exposed cases",
-    LB_95 = "CI95LB", UB_95 = "CI95UB", P_VALUE = "P", I2 = "I-square")
+    niceColumnName <- list(
+      SOURCE_NAME = "Database",
+      RR = "Relative Risk",
+      CALIBRATED_RR = "Calibrated Relative Risk",
+      C_AT_RISK = "N Unexp",
+      T_AT_RISK = "N Exp",
+      C_PT = "Unexposed time (years)",
+      T_PT = "Exposed time (years)",
+      C_CASES = "Unexposed cases",
+      T_CASES = "Exposed cases",
+      LB_95 = "CI95LB",
+      UB_95 = "CI95UB",
+      CALIBRATED_LB_95 = "calibrated CI95LB",
+      CALIBRATED_UB_95 = "calibrated CI95UB",
+      P_VALUE = "P",
+      CALIBRATED_P_VALUE = "calibrated P"
+    )
 
     niceColumnNameInv <- list()
 
@@ -143,32 +157,22 @@ serverInstance <- function(input, output, session) {
         s$TARGET_COHORT_NAME
     })
 
-    dynamicMetaAnalysisTbl <- reactive({
+    metaAnalysisTbl <- reactive({
         s <- filteredTableSelected()
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
         if (length(outcome)) {
             updateTabsetPanel(session, "mainPanel", "Detail")
-            sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-            uncalibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
-            calibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=1)
-
-            if (nrow(calibratedTable)) {
-                calibratedTable$CALIBRATED = 1
-                uncalibratedTable$CALIBRATED = 0
-                uncalibratedTable$SOURCE_NAME <- paste(uncalibratedTable$SOURCE_NAME, "Uncalibrated")
-                calibratedTable$SOURCE_NAME <- paste(calibratedTable$SOURCE_NAME, "Calibrated")
-                table <- rbind(calibratedTable, uncalibratedTable)
-                return(table[order(table$SOURCE_ID, table$SOURCE_NAME),])
-            }
-            return(uncalibratedTable)
+            sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRowsGrouped.sql", package = "rewardb"))
+            table <- queryDb(sql, treatment = treatment, outcome = outcome)
+            return(table)
         }
         return(data.frame())
     })
 
     fullResultsTable <- function() {
         option = list(columnDefs = list(list(targets = c(8, 11), class = "dt-right")))
-        table3 <- dynamicMetaAnalysisTbl()
+        table3 <- metaAnalysisTbl()
         if(nrow(table3) >= 1) {
             table3$RR[table3$RR > 100] <- NA
             table3$C_PT <- formatC(table3$C_PT, digits = 0, format = "f")
@@ -177,7 +181,11 @@ serverInstance <- function(input, output, session) {
             table3$LB_95 <- formatC(table3$LB_95, digits = 2, format = "f")
             table3$UB_95 <- formatC(table3$UB_95, digits = 2, format = "f")
             table3$P_VALUE <- formatC(table3$P_VALUE, digits = 2, format = "f")
-            table3$I2 <- formatC(table3$I2, digits = 2, format = "f")
+
+            table3$CALIBRATED_RR <- formatC(table3$CALIBRATED_RR, digits = 2, format = "f")
+            table3$CALIBRATED_LB_95 <- formatC(table3$CALIBRATED_LB_95, digits = 2, format = "f")
+            table3$CALIBRATED_UB_95 <- formatC(table3$CALIBRATED_UB_95, digits = 2, format = "f")
+            table3$CALIBRATED_P_VALUE <- formatC(table3$CALIBRATED_P_VALUE, digits = 2, format = "f")
 
             for (n in names(niceColumnName)) {
                 colnames(table3)[colnames(table3) == n] <- niceColumnName[n]
@@ -222,8 +230,31 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+    forestPlotTable <- reactive({
+        s <- filteredTableSelected()
+        treatment <- s$TARGET_COHORT_ID
+        outcome <- s$OUTCOME_COHORT_ID
+        if (length(outcome)) {
+            updateTabsetPanel(session, "mainPanel", "Detail")
+            sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+            uncalibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+            calibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=1)
+
+            if (nrow(calibratedTable)) {
+                calibratedTable$CALIBRATED = 1
+                uncalibratedTable$CALIBRATED = 0
+                uncalibratedTable$SOURCE_NAME <- paste(uncalibratedTable$SOURCE_NAME, "Uncalibrated")
+                calibratedTable$SOURCE_NAME <- paste(calibratedTable$SOURCE_NAME, "Calibrated")
+                table <- rbind(calibratedTable, uncalibratedTable)
+                return(table[order(table$SOURCE_ID, table$SOURCE_NAME),])
+            }
+            return(uncalibratedTable)
+        }
+        return(data.frame())
+    })
+
     output$forestPlot <- renderPlot({
-        df <- dynamicMetaAnalysisTbl()
+        df <- forestPlotTable()
         if (nrow(df)) {
             return(rewardb::forestPlot(df))
         }

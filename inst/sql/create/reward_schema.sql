@@ -41,8 +41,9 @@ CREATE TABLE @schema.outcome (
 DROP TABLE IF EXISTS @schema.outcome_concept;
 -- Maps to CDM condition concept. Many condition concepts may be associated with an outcome cohort
 CREATE TABLE @schema.outcome_concept (
-   outcome_cohort_id BIGINT PRIMARY KEY,
-   condition_concept_id BIGINT
+   outcome_cohort_id BIGINT NOT NULL,
+   condition_concept_id BIGINT NOT NULL,
+   PRIMARY KEY(outcome_cohort_id, condition_concept_id)
 );
 
 DROP TABLE IF EXISTS @schema.cohort_type;
