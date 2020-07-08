@@ -57,8 +57,6 @@ createAtlasReference <- function(connection, config, dataSource, customOutcomeCo
 
 createReferenceTables <- function(connection, config)
   {
-  connection <- DatabaseConnector::connect(config$cdmDataSource)
-
   sql <- SqlRender::readSql(system.file("sql/create", "createReferenceTables.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
@@ -92,12 +90,13 @@ createReferenceTables <- function(connection, config)
 }
 
 
-execute <- function(configFilePath) {
-  # load config
-  base::writeLines("Creating and populating reference tables...")
-  config <- yaml::read_yaml(configFilePath)
-  # createReferenceTables
-  createReferenceTables(connection, config)
+execute <- function (configFilePath) {
+    # load config
+    base::writeLines("Creating and populating reference tables...")
+    config <- yaml::read_yaml(configFilePath)
+    # createReferenceTables
+    connection <- DatabaseConnector::connect(config$cdmDataSource)
+    createReferenceTables(connection, config)
 
   # createCohorts
 
