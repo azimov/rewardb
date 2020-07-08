@@ -1,60 +1,12 @@
 createTargetDefinitions <- function(connection, config) {
-
-  sql <- SqlRender::readSql(system.file("sql/cohorts", "getIngredientsAndATC.sql", package = "rewardb"))
-  ingredients <- DatabaseConnector::renderTranslateQuerySql(
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createIngredientConceptReferences.sql", package = "rewardb"))
+  ingredients <- DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql,
-    vocabulary_database_schema = config$cdmDatabase$vocabularySchema
-  )
-  conceptDefinitions <- ingredients[c("CONCEPT_ID", "CONCEPT_NAME")]
-  conceptDefinitions$ISEXCLUDED <- 0
-  conceptDefinitions$INCLUDEDESCENDANTS <- 1
-  conceptDefinitions$INCLUDEMAPPED <- 0
-  conceptDefinitions$CONCEPTSET_ID <- ingredients$CONCEPT_ID
-
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection = connection,
-    sql = "DELETE FROM @schema.@concept_set_definition_table",
-    schema = config$cdmDatabase$schema,
-    concept_set_definition_table = config$cdmDatabase$conceptSetDefinitionTable
-  )
-  base::writeLines("Inserting concept set definitions")
-  DatabaseConnector::insertTable(
-    connection, 
-    paste(config$cdmDatabase$schema, ".", config$cdmDatabase$conceptSetDefinitionTable), 
-    conceptDefinitions,
-    dropTableIfExists = FALSE,
-    createTable = FALSE,
-    useMppBulkLoad = FALSE, 
-    progressBar = TRUE
-  )
-
-  #### cohort definitions ############################
-  # COHORT_DEFINITION_ID, COHORT_DEFINITION_NAME, SHORT_NAME, DRUG_CONCEPTSET_ID, INDICATION_CONCEPTSET_ID, TARGET_COHORT,SUBGROUP_COHORT, ATC_FLG)
-  # VALUES (1353766000,'New users of propranolol','New users of propranolol',1353766,0,0,0, 0)
-  ingredients$COHORT_DEFINITION_ID <- ingredients$CONCEPT_ID * 1000 #COHORT_DEFINITION_ID
-  colnames(ingredients)[colnames(ingredients) == "CONCEPT_NAME"] <- "COHORT_DEFINITION_NAME"
-  colnames(ingredients)[colnames(ingredients) == "VOCABULARY_ID"] <- "SHORT_NAME"
-  colnames(ingredients)[colnames(ingredients) == "CONCEPT_ID"] <- "DRUG_CONCEPTSET_ID"
-  ingredients$INDICATION_CONCEPTSET_ID <- 0 # Not sure what this is used for but appears to always be 0
-  ingredients$TARGET_COHORT <- 0
-  ingredients$SUBGROUP_COHORT <- 0
-
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection = connection,
-    sql = "DELETE FROM @schema.@cohort_definition_table",
-    schema = config$cdmDatabase$schema,
-    cohort_definition_table = config$cdmDatabase$cohortDefinitionTable
-  )
-  base::writeLines("Inserting target cohort definitions")
-  DatabaseConnector::insertTable(
-    connection,
-    paste(config$cdmDatabase$schema, ".",config$cdmDatabase$cohortDefinitionTable),
-    ingredients,
-    dropTableIfExists = FALSE,
-    createTable = FALSE,
-    useMppBulkLoad = FALSE,
-    progressBar = TRUE
+    vocabulary_database_schema = config$cdmDatabase$vocabularySchema,
+    cohort_database_schema = config$cdmDatabase$schema,
+    concept_set_definition_table = config$cdmDatabase$conceptSetDefinitionTable,
+    cohort_definition_table = config$cdmDatabase$conceptSetDefinitionTable
   )
 }
 
@@ -73,8 +25,7 @@ createAtlasReference <- function(connection, config, dataSource, customOutcomeCo
   )
 }
 
-createReferenceTables <- function(connection, config)
-  {
+createReferenceTables <- function(connection, config) {
   base::writeLines("Removing and inserting references")
   sql <- SqlRender::readSql(system.file("sql/create", "createReferenceTables.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
