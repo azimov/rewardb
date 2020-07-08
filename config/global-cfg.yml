@@ -1,0 +1,46 @@
+cdmDatabase:
+  schema: "scratch.jgilber2"
+  vocabularySchema: "Vocabulary_20200525.dbo"
+  cemSchema: "CEM_V2_0_0_20200226.dbo"
+  cohortDefinitionTable: "rewardb_cohort_definition_dev"
+  outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
+  conceptSetDefinitionTable: "rewardb-conceptset_definition_dev"
+  asurvResultsTable: "rewardb_results_dev"
+
+cdmDataSource:
+  dbms: pdw
+  server: JRDUSAPSCTL01
+  port: 17001
+
+dataSources:
+  CCAE_1151:
+    cdmDatabaseSchema: "CDM_IBM_ccae_v1151.dbo" #this is where we'll pull drug and condition history for patients
+    drugEraSchema: "CDM_IBM_ccae_v1151.reward"
+    cohortTable: "homer_cohort_ccae_v1151" # will be created and saved on scratch.dbo
+    outcomeCohortTable: "homer_outcome_cohort_ccae_v1151" # will be created and saved on scratch.dbo
+    outcomeSummaryTable: "homer_outcome_summary_ccae_v1151" # will be created and saved on scratch.dbo
+    cdmOutcomeCohortSchema: "CDM_IBM_ccae_v1151.ohdsi_results" #schema for user defined cohorts in Atlas
+
+  Optum SES_1156:
+    cdmDatabaseSchema: "CDM_Optum_Extended_SES_v1156.dbo"
+    drugEraSchema: "CDM_Optum_Extended_SES_v1156.reward"
+    cohortTable: "homer_cohort_optum_v1156"
+    outcomeCohortTable: "homer_outcome_cohort_optum_v1156" # Not sure this is needed
+    outcomeSummaryTable: "homer_outcome_summary_optum_v1156" # Not sure this is needed
+    cdmOutcomeCohortSchema: "CDM_Optum_Extended_SES_v1156.ohdsi_results" # Not sure this is needed
+
+  MDCD_1153:
+    cdmDatabaseSchema: "CDM_IBM_MDCD_v1153.dbo"
+    drugEraSchema: "CDM_IBM_MDCD_v1153.reward"
+    cohortTable: "homer_cohort_mdcd_v1153"
+    outcomeCohortTable: "homer_outcome_cohort_mdcd_v1153" # Not sure this is needed
+    outcomeSummaryTable: "homer_outcome_summary_mdcd_v1153" # Not sure this is needed
+    cdmOutcomeCohortSchema: "CDM_IBM_MDCD_v1153.ohdsi_results" # Not sure this is needed
+
+  MDCR_1152:
+    cdmDatabaseSchema: "CDM_IBM_MDCR_v1152.dbo"
+    drugEraSchema: "CDM_IBM_MDCR_v1152.reward"
+    cohortTable: "homer_cohort_mdcr_v1152"
+    outcomeCohortTable: "homer_outcome_cohort_mdcr_v1152" # Not sure this is needed
+    outcomeSummaryTable: "homer_outcome_summary_mdcr_v1152" # Not sure this is needed
+    cdmOutcomeCohortSchema: "CDM_IBM_MDCR_v1152.ohdsi_results" # Not sure this is needed
