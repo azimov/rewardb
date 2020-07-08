@@ -1,5 +1,4 @@
-{DEFAULT @custom_outcome_cohort_list = '(0)'}
-create table #concept_ancestor_grouping with (location=user_db, distribution=replicate) as
+create table #cpt_anc_grp with (location=user_db, distribution=replicate) as
 select
   ca1.ancestor_concept_id
   , ca1.descendant_concept_id
@@ -37,7 +36,7 @@ inner join
 ;
 
 create clustered columnstore index cci_cag1
-  on #concept_ancestor_grouping;
+  on #cpt_anc_grp;
 
 --incident outcomes - first diagnosis, which eventually leads to hospitalization for same outcome
 INSERT INTO @cohort_database_schema.@outcome_cohort_definition_table
@@ -63,7 +62,7 @@ from
     on co1.person_Id = vo1.person_id
     and co1.visit_occurrence_id = vo1.visit_occurrence_id
     and visit_concept_id = 9201
-  inner join #concept_ancestor_grouping ca1
+  inner join #cpt_anc_grp ca1
     on co1.condition_concept_id = ca1.descendant_concept_id
 ) t1
 
@@ -94,7 +93,7 @@ from
   inner join @cdm_database_schema.visit_occurrence vo1
     on co1.person_Id = vo1.person_id
     and co1.visit_occurrence_id = vo1.visit_occurrence_id
-  inner join #concept_ancestor_grouping ca1
+  inner join #cpt_anc_grp ca1
     on co1.condition_concept_id = ca1.descendant_concept_id
 ) t1
 
@@ -102,5 +101,5 @@ inner join @cdm_database_schema.concept c1
   on t1.ancestor_concept_id = c1.concept_id
 ;
 
---truncate table #concept_ancestor_grouping;
---drop table #concept_ancestor_grouping;
+truncate table #cpt_anc_grp;
+drop table #cpt_anc_grp;

@@ -39,23 +39,22 @@ createReferenceTables <- function(connection, config) {
 
   base::writeLines("Inserting ingredient/ATC cohorts")
   createTargetDefinitions(connection, config)
-
+  
+  sql <- SqlRender::readSql(system.file("sql/create", "outcomeCohortDefinitions.sql", package = "rewardb"))
+  
   for (dataSource in config$dataSources) {
-    sql <- SqlRender::readSql(system.file("sql/create", "outcomeCohortDefinitions.sql", package = "rewardb"))
+    
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,
       cdm_database_schema = dataSource$cdmDatabaseSchema,
       cohort_database_schema = config$cdmDatabase$schema,
-      outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
-      cdm_outcome_cohort_schema = dataSource$cdmOutcomeCohortSchema,
-      cdm_outcome_cohort_table = dataSource$cdmOutcomeCohortTable
+      outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
     )
     # TODO - move these to a reference table to allow adding them one by one
-    customOutcomeCohortList <- c(7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822, 7823, 10357, 11073,
-                                 2538, 10593, 10605, 15078, 10607, 11643, 12047)
+    #customOutcomeCohortList <- c(7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822, 7823, 10357, 11073, 2538, 10593, 10605, 15078, 10607, 11643, 12047)
 
-    createAtlasReference(connection, config, dataSource, customOutcomeCohortList)
+    #createAtlasReference(connection, config, dataSource, customOutcomeCohortList)
   }
 }
 
