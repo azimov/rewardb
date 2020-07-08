@@ -1,6 +1,6 @@
 /* CONCEPT SET TABLE */
 IF OBJECT_ID('@cohort_database_schema.@conceptset_definition_table', 'U') IS NOT NULL
-	DROP TABLE @cohort_database_schema.@conceptset_definition_table;
+	DROP TABLE @cohort_database_schema.@conceptset_definition_table CASCADE;
 
 create table @cohort_database_schema.@conceptset_definition_table
 (
@@ -15,7 +15,7 @@ create table @cohort_database_schema.@conceptset_definition_table
 
 /* COHORT DEFINITION TABLE */
 IF OBJECT_ID('@cohort_database_schema.@cohort_definition_table', 'U') IS NOT NULL
-	DROP TABLE @cohort_database_schema.@cohort_definition_table;
+	DROP TABLE @cohort_database_schema.@cohort_definition_table CASCADE;
 
 create table @cohort_database_schema.@cohort_definition_table
 (
@@ -32,7 +32,7 @@ create table @cohort_database_schema.@cohort_definition_table
 
 /* OUTCOME COHORT DEFINITION TABLE */
 IF OBJECT_ID('@cohort_database_schema.@outcome_cohort_definition_table', 'U') IS NOT NULL
-	DROP TABLE @cohort_database_schema.@outcome_cohort_definition_table;
+	DROP TABLE @cohort_database_schema.@outcome_cohort_definition_table CASCADE;
 
 create table @cohort_database_schema.@outcome_cohort_definition_table
 (

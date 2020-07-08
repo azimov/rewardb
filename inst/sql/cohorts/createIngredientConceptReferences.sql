@@ -1,7 +1,7 @@
 DELETE FROM @cohort_database_schema.@concept_set_definition_table;
 INSERT INTO @cohort_database_schema.@concept_set_definition_table (
     CONCEPT_ID,
-    CONCEPT_NAME,
+    CONCEPTSET_NAME,
     CONCEPTSET_ID,
     ISEXCLUDED,
     INCLUDEDESCENDANTS,
@@ -21,10 +21,10 @@ INSERT INTO @cohort_database_schema.@cohort_definition_table (
     INDICATION_CONCEPTSET_ID,
     TARGET_COHORT,
     SUBGROUP_COHORT,
-    ATC_FLAG
+    ATC_FLG
 )
     SELECT DISTINCT
-        CONCEPT_ID * 1000,
+        CAST(CONCEPT_ID AS BIGINT) * 1000,
         CONCEPT_NAME,
         CONCAT(VOCABULARY_ID, ' - ', CONCEPT_NAME),
         CONCEPT_ID,
@@ -34,4 +34,4 @@ INSERT INTO @cohort_database_schema.@cohort_definition_table (
         CASE WHEN vocabulary_id = 'ATC' THEN 1 else 0 END AS ATC_FLAG
     FROM @vocabulary_database_schema.concept
     WHERE (concept_class_id = 'Ingredient' AND vocabulary_id = 'RxNorm' AND standard_concept = 'S')
-    OR (concept_class_id = 'ATC 4th' AND vocabulary_id = 'ATC')`;
+    OR (concept_class_id = 'ATC 4th' AND vocabulary_id = 'ATC');
