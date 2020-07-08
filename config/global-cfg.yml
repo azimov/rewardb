@@ -4,7 +4,7 @@ cdmDatabase:
   cemSchema: "CEM_V2_0_0_20200226.dbo"
   cohortDefinitionTable: "rewardb_cohort_definition_dev"
   outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
-  conceptSetDefinitionTable: "rewardb-conceptset_definition_dev"
+  conceptSetDefinitionTable: "rewardb_conceptset_definition_dev"
   asurvResultsTable: "rewardb_results_dev"
 
 cdmDataSource:

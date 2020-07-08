@@ -1,12 +1,12 @@
 createTargetDefinitions <- function(connection, config) {
 
-  sql <- SqlRender::readSql(system.file("sql/create", "getIngredientsAndATC.sql", package = "rewardb"))
-  ingredients <- SqlRender::renderTranslateQuerySql(
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "getIngredientsAndATC.sql", package = "rewardb"))
+  ingredients <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
-    vocabulary_database_schema = config$vocabularySchema
+    vocabulary_database_schema = config$cdmDatabase$vocabularySchema
   )
-  conceptDefinitions <- ingredients[c("CONCEPT_ID", "CONCEPT_NAME", "CONCEPT_ID")]
+  conceptDefinitions <- ingredients[c("CONCEPT_ID", "CONCEPT_NAME")]
   conceptDefinitions$ISEXCLUDED <- 0
   conceptDefinitions$INCLUDEDESCENDANTS <- 1
   conceptDefinitions$INCLUDEMAPPED <- 0
@@ -15,10 +15,19 @@ createTargetDefinitions <- function(connection, config) {
   DatabaseConnector::renderTranslateExecuteSql(
     connection = connection,
     sql = "DELETE FROM @schema.@concept_set_definition_table",
-    schema = config$schema,
-    concept_set_definition_table = config$conceptSetDefinitionTable
+    schema = config$cdmDatabase$schema,
+    concept_set_definition_table = config$cdmDatabase$conceptSetDefinitionTable
   )
-  DatabaseConnector::insertTable(connection, paste(config$schema, ".", config$conceptSetDefinitionTable), conceptDefinitions)
+  base::writeLines("Inserting concept set definitions")
+  DatabaseConnector::insertTable(
+    connection, 
+    paste(config$cdmDatabase$schema, ".", config$cdmDatabase$conceptSetDefinitionTable), 
+    conceptDefinitions,
+    dropTableIfExists = FALSE,
+    createTable = FALSE,
+    useMppBulkLoad = FALSE, 
+    progressBar = TRUE
+  )
 
   #### cohort definitions ############################
   # COHORT_DEFINITION_ID, COHORT_DEFINITION_NAME, SHORT_NAME, DRUG_CONCEPTSET_ID, INDICATION_CONCEPTSET_ID, TARGET_COHORT,SUBGROUP_COHORT, ATC_FLG)
@@ -34,10 +43,19 @@ createTargetDefinitions <- function(connection, config) {
   DatabaseConnector::renderTranslateExecuteSql(
     connection = connection,
     sql = "DELETE FROM @schema.@cohort_definition_table",
-    schema = config$schema,
-    cohort_definition_table = config$cohortDefinitionTable
+    schema = config$cdmDatabase$schema,
+    cohort_definition_table = config$cdmDatabase$cohortDefinitionTable
   )
-  DatabaseConnector::insertTable(connection, paste(config$schema, ".", config$cohortDefinitionTable), ingredients)
+  base::writeLines("Inserting target cohort definitions")
+  DatabaseConnector::insertTable(
+    connection,
+    paste(config$cdmDatabase$schema, ".",config$cdmDatabase$cohortDefinitionTable),
+    ingredients,
+    dropTableIfExists = FALSE,
+    createTable = FALSE,
+    useMppBulkLoad = FALSE,
+    progressBar = TRUE
+  )
 }
 
 createAtlasReference <- function(connection, config, dataSource, customOutcomeCohortList) {
@@ -47,8 +65,8 @@ createAtlasReference <- function(connection, config, dataSource, customOutcomeCo
     connection,
     sql = sql,
     cdm_database_schema = dataSource$cdmDatabaseSchema,
-    cohort_database_schema = config$schema,
-    outcome_cohort_definition_table = config$outcomeCohortDefinitionTable,
+    cohort_database_schema = config$cdmDatabase$schema,
+    outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
     cdm_outcome_cohort_schema = dataSource$cdmOutcomeCohortSchema,
     cdm_outcome_cohort_table = dataSource$cdmOutcomeCohortTable,
     custom_outcome_cohort_list = customOutcomeCohortList
@@ -57,14 +75,15 @@ createAtlasReference <- function(connection, config, dataSource, customOutcomeCo
 
 createReferenceTables <- function(connection, config)
   {
+  base::writeLines("Removing and inserting references")
   sql <- SqlRender::readSql(system.file("sql/create", "createReferenceTables.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql = sql,
-    cohort_database_schema = config$schema,
-    conceptset_definition_table = config$conceptSetDefinitionTable,
-    cohort_definition_table = config$cohortDefinitionTable,
-    outcome_cohort_definition_table = config$outcomeCohortDefinitionTable
+    cohort_database_schema = config$cdmDatabase$schema,
+    conceptset_definition_table = config$cdmDatabase$conceptSetDefinitionTable,
+    cohort_definition_table = config$cdmDatabase$cohortDefinitionTable,
+    outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
   )
 
   base::writeLines("Inserting ingredient/ATC cohorts")
@@ -76,8 +95,8 @@ createReferenceTables <- function(connection, config)
       connection,
       sql = sql,
       cdm_database_schema = dataSource$cdmDatabaseSchema,
-      cohort_database_schema = config$schema,
-      outcome_cohort_definition_table = config$outcomeCohortDefinitionTable,
+      cohort_database_schema = config$cdmDatabase$schema,
+      outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
       cdm_outcome_cohort_schema = dataSource$cdmOutcomeCohortSchema,
       cdm_outcome_cohort_table = dataSource$cdmOutcomeCohortTable
     )
@@ -90,7 +109,7 @@ createReferenceTables <- function(connection, config)
 }
 
 
-execute <- function (configFilePath) {
+execute <- function (configFilePath="config/global-cfg.yml") {
     # load config
     base::writeLines("Creating and populating reference tables...")
     config <- yaml::read_yaml(configFilePath)
