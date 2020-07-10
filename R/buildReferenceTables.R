@@ -71,9 +71,6 @@ createReferenceTables <- function(connection, config) {
 # Maps condition concepts of interest, any desecdants or if they're excluded from the cohort
 
 addAtlasCohort <- function(connection, config, atlasId) {
-  content <- rewardb::getWebObject(config$webApiUrl, "cohortdefinition", atlasId)
-  cohortDef <- RJSONIO::fromJSON(content$expression)
-
   count <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT COUNT(*) FROM @cohort_database_schema.@atlas_reference_table WHERE cohort_definition_id = @cohort_definition_id",
@@ -83,6 +80,8 @@ addAtlasCohort <- function(connection, config, atlasId) {
   )
 
   if (count == 0) {
+    content <- rewardb::getWebObject(config$webApiUrl, "cohortdefinition", atlasId)
+    cohortDef <- RJSONIO::fromJSON(content$expression)
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = "INSERT INTO @cohort_database_schema.@atlas_reference_table (cohort_definition_id, cohort_name)
@@ -98,6 +97,10 @@ addAtlasCohort <- function(connection, config, atlasId) {
       connection,
       sql=sql,
       cohort_definition_id = content$id,
+      custom_outcome_name = gsub("'","''", content$name),
+      subject_id = "",
+      cohort_start_date = "",
+      cohort_end_data = "",
       cohort_database_schema = config$cdmDatabase$schema,
       outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
     )

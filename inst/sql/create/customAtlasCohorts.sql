@@ -8,8 +8,22 @@ insert into @cohort_database_schema.@outcome_cohort_definition_table
 )
 VALUES (
     @cohort_definition_id,
-    'Custom outcome definition',
-    'Custom outcome definition',
+    @custom_outcome_name,
+    @custom_outcome_name,
     99999999,
     2
+);
+
+INSERT INTO @cohort_database_schema.@outcome_cohort_table
+(
+  cohort_definition_id
+  , subject_id
+  , cohort_start_date
+  , cohort_end_date
 )
+VALUES (
+    @cohort_definition_id,
+    @subject_id,
+    @cohort_start_date,
+    @cohort_end_date,
+);
