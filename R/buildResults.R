@@ -70,62 +70,71 @@ createReferenceTables <- function(connection, config) {
 # Inserts name/id in to custom cohort table
 # Maps condition concepts of interest, any desecdants or if they're excluded from the cohort
 
-addAtlasCohortConcepts <- function(connection, config, atlasId) {
+addAtlasCohort <- function(connection, config, atlasId) {
   content <- rewardb::getWebObject(config$webApiUrl, "cohortdefinition", atlasId)
   cohortDef <- RJSONIO::fromJSON(content$expression)
 
-  DatabaseConnector::renderTranslateExecuteSql(
+  count <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    sql = "INSERT INTO @cohort_database_schema.@atlas_reference_table (cohort_definition_id, cohort_name)
-                                   values (@cohort_definition_id, '@cohort_name')",
+    "SELECT COUNT(*) FROM @cohort_database_schema.@atlas_reference_table WHERE cohort_definition_id = @cohort_definition_id",
     cohort_database_schema = config$cdmDatabase$schema,
     atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
-    cohort_definition_id = cohortDef$id,
-    cohort_name = cohortDef$name
+    cohort_definition_id = cohortDef$id
   )
 
-  sql <- "insert into @cohort_database_schema.@outcome_cohort_definition_table
-  (
-    cohort_definition_id,
-    cohort_definition_name,
-    short_name,
-    CONCEPTSET_ID,
-    outcome_type,
-  )
-  VALUES (
-    @cohort_definition_id,
-    'Custom outcome definition',
-    'Custom outcome definition',
-    99999999,
-    2
-  )"
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection,
-    sql=sql,
-    cohort_definition_id = cohortDef$id,
-    cohort_database_schema = config$cdmDatabase$schema,
-    outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
-  )
+  if (count == 0) {
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection,
+      sql = "INSERT INTO @cohort_database_schema.@atlas_reference_table (cohort_definition_id, cohort_name)
+                                     values (@cohort_definition_id, '@cohort_name')",
+      cohort_database_schema = config$cdmDatabase$schema,
+      atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
+      cohort_definition_id = cohortDef$id,
+      cohort_name = cohortDef$name
+    )
 
-  results <- data.frame()
-  for (conceptSet in cohortDef$ConceptSets) {
-    for (item in conceptSet$expression$items) {
+    SqlRender::readSql(system.file("sql/create", "customAtlasCohorts.sql", package = "rewardb"))
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection,
+      sql=sql,
+      cohort_definition_id = cohortDef$id,
+      cohort_database_schema = config$cdmDatabase$schema,
+      outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
+    )
 
-      if (item$concept$DOMAIN_ID == "Condition" && !item$isExcluded) {
-
-        results <- rbind(results, data.frame(
-          ATLAS_ID = atlasId,
-          CONCEPT_ID = item$concept$CONCEPT_ID,
-          IS_EXCLUDED = item$isExcluded,
-          include_descendants = item$includeDescendants
-        )
-        )
+    results <- data.frame()
+    for (conceptSet in cohortDef$ConceptSets) {
+      for (item in conceptSet$expression$items) {
+        if (item$concept$DOMAIN_ID == "Condition" && !item$isExcluded) {
+          results <- rbind(results, data.frame(
+            ATLAS_ID = atlasId,
+            CONCEPT_ID = item$concept$CONCEPT_ID,
+            IS_EXCLUDED = item$isExcluded,
+            include_descendants = item$includeDescendants
+          )
+          )
+        }
       }
     }
+    tableName <- paste0(config$cdmDatabase$schema, ".", config$cdmDatabase$atlasConceptReferenceTable)
+    DatabaseConnector::dbAppendTable(connection, tableName, results)
+  } else {
+    print(paste("COHORT", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))
   }
-  tableName <- paste0(config$cdmDatabase$schema, ".", config$cdmDatabase$atlasConceptReferenceTable)
-  DatabaseConnector::dbAppendTable(connection, tableName, results)
+}
 
+removeAtlasCohort <- function (connection, config, atlasId) {
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql = "DELETE FROM @cohort_database_schema.@outcome_cohort_definition_table WHERE cohort_definition_id = @cohort_definition_id;
+    DELETE FROM @cohort_database_schema.@atlas_concept_reference WHERE cohort_definition_id = @cohort_definition_id;
+    DELETE FROM @cohort_database_schema.@atlas_reference_table WHERE cohort_definition_id = @cohort_definition_id;",
+    cohort_database_schema = config$cdmDatabase$schema,
+    outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
+    cohort_definition_id = atlasId,
+    atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
+    atlas_concept_reference = config$cdmDatabase$atlasConceptReferenceTable
+  )
 }
 
 execute <- function(configFilePath = "config/global-cfg.yml") {
@@ -138,6 +147,7 @@ execute <- function(configFilePath = "config/global-cfg.yml") {
   connection <- DatabaseConnector::connect(config$cdmDataSource)
   createReferenceTables(connection, config)
 
+  addAtlasCohort(connection, config, customOutcomeCohortList)
   # createCohorts
   # createOutcomeCohorts
   # createOutcomeSummary
