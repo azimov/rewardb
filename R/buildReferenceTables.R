@@ -138,8 +138,6 @@ removeAtlasCohort <- function (connection, config, atlasId) {
 }
 
 buildReferenceTables <- function(configFilePath = "config/global-cfg.yml") {
-  customOutcomeCohortList <- c(7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822, 7823,
-                               10357, 11073, 2538, 10593, 10605, 15078, 10607, 11643, 12047)
   # load config
   base::writeLines("Creating and populating reference tables...")
   config <- yaml::read_yaml(configFilePath)
@@ -147,9 +145,9 @@ buildReferenceTables <- function(configFilePath = "config/global-cfg.yml") {
   connection <- DatabaseConnector::connect(config$cdmDataSource)
   createReferenceTables(connection, config)
 
-  for (i in customOutcomeCohortList) {
-    removeAtlasCohort(connection, config, i)
-    addAtlasCohort(connection, config, i)
+  for (aid in conifg$maintinedAtlasCohortList) {
+    removeAtlasCohort(connection, config, aid)
+    addAtlasCohort(connection, config, aid)
   }
   # createCohorts
   # createOutcomeCohorts
