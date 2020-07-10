@@ -12,4 +12,4 @@ VALUES (
     'Custom outcome definition',
     99999999,
     2
-)"
+)

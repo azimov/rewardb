@@ -14,7 +14,9 @@ Imports:
     ggplot2,
     scales,
     DT,
-    EmpiricalCalibration
+    EmpiricalCalibration,
+    yaml,
+    RJSONIO
 Suggests:
     doParallel,
     foreach,

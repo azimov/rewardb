@@ -79,7 +79,7 @@ addAtlasCohort <- function(connection, config, atlasId) {
     "SELECT COUNT(*) FROM @cohort_database_schema.@atlas_reference_table WHERE cohort_definition_id = @cohort_definition_id",
     cohort_database_schema = config$cdmDatabase$schema,
     atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
-    cohort_definition_id = cohortDef$id
+    cohort_definition_id = content$id
   )
 
   if (count == 0) {
@@ -89,15 +89,15 @@ addAtlasCohort <- function(connection, config, atlasId) {
                                      values (@cohort_definition_id, '@cohort_name')",
       cohort_database_schema = config$cdmDatabase$schema,
       atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
-      cohort_definition_id = cohortDef$id,
-      cohort_name = cohortDef$name
+      cohort_definition_id = content$id,
+      cohort_name = gsub("'","''", content$name)
     )
 
-    SqlRender::readSql(system.file("sql/create", "customAtlasCohorts.sql", package = "rewardb"))
+    sql <- SqlRender::readSql(system.file("sql/create", "customAtlasCohorts.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql=sql,
-      cohort_definition_id = cohortDef$id,
+      cohort_definition_id = content$id,
       cohort_database_schema = config$cdmDatabase$schema,
       outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
     )
@@ -105,9 +105,9 @@ addAtlasCohort <- function(connection, config, atlasId) {
     results <- data.frame()
     for (conceptSet in cohortDef$ConceptSets) {
       for (item in conceptSet$expression$items) {
-        if (item$concept$DOMAIN_ID == "Condition" && !item$isExcluded) {
+        if (item$concept$DOMAIN_ID == "Condition") {
           results <- rbind(results, data.frame(
-            ATLAS_ID = atlasId,
+            COHORT_DEFINITION_ID = content$id,
             CONCEPT_ID = item$concept$CONCEPT_ID,
             IS_EXCLUDED = item$isExcluded,
             include_descendants = item$includeDescendants
@@ -142,12 +142,15 @@ execute <- function(configFilePath = "config/global-cfg.yml") {
                                10357, 11073, 2538, 10593, 10605, 15078, 10607, 11643, 12047)
   # load config
   base::writeLines("Creating and populating reference tables...")
-  config <- yaml::read_yaml(configFilePath)
+  config <- yaml::read_yaml("config/global-cfg.yml")
   # createReferenceTables
   connection <- DatabaseConnector::connect(config$cdmDataSource)
   createReferenceTables(connection, config)
 
-  addAtlasCohort(connection, config, customOutcomeCohortList)
+  for (i in customOutcomeCohortList) {
+    removeAtlasCohort(connection, config, i)
+    addAtlasCohort(connection, config, i)
+  }
   # createCohorts
   # createOutcomeCohorts
   # createOutcomeSummary
