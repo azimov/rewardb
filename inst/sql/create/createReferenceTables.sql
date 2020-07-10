@@ -1,6 +1,7 @@
-DROP TABLE @cohort_database_schema.@conceptset_definition_table;
-DROP TABLE @cohort_database_schema.@cohort_definition_table;
-DROP TABLE @cohort_database_schema.@outcome_cohort_definition_table;
+/* CONCEPT SET TABLE */
+IF OBJECT_ID('@cohort_database_schema.@conceptset_definition_table', 'U') IS NOT NULL
+	DROP TABLE @cohort_database_schema.@conceptset_definition_table;
+
 create table @cohort_database_schema.@conceptset_definition_table
 (
 	CONCEPTSET_ID bigint,
@@ -11,6 +12,11 @@ create table @cohort_database_schema.@conceptset_definition_table
 	includeMapped bit
 ) with (distribution=replicate)
 ;
+
+/* COHORT DEFINITION TABLE */
+IF OBJECT_ID('@cohort_database_schema.@cohort_definition_table', 'U') IS NOT NULL
+	DROP TABLE @cohort_database_schema.@cohort_definition_table;
+
 create table @cohort_database_schema.@cohort_definition_table
 (
 	cohort_definition_id bigint
@@ -23,6 +29,10 @@ create table @cohort_database_schema.@cohort_definition_table
 	, ATC_flg int           /* 1- exposure is ATC 4th level, 0-exposure is ingredient */
 ) with (distribution=replicate)
 ;
+
+/* OUTCOME COHORT DEFINITION TABLE */
+IF OBJECT_ID('@cohort_database_schema.@outcome_cohort_definition_table', 'U') IS NOT NULL
+	DROP TABLE @cohort_database_schema.@outcome_cohort_definition_table;
 
 create table @cohort_database_schema.@outcome_cohort_definition_table
 (
