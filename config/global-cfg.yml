@@ -20,6 +20,7 @@ cdmDataSource:
 
 dataSources:
   CCAE_1151:
+    database: "CDM_IBM_ccae_v1151"
     cdmDatabaseSchema: "CDM_IBM_ccae_v1151.dbo" #this is where we'll pull drug and condition history for patients
     drugEraSchema: "CDM_IBM_ccae_v1151.reward"
     cohortTable: "homer_cohort_ccae_v1151" # will be created and saved on scratch.dbo
@@ -28,6 +29,7 @@ dataSources:
     cdmOutcomeCohortSchema: "CDM_IBM_ccae_v1151.ohdsi_results" #schema for user defined cohorts in Atlas
 
   Optum SES_1156:
+    database: "CDM_Optum_Extended_SES_v1156"
     cdmDatabaseSchema: "CDM_Optum_Extended_SES_v1156.dbo"
     drugEraSchema: "CDM_Optum_Extended_SES_v1156.reward"
     cohortTable: "homer_cohort_optum_v1156"
@@ -36,6 +38,7 @@ dataSources:
     cdmOutcomeCohortSchema: "CDM_Optum_Extended_SES_v1156.ohdsi_results" # Not sure this is needed
 
   MDCD_1153:
+    database: "CDM_IBM_MDCD_v1153"
     cdmDatabaseSchema: "CDM_IBM_MDCD_v1153.dbo"
     drugEraSchema: "CDM_IBM_MDCD_v1153.reward"
     cohortTable: "homer_cohort_mdcd_v1153"
@@ -44,6 +47,7 @@ dataSources:
     cdmOutcomeCohortSchema: "CDM_IBM_MDCD_v1153.ohdsi_results" # Not sure this is needed
 
   MDCR_1152:
+    database: "CDM_IBM_MDCR_v1152"
     cdmDatabaseSchema: "CDM_IBM_MDCR_v1152.dbo"
     drugEraSchema: "CDM_IBM_MDCR_v1152.reward"
     cohortTable: "homer_cohort_mdcr_v1152"
