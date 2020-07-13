@@ -60,9 +60,6 @@ createReferenceTables <- function(connection, config) {
       cohort_database_schema = config$cdmDatabase$schema,
       outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
     )
-    # TODO - move these to a reference table to allow adding them one by one
-
-    #createAtlasReference(connection, config, dataSource, customOutcomeCohortList)
   }
 }
 
@@ -92,15 +89,12 @@ addAtlasCohort <- function(connection, config, atlasId) {
       cohort_name = gsub("'","''", content$name)
     )
 
-    sql <- SqlRender::readSql(system.file("sql/create", "customAtlasCohorts.sql", package = "rewardb"))
+    sql <- SqlRender::readSql(system.file("sql/create", "customAtlasCohortsConcepts.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql=sql,
       cohort_definition_id = content$id,
       custom_outcome_name = gsub("'","''", content$name),
-      subject_id = "",
-      cohort_start_date = "",
-      cohort_end_data = "",
       cohort_database_schema = config$cdmDatabase$schema,
       outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
     )
@@ -138,6 +132,16 @@ removeAtlasCohort <- function (connection, config, atlasId) {
     atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
     atlas_concept_reference = config$cdmDatabase$atlasConceptReferenceTable
   )
+
+  for (dataSource in config$dataSources) {
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection,
+        sql = "DELETE FROM @cohort_database_schema.@outcome_cohort_table WHERE cohort_definition_id = @cohort_definition_id",
+        cohort_definition_id = atlasId,
+        cohort_database_schema = config$cdmDatabase$schema,
+        outcome_cohort_table = dataSource$outcomeCohortTable
+      )
+    }
 }
 
 buildReferenceTables <- function(configFilePath = "config/global-cfg.yml") {

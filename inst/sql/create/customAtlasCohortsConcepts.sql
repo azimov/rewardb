@@ -14,16 +14,3 @@ VALUES (
     2
 );
 
-INSERT INTO @cohort_database_schema.@outcome_cohort_table
-(
-  cohort_definition_id
-  , subject_id
-  , cohort_start_date
-  , cohort_end_date
-)
-VALUES (
-    @cohort_definition_id,
-    @subject_id,
-    @cohort_start_date,
-    @cohort_end_date,
-);
