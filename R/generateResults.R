@@ -80,14 +80,13 @@ batchScc <- function(connection, config, dataSource, batchSize = 100) {
   }
 }
 
-# Add an individual atlas outcome to the results set
-
-addCustomOutcome <- function(connection, config, dataSource, outcomeId, batchSize = 1000) {
+# Add an individual atlas outcome (or outcomes) to the results set
+addCustomOutcome <- function(connection, config, dataSource, outcomeIds, batchSize = 1000) {
   exposureIds <- getAllExposureIds(connection, config)
   eIndex <- 1
   while (eIndex < length(exposureIds)) {
     eEnd <- min(eIndex + batchSize - 1, length(exposureIds))
-    sccSummary <- runScc(config, dataSource, exposureIds[eIndex:eEnd], outcomeId)
+    sccSummary <- runScc(config, dataSource, exposureIds[eIndex:eEnd], outcomeIds)
     DatabaseConnector::dbAppendTable(connection, getResultsDatabaseTableName(config, dataSource), sccSummary)
     eIndex <- eIndex + batchSize
   }
