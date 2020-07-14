@@ -143,26 +143,3 @@ removeAtlasCohort <- function (connection, config, atlasId) {
       )
     }
 }
-
-buildReferenceTables <- function(configFilePath = "config/global-cfg.yml") {
-  # load config
-  base::writeLines("Creating and populating reference tables...")
-  config <- yaml::read_yaml(configFilePath)
-  # createReferenceTables
-  connection <- DatabaseConnector::connect(config$cdmDataSource)
-  createReferenceTables(connection, config)
-
-  for (aid in conifg$maintinedAtlasCohortList) {
-    removeAtlasCohort(connection, config, aid)
-    addAtlasCohort(connection, config, aid)
-  }
-  # createCohorts
-  # createOutcomeCohorts
-  # createOutcomeSummary
-  # run SCC
-  # run SCCS
-}
-
-# Combine results
-
-# compile results

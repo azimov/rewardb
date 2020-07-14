@@ -51,15 +51,13 @@ createOutcomeCohorts <- function(connection, config) {
   }
 }
 
-# This requires the cohorts to have been generated in atlas
-# TODO: check if there is a way to see if this has happened in web API
-addCustomOutcomes <- function (connection, config) {
+# TODO: This requires the cohorts to have been generated in atlas, check if there is a way to see if this has happened in web API
+addCustomOutcomes <- function (connection, config, atlasId) {
     sql <- SqlRender::readSql(system.file("sql/create", "customAtlasCohorts.sql", package = "rewardb"))
     for (dataSource in config$dataSources) {
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = sql,
-        cohort_definition_id = content$id,
         cdm_outcome_cohort_schema = dataSource$cdmOutcomeCohortSchema,
         cohort_database_schema = config$cdmDatabase$schema,
         outcome_cohort_table = dataSource$outcomeCohortTable
