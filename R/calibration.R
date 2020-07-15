@@ -99,7 +99,7 @@ getUncalibratedAtlasCohorts <- function(appContext) {
   return(positives)
 }
 
-computeCalibratedRows <- function (interest, negatives, calibrationType = 1) {
+computeCalibratedRows <- function (interest, negatives, idCol, calibrationType = 1) {
   nullDist <- EmpiricalCalibration::fitNull(logRr = log(negatives$RR), seLogRr = negatives$SE_LOG_RR)
   calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(interest$RR), interest$SE_LOG_RR)
   errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
@@ -108,7 +108,6 @@ computeCalibratedRows <- function (interest, negatives, calibrationType = 1) {
   # Row matches fields in the database excluding the ids, used in dplyr, group_by with keep_true
   result <- data.frame(
       CALIBRATED = calibrationType,
-      OUTCOME_COHORT_ID = interest$OUTCOME_COHORT_ID,
       P_VALUE = calibratedPValue,
       UB_95 = exp(ci$logUb95Rr),
       LB_95 = exp(ci$logLb95Rr),
@@ -122,6 +121,8 @@ computeCalibratedRows <- function (interest, negatives, calibrationType = 1) {
       T_AT_RISK = interest$T_AT_RISK,
       STUDY_DESIGN = interest$STUDY_DESIGN
   )
+
+  result[,idCol] <- interest[,idCol]
   return(result)
 }
 
@@ -141,7 +142,7 @@ calibrateTargets <- function(appContext, targetCohortIds) {
       controlOutcomes$OUTCOME_TYPE == .x$OUTCOME_TYPE[1] &
       controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
       controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
-    ]), .keep=TRUE)
+    ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
@@ -166,7 +167,7 @@ calibrateOutcomes <- function(appContext) {
       controlExposures$OUTCOME_TYPE == .x$OUTCOME_TYPE[1] &
       controlExposures$OUTCOME_COHORT_ID == .x$OUTCOME_COHORT_ID[1] &
       controlExposures$SOURCE_ID == .x$SOURCE_ID[1],
-    ]), .keep=TRUE)
+    ], idCol = "TARGET_COHORT_ID"), .keep=TRUE)
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
@@ -191,7 +192,7 @@ calibrateCustomCohorts <- function(appContext, targetCohortIds) {
       controlOutcomes$OUTCOME_TYPE == 0 &
       controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
       controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
-    ]), .keep=TRUE)
+    ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
 
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
@@ -206,7 +207,7 @@ calibrateOutcomesCustomCohorts <- function(appContext) {
   controlExposures <- getExposureControls(appContext, appContext$custom_outcome_cohort_ids)
   positives <- getUncalibratedAtlasCohorts(appContext)
 
-  print(paste("calibrating", nrow(positives) ,"outcomes"))
+  print(paste("calibrating", nrow(positives) ,"exposures"))
   library(dplyr)
 
   # Get all outcomes for a given target, source for outcome type 0
@@ -216,7 +217,7 @@ calibrateOutcomesCustomCohorts <- function(appContext) {
     group_modify(~ computeCalibratedRows(.x, controlExposures[
       controlExposures$OUTCOME_COHORT_ID == .x$OUTCOME_COHORT_ID[1] &
       controlExposures$SOURCE_ID == .x$SOURCE_ID[1],
-    ]), .keep=TRUE)
+    ], idCol = "TARGET_COHORT_ID"), .keep=TRUE)
 
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
