@@ -1,0 +1,26 @@
+name: Depression outcomes
+short_name: depression_outcomes
+description: ''
+outcome_concept_ids: [4151170]
+custom_outcome_cohort_ids: [10357, 7543]
+target_concept_ids: ~
+connectionDetails:
+  dbms: "postgresql"
+  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
+  port: 5432
+  user: "reward_admin"
+  password: ""
+
+resultsDatabase:
+  schema: "scratch.dbo"
+  cohortDefinitionTable: "homer_cohort_definition_May2020"
+  outcomeCohortDefinitionTable: "homer_outcome_cohort_definition_May2020"
+  asurvResultsTable: "homer_AllbyAll_results_May2020"
+  cemSchema: "CEM_V2_0_0_20200226.dbo"
+  negativeControlTable: "matrix_summary"
+
+  cdmDataSource:
+    dbms: pdw
+    server: JRDUSAPSCTL01
+    port: 17001
+
