@@ -120,7 +120,7 @@ extractResultsSubset <- function(appContext){
   resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
                                                            target_cohort_ids = targetCohorts,
                                                            target_cohort_ids_length = length(targetCohorts)  > 0,
-                                                           outcome_cohort_ids = outcomeCohortIds,
+                                                           outcome_cohort_ids = append(outcomeCohortIds, appContext$custom_outcome_cohort_ids),
                                                            outcome_cohort_ids_length = length(outcomeCohortIds)  > 0,
                                                            scca_results = appContext$resultsDatabase$asurvResultsTable,
                                                            results_database_schema = appContext$resultsDatabase$schema)
@@ -233,7 +233,7 @@ performMetaAnalysis <- function(appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, data.frame(results))
 }
 
-buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposures = FALSE) {
+buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateOutcomes = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   print("Creating schema")
   DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
