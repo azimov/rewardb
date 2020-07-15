@@ -1,0 +1,26 @@
+name: 'IL-17 inhibitors'
+short_name: Il17
+description: 'Dashboard for all outcomes for IL-17 inhibitor exposures'
+outcome_concept_ids: ~
+custom_outcome_cohort_ids: [7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822, 7823, 10357,11073, 2538, 10593, 10605, 15078, 10607, 11643]
+target_concept_ids: [45892883, 1592513, 35603563]
+connectionDetails:
+  dbms: "postgresql"
+  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
+  port: 5432
+  user: "reward_admin"
+
+resultsDatabase:
+  schema: "scratch.dbo"
+  vocabularySchema: "Vocabulary_20200525.dbo"
+  cohortDefinitionTable: "homer_cohort_definition_May2020"
+  outcomeCohortDefinitionTable: "homer_outcome_cohort_definition_May2020"
+  asurvResultsTable: "homer_AllbyAll_results_May2020"
+  cemSchema: "CEM_V2_0_0_20200226.dbo"
+  negativeControlTable: "matrix_summary"
+  atlasCohorts: "rewardb_atlas_cohorts"
+
+  cdmDataSource:
+    dbms: pdw
+    server: JRDUSAPSCTL01
+    port: 17001
