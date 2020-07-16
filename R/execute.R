@@ -1,7 +1,12 @@
 #'@export
-fullExecution <- function(configFilePath = "config/global-cfg.yml",
-                          createReferences = TRUE,
-                          addDefaultAtlasCohorts = TRUE) {
+fullExecution <- function(
+  configFilePath = "config/global-cfg.yml",
+  createReferences = TRUE,
+  addDefaultAtlasCohorts = TRUE,
+  .createExposureCohorts = TRUE,
+  .createOutcomeCohorts = TRUE,
+  .generateSummaryTables = TRUE
+) {
   # load config
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
@@ -21,16 +26,26 @@ fullExecution <- function(configFilePath = "config/global-cfg.yml",
       insertAtlasCohort(connection, config, aid)
     }
   }
+ 
+  if (.createExposureCohorts) {
+    base::writeLines("Creating exposure cohorts")
+    createCohorts(connection, config)
+  }
   # NOT tested from here
-  base::writeLines("Creating exposure cohorts")
-  createCohorts(connection, config)
-  base::writeLines("Creating outcome cohorts")
-  createOutcomeCohorts(connection, config)
+  if (.createOutcomeCohorts) {
+    base::writeLines("Creating outcome cohorts")
+    createOutcomeCohorts(connection, config)
+  }
+
+  # Always runs as this checks for null entries
   base::writeLines("Creating custom outcome cohorts")
   addCustomOutcomes(connection, config)
   # generate summary tables
-  base::writeLines("Generating cohort summary tables")
-  createSummaryTables(connection, config)
+  if (.generateSummaryTables) {
+    base::writeLines("Generating cohort summary tables")
+    createSummaryTables(connection, config)
+  }
+
   base::writeLines("Generating fresh scc results tables")
   createResultsTables(connection, config)
   # run SCC

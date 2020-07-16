@@ -1,5 +1,3 @@
-{DEFAULT @custom_outcome_cohort_list = '(0)'}
-
 create table #concept_ancestor_grouping with (location = user_db, distribution = replicate) as
 select
   ca1.ancestor_concept_id
