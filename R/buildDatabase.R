@@ -151,13 +151,31 @@ addCemEvidence <- function(appContext) {
   DatabaseConnector::insertTable(appContext$cdmConnection, "#outcome_nc_tmp", outcomeIds, tempTable=TRUE)
   DatabaseConnector::insertTable(appContext$cdmConnection, "#target_nc_tmp", targetIds, tempTable=TRUE)
 
+
   sql <- SqlRender::readSql(system.file("sql/queries", "cemSummary.sql", package = "rewardb"))
+  # First, method of mapping evidence at the normal level
   evidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
     cdmConnection,
     sql,
     schema = appContext$resultsDatabase$cemSchema,
+    vocab_schema = appContext$resultsDatabase$vocabularySchema,
     summary_table = appContext$resultsDatabase$negativeControlTable
   )
+
+  outcomeIds$counts <- lappay(outcomeIds$CONDITION_CONCEPT_ID, function (id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
+
+  if (nrow(outcomeIds[outcomeIds$counts == 0, ])) {
+    # Only if we can't map evidence, go up to the level of parent of concept id
+    sql <- SqlRender::readSql(system.file("sql/queries", "cemSummaryParents.sql", package = "rewardb"))
+    parentLevelEvidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
+      cdmConnection,
+      sql,
+      schema = appContext$resultsDatabase$cemSchema,
+      summary_table = appContext$resultsDatabase$negativeControlTable,
+      outcome_concepts_of_interest = outcomeIds[outcomeIds$counts == 0, ]$CONDITION_CONCEPT_ID
+    )
+    evidenceConcepts <- rbind(evidenceConcepts, parentLevelEvidenceConcepts)
+  }
   print(paste("Found ", nrow(evidenceConcepts), "mappings"))
 
   DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", evidenceConcepts, tempTable=TRUE)
