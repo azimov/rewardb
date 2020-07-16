@@ -6,7 +6,7 @@ createCohorts <- function(connection, config) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,
-      cohort_database_schema = cohort_database_schema = config$cdmDatabase$schema,
+      cohort_database_schema = config$cdmDatabase$schema,
       cohort_table = dataSource$cohortTable
     )
 
@@ -29,13 +29,6 @@ createOutcomeCohorts <- function(connection, config) {
   base::writeLines("Creating outcome cohorts...")
 
   for (dataSource in config$dataSources) {
-    sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortTable.sql", package = "rewardb"))
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql = sql,
-      cohort_database_schema = config$cdmDatabase$schema,
-      outcome_cohort_table = dataSource$outcomeCohortTable
-    )
     sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
 
     DatabaseConnector::renderTranslateExecuteSql(

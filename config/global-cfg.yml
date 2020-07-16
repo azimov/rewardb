@@ -25,7 +25,7 @@ dataSources:
     sourceId: 11
     database: "CDM_IBM_ccae_v1151"
     cdmDatabaseSchema: "CDM_IBM_ccae_v1151.dbo" #this is where we'll pull drug and condition history for patients
-    drugEraSchema: "CDM_IBM_ccae_v1151.reward_dev"
+    drugEraSchema: "CDM_IBM_ccae_v1151.reward"
     cohortTable: "homer_cohort_ccae_v1151_dev" # will be created and saved on scratch.dbo
     outcomeCohortTable: "homer_outcome_cohort_ccae_v1151_dev" # will be created and saved on scratch.dbo
     outcomeSummaryTable: "homer_outcome_summary_ccae_v1151_dev" # will be created and saved on scratch.dbo

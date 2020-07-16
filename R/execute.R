@@ -1,16 +1,27 @@
-fullExecution <- function(configFilePath = "config/global-cfg.yml") {
+#'@export
+fullExecution <- function(configFilePath = "config/global-cfg.yml",
+                          createReferences = TRUE,
+                          addDefaultAtlasCohorts = TRUE) {
   # load config
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
 
-  base::writeLines("Creating and populating reference tables...")
-  createReferenceTables(connection, config)
-
-  base::writeLines("Adding maintained atlas cohorts from config")
-  for (aid in conifg$maintinedAtlasCohortList) {
-    removeAtlasCohort(connection, config, aid)
-    addAtlasCohort(connection, config, aid)
+  if (createReferences) {
+    base::writeLines("Creating and populating reference tables...")
+    createReferenceTables(connection, config)
   }
+
+  if (length(config$maintinedAtlasCohortList) & addDefaultAtlasCohorts) {
+    base::writeLines(paste("removing atlas cohort", config$maintinedAtlasCohortList))
+    removeAtlasCohort(connection, config, config$maintinedAtlasCohortList)
+    base::writeLines("Adding maintained atlas cohorts from config")
+
+    for (aid in config$maintinedAtlasCohortList) {
+      base::writeLines(paste("adding cohort", aid))
+      insertAtlasCohort(connection, config, aid)
+    }
+  }
+  # NOT tested from here
   base::writeLines("Creating exposure cohorts")
   createCohorts(connection, config)
   base::writeLines("Creating outcome cohorts")
@@ -38,7 +49,7 @@ addAtlasCohort <- function(configFilePath = "config/global-cfg.yml", atlasId, re
   if (removeExisting) {
     removeAtlasCohort(connection, config, atlasId)
   }
-  addAtlasCohort(connection, config, atlasId)
+  insertAtlasCohort(connection, config, atlasId)
 
   # Only adds where null entries are dound in the table so doesn't need an id
   addCustomOutcomes(connection, config)
