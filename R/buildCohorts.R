@@ -42,21 +42,24 @@ createOutcomeCohorts <- function(connection, config) {
   }
 }
 
-# TODO: This requires the cohorts to have been generated in atlas, check if there is a way to see if this has happened in web API
-addCustomOutcomes <- function (connection, config, atlasId) {
-    sql <- SqlRender::readSql(system.file("sql/create", "customAtlasCohorts.sql", package = "rewardb"))
+addAtlasOutcomeCohort <- function (connection, config, atlasId) {
+    cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, config$webApiUrl)
+    sql <- ROhdsiWebApi::getCohortDefinitionSql(cohortDefinition, config$webApiUrl)
+
+    base::writeLines("Generating cohort",  atlasId, "from ATLAS SQL definition")
     for (dataSource in config$dataSources) {
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = sql,
-        cdm_outcome_cohort_schema = dataSource$cdmOutcomeCohortSchema,
-        cohort_database_schema = config$cdmDatabase$schema,
-        outcome_cohort_table = dataSource$outcomeCohortTable
+        cdm_database_schema = dataSource$cdmDatabaseSchema,
+        vocabulary_schema = config$cdmDatabase$vocabularySchema,
+        target_database_schema = config$cdmDatabase$schema,
+        target_cohort_table = dataSource$cohortTable
       )
     }
 }
 
-createCustomDrugEras <- function (connection, config, atlasId) {
+createCustomDrugEras <- function (connection, config) {
     sql <- SqlRender::readSql(system.file("sql/create", "customDrugEra.sql", package = "rewardb"))
     for (dataSource in config$dataSources) {
       DatabaseConnector::renderTranslateExecuteSql(

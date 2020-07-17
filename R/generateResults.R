@@ -81,7 +81,7 @@ batchScc <- function(connection, config, dataSource, batchSize = 100) {
 }
 
 # Add an individual atlas outcome (or outcomes) to the results set
-addCustomOutcome <- function(connection, config, dataSource, outcomeIds, batchSize = 1000) {
+generateCustomOutcomeResult <- function(connection, config, dataSource, outcomeIds, batchSize = 1000) {
   exposureIds <- getAllExposureIds(connection, config)
   eIndex <- 1
   while (eIndex < length(exposureIds)) {

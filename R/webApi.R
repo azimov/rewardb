@@ -1,4 +1,5 @@
 # Hit a web api REST endpoint
+# TODO: replace with ROhdsiWebApi calls
 #'@export
 getWebObject <- function(webApiUrl, resource, id) {
   definitionUrl <- URLencode(paste0(webApiUrl, "/", resource, "/", id))
@@ -11,7 +12,7 @@ getWebObject <- function(webApiUrl, resource, id) {
 # Adds atlas cohort to db reference, from web api
 # Inserts name/id in to custom cohort table
 # Maps condition concepts of interest, any desecdants or if they're excluded from the cohort
-insertAtlasCohort <- function(connection, config, atlasId) {
+insertAtlasCohortRef <- function(connection, config, atlasId) {
 
   base::writeLines(paste("Checking if cohort already exists", atlasId))
   count <- DatabaseConnector::renderTranslateQuerySql(

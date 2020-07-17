@@ -23,7 +23,7 @@ fullExecution <- function(
 
     for (aid in config$maintinedAtlasCohortList) {
       base::writeLines(paste("adding cohort", aid))
-      insertAtlasCohort(connection, config, aid)
+      insertAtlasCohortRef(connection, config, aid)
     }
   }
  
@@ -35,11 +35,12 @@ fullExecution <- function(
   if (.createOutcomeCohorts) {
     base::writeLines("Creating outcome cohorts")
     createOutcomeCohorts(connection, config)
-  }
 
-  # Always runs as this checks for null entries
-  base::writeLines("Creating custom outcome cohorts")
-  addCustomOutcomes(connection, config)
+    base::writeLines("Creating custom outcome cohorts")
+    for (aid in config$maintinedAtlasCohortList) {
+      addAtlasOutcomeCohort(connection, config, atlasId)
+    }
+  }
   # generate summary tables
   if (.generateSummaryTables) {
     base::writeLines("Generating cohort summary tables")
@@ -64,15 +65,14 @@ addAtlasCohort <- function(configFilePath = "config/global-cfg.yml", atlasId, re
   if (removeExisting) {
     removeAtlasCohort(connection, config, atlasId)
   }
-  insertAtlasCohort(connection, config, atlasId)
+  insertAtlasCohortRef(connection, config, atlasId)
 
-  # Only adds where null entries are dound in the table so doesn't need an id
-  addCustomOutcomes(connection, config)
+  # Removes then adds cohort with atlas generated sql
+  addAtlasOutcomeCohort(connection, config, atlasId)
 
   # TODO: add summary
-  # TODO: run sccs
   for (dataSource in config$dataSources) {
-    addCustomOutcome(connection, config, dataSource, atlasId)
+    generateCustomOutcomeResult(connection, config, dataSource, atlasId)
   }
   # TODO: add to full results tables
 }
