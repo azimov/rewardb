@@ -19,7 +19,7 @@ resultsDatabase:
   asurvResultsTable: "homer_AllbyAll_results_May2020"
   cemSchema: "CEM_V2_0_0_20200226.dbo"
   negativeControlTable: "matrix_summary"
-  atlasCohorts: "rewardb_atlas_cohort"
+  atlasCohorts: "rewardb_atlas_cohorts"
 
   cdmDataSource:
     dbms: pdw
