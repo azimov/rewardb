@@ -9,8 +9,8 @@ createCohorts <- function(connection, config) {
     )
 
     sql <- SqlRender::readSql(system.file("sql/cohorts", "createCohorts.sql", package = "rewardb"))
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
+    options <- list(
+      connection=connection,
       sql = sql,
       cdm_database_schema = dataSource$cdmDatabaseSchema,
       drug_era_schema = dataSource$cdmDatabaseSchema, # Use cdm drug eras
@@ -20,19 +20,10 @@ createCohorts <- function(connection, config) {
       vocab_schema = config$cdmDatabase$vocabularySchema,
       cohort_table = dataSource$cohortTable
     )
-
+    do.call(DatabaseConnector::renderTranslateExecuteSql, options)
     # Custom drug eras
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql = sql,
-      cdm_database_schema = dataSource$cdmDatabaseSchema,
-      drug_era_schema = dataSource$drugEraSchema, # Custom drug era tables live here
-      cohort_database_schema = config$cdmDatabase$schema,
-      cohort_definition_table = config$cdmDatabase$cohortDefinitionTable,
-      conceptset_definition_table = config$cdmDatabase$conceptSetDefinitionTable,
-      vocab_schema = config$cdmDatabase$vocabularySchema,
-      cohort_table = dataSource$cohortTable
-    )
+    options$drug_era_schema <- dataSource$drugEraSchema # Custom drug era tables live here
+    do.call(DatabaseConnector::renderTranslateExecuteSql, options)
   }
 }
 
