@@ -22,7 +22,7 @@ fullExecution <- function(
     base::writeLines("Adding maintained atlas cohorts from config")
 
     for (aid in config$maintinedAtlasCohortList) {
-      base::writeLines(paste("adding cohort", aid))
+      base::writeLines(paste("adding cohort reference", aid))
       insertAtlasCohortRef(connection, config, aid)
     }
   }
@@ -33,13 +33,13 @@ fullExecution <- function(
   }
   # NOT tested from here
   if (.createOutcomeCohorts) {
+    for (aid in config$maintinedAtlasCohortList) {
+      base::writeLines(paste("Generating custom outcome cohort", aid))
+      addAtlasOutcomeCohort(connection, config, aid)
+    }
+
     base::writeLines("Creating outcome cohorts")
     createOutcomeCohorts(connection, config)
-
-    base::writeLines("Creating custom outcome cohorts")
-    for (aid in config$maintinedAtlasCohortList) {
-      addAtlasOutcomeCohort(connection, config, atlasId)
-    }
   }
   # generate summary tables
   if (.generateSummaryTables) {
