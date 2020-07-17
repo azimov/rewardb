@@ -162,7 +162,7 @@ addCemEvidence <- function(appContext) {
     summary_table = appContext$resultsDatabase$negativeControlTable
   )
 
-  outcomeIds$counts <- lappay(outcomeIds$CONDITION_CONCEPT_ID, function (id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
+  outcomeIds$counts <- lapply(outcomeIds$CONDITION_CONCEPT_ID, function (id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
 
   if (nrow(outcomeIds[outcomeIds$counts == 0, ])) {
     # Only if we can't map evidence, go up to the level of parent of concept id
