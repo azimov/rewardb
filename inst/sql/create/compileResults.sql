@@ -34,4 +34,6 @@ select
   , logRr as log_rr
   , seLogRr as se_log_rr
   , p as p_value
-from @results_database_schema.@results_table;
+from @results_database_schema.@results_table
+{@use_custom_ids} ? {WHERE outcomeId IN (@custom_outcome_ids)}
+;

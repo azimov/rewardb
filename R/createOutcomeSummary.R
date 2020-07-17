@@ -18,7 +18,9 @@ createSummaryTables <- function (connection, config) {
       outcome_cohort_table = dataSource$outcomeCohortTable,
       outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
       outcome_summary_table = dataSource$outcomeSummaryTable,
-      cohort_table = dataSource$cohortTable
+      cdm_database_schema = dataSource$cdmDatabaseSchema,
+      cohort_table = dataSource$cohortTable,
+      use_custom_outcome_cohort_ids = 0
     )
   }
 }
@@ -46,6 +48,7 @@ addOutcomeSummary <- function (connection, config, outcomeCohortIds) {
       outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
       outcome_summary_table = dataSource$outcomeSummaryTable,
       cohort_table = dataSource$cohortTable,
+      cdm_database_schema = dataSource$cdmDatabaseSchema,
       use_custom_outcome_cohort_ids = 1,
       custom_outcome_cohort_ids = outcomeCohortIds
     )

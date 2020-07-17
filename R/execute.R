@@ -5,7 +5,8 @@ fullExecution <- function(
   addDefaultAtlasCohorts = TRUE,
   .createExposureCohorts = TRUE,
   .createOutcomeCohorts = TRUE,
-  .generateSummaryTables = TRUE
+  .generateSummaryTables = TRUE,
+  .runSCC = TRUE
 ) {
   # load config
   config <- yaml::read_yaml(configFilePath)
@@ -47,12 +48,14 @@ fullExecution <- function(
     createSummaryTables(connection, config)
   }
 
-  base::writeLines("Generating fresh scc results tables")
-  createResultsTables(connection, config)
-  # run SCC
-  for (dataSource in config$dataSources) {
-    base::writeLines(paste("Running scc on", dataSource$database))
-    batchScc(connection, config, dataSource)
+  if (.runSCC) {
+    base::writeLines("Generating fresh scc results tables")
+    createResultsTables(connection, config)
+    # run SCC
+    for (dataSource in config$dataSources) {
+      base::writeLines(paste("Running scc on", dataSource$database))
+      batchScc(connection, config, dataSource)
+    }
   }
   compileResults(connection, config)
 
@@ -76,5 +79,5 @@ addAtlasCohort <- function(configFilePath = "config/global-cfg.yml", atlasId, re
   for (dataSource in config$dataSources) {
     generateCustomOutcomeResult(connection, config, dataSource, atlasId)
   }
-  # TODO: add to full results tables
+  addAtlasResultsToMergedTable(connection, config, atlasId)
 }
