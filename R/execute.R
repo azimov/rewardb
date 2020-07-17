@@ -70,7 +70,9 @@ addAtlasCohort <- function(configFilePath = "config/global-cfg.yml", atlasId, re
   # Removes then adds cohort with atlas generated sql
   addAtlasOutcomeCohort(connection, config, atlasId)
 
-  # TODO: add summary
+  # Adds new cohort to summary table
+  addOutcomeSummary(connection, config, atlasId)
+
   for (dataSource in config$dataSources) {
     generateCustomOutcomeResult(connection, config, dataSource, atlasId)
   }
