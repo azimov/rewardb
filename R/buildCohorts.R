@@ -44,17 +44,18 @@ createOutcomeCohorts <- function(connection, config) {
 
 addAtlasOutcomeCohort <- function (connection, config, atlasId) {
     cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, config$webApiUrl)
-    sql <- ROhdsiWebApi::getCohortDefinitionSql(cohortDefinition, config$webApiUrl)
+    sql <- ROhdsiWebApi::getCohortSql(cohortDefinition, config$webApiUrl, generateStats = FALSE)
 
-    base::writeLines("Generating cohort",  atlasId, "from ATLAS SQL definition")
+    base::writeLines(paste("Generating cohort",  atlasId, "from ATLAS SQL definition"))
     for (dataSource in config$dataSources) {
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = sql,
         cdm_database_schema = dataSource$cdmDatabaseSchema,
-        vocabulary_schema = config$cdmDatabase$vocabularySchema,
+        vocabulary_database_schema = config$cdmDatabase$vocabularySchema,
         target_database_schema = config$cdmDatabase$schema,
-        target_cohort_table = dataSource$cohortTable
+        target_cohort_table = dataSource$cohortTable,
+        target_cohort_id = atlasId
       )
     }
 }

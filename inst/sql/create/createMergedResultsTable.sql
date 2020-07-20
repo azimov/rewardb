@@ -1,4 +1,4 @@
-if object_id('@results_database_schema.@results_table', 'U') is not null
+if object_id('@results_database_schema.@merged_results_table', 'U') is not null
 	drop table @results_database_schema.@merged_results_table
 ;
 

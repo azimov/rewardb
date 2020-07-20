@@ -55,7 +55,7 @@ getAllOutcomeIds <- function(connection, config) {
     connection,
     sql,
     cohort_database_schema = config$cdmDatabase$schema,
-    outcome_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
+    outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
   )
   return(queryRes$COHORT_DEFINITION_ID)
 }
@@ -96,7 +96,7 @@ generateCustomOutcomeResult <- function(connection, config, dataSource, outcomeI
 #' @export
 createResultsTables <- function(connection, config) {
   for (dataSource in config$dataSources) {
-    sql <- SqlRender::readSql(system.file("sql/create", "createDbResultsTable.sql", package = "rewardb"))
+    sql <- SqlRender::readSql(system.file("sql/create", "createResultsTable.sql", package = "rewardb"))
 
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
@@ -106,7 +106,6 @@ createResultsTables <- function(connection, config) {
     )
   }
 }
-
 
 # Place results from all data sources in a single table
 #' @export
@@ -127,26 +126,27 @@ compileResults <- function(connection, config) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql,
+      source_id = dataSource$sourceId,
       results_database_schema = config$cdmDatabase$schema,
       merged_results_table = config$cdmDatabase$mergedResultsTable,
       results_table = getResultsDatabaseTableName(config, dataSource),
-      custom_cohorts_only = 0
+      use_custom_ids = 0
     )
   }
 }
 
-
-compileCustomResults <- function(connection, config, atlasCohortIds) {
+addAtlasResultsToMergedTable <- function(connection, config, atlasIds) {
   for (dataSource in config$dataSources) {
     sql <- SqlRender::readSql(system.file("sql/create", "compileResults.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql,
+      source_id = dataSource$sourceId,
       results_database_schema = config$cdmDatabase$schema,
       merged_results_table = config$cdmDatabase$mergedResultsTable,
       results_table = getResultsDatabaseTableName(config, dataSource),
-      custom_cohorts_only = 1,
-      custom_outcome_cohorts = atlasCohortIds
+      use_custom_ids = 1,
+      custom_outcome_ids = atlasIds
     )
   }
 }
