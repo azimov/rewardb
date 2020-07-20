@@ -129,7 +129,24 @@ compileResults <- function(connection, config) {
       sql,
       results_database_schema = config$cdmDatabase$schema,
       merged_results_table = config$cdmDatabase$mergedResultsTable,
-      results_table = getResultsDatabaseTableName(config, dataSource)
+      results_table = getResultsDatabaseTableName(config, dataSource),
+      custom_cohorts_only = 0
+    )
+  }
+}
+
+
+compileCustomResults <- function(connection, config, atlasCohortIds) {
+  for (dataSource in config$dataSources) {
+    sql <- SqlRender::readSql(system.file("sql/create", "compileResults.sql", package = "rewardb"))
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection,
+      sql,
+      results_database_schema = config$cdmDatabase$schema,
+      merged_results_table = config$cdmDatabase$mergedResultsTable,
+      results_table = getResultsDatabaseTableName(config, dataSource),
+      custom_cohorts_only = 1,
+      custom_outcome_cohorts = atlasCohortIds
     )
   }
 }
