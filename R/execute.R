@@ -32,7 +32,7 @@ fullExecution <- function(
     base::writeLines("Creating exposure cohorts")
     createCohorts(connection, config)
   }
-  # NOT tested from here
+  
   if (.createOutcomeCohorts) {
     for (aid in config$maintinedAtlasCohortList) {
       base::writeLines(paste("Generating custom outcome cohort", aid))

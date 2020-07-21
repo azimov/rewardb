@@ -34,7 +34,7 @@ runScc <- function(config, dataSource, exposureIds, outcomeIds, cores = parallel
 }
 
 getResultsDatabaseTableName <- function(config, dataSource) {
-  return(paste0(config$resultsTablePrefix, dataSource$database))
+  return(paste0(config$cdmDatabase$schema, ".", config$resultsTablePrefix, dataSource$database))
 }
 
 
@@ -46,7 +46,7 @@ getAllExposureIds <- function(connection, config) {
     cohort_database_schema = config$cdmDatabase$schema,
     cohort_definition_table = config$cdmDatabase$cohortDefinitionTable
   )
-
+  return(queryRes$COHORT_DEFINITION_ID)
 }
 
 getAllOutcomeIds <- function(connection, config) {
