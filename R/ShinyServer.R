@@ -98,7 +98,7 @@ serverInstance <- function(input, output, session) {
         return(picker)
     })
 
-    if (appContext$showExposureFilter) {
+    if (appContext$useExposureControls) {
         output$exposureClasses <- renderUI(
             {
 
@@ -279,6 +279,27 @@ serverInstance <- function(input, output, session) {
         if (nrow(df)) {
             return(rewardb::forestPlot(df))
         }
+    })
+    output$calibrationPlot <- renderPlot(
+    {
+        s <- filteredTableSelected()
+        treatment <- s$TARGET_COHORT_ID
+        outcome <- s$OUTCOME_COHORT_ID
+
+        positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+
+        if (appContext$useExposureControls) {
+            negatives <- rewardb::getExposureControls(appContext, outcome)
+        } else {
+            negatives <- rewardb::getOutcomeControls(appContext, treatment)
+        }
+        plot <- EmpiricalCalibration::plotCalibrationEffect(
+          logRrNegatives = log(negatives$RR),
+          seLogRrNegatives = negatives$SE_LOG_RR,
+          logRrPositives = log(positives$RR),
+          seLogRrPositives = positives$SE_LOG_RR
+        )
+        return(plot)
     })
 }
 

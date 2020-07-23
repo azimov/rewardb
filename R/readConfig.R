@@ -18,7 +18,7 @@ getPasswordSecurely <- function() {
 
 .setDefaultOptions <- function (appContext) {
     defaults <- list(
-        showExposureFilter = FALSE
+        useExposureControls = FALSE
     )
 
     for(n in names(defaults)) {
@@ -26,7 +26,7 @@ getPasswordSecurely <- function() {
         appContext[[n]] <- defaults[[n]]
       }
     }
-    
+
     return(appContext)
 }
 
