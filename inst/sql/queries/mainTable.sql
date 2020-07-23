@@ -35,6 +35,7 @@ SELECT
     END AS benefit_count,
     mr.I2 as I2,
     ROUND(mr.RR, 2) as meta_RR,
+    {@show_exposure_classes}?{ec.EXPOSURE_CLASS_NAME as ECN,}
     CASE
         WHEN nc.outcome_cohort_id IS NULL THEN 0
         ELSE 1
@@ -62,6 +63,10 @@ FROM @schema.result fr
         mr.calibrated = 0 AND -- BUG NO META ANALYSIS I2 fo calibrated data, but it should be the same
         mr.source_id = -99
     )
+    {@show_exposure_classes}?{
+    INNER JOIN @schema.target_exposure_class tec ON tec.target_cohort_id = t.target_cohort_id
+    INNER JOIN @schema.exposure_class ec ON ec.exposure_class_id = tec.exposure_class_id
+    }
     WHERE fr.calibrated = @calibrated
     {@exclude_indications == TRUE} ? {AND pi.outcome_cohort_id IS NULL}
     AND 1 = CASE

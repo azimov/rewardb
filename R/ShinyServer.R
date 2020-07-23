@@ -54,11 +54,18 @@ serverInstance <- function(input, output, session) {
         calibrated <- ifelse(input$calibrated, 1, 0)
         bSelection <- paste0("'", paste0(input$scBenefit, sep="'"))
         rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
-        df <- queryDb(mainTableSql, risk = risk, benefit = benefit, exclude_indications = input$excludeIndications,
-                      filter_outcome_types = length(outcomeCohortTypes) > 0,
-                      outcome_types = outcomeCohortTypes, risk_selection = rSelection,
-                      benefit_selection = bSelection, calibrated=calibrated)
-
+        df <- queryDb(
+          mainTableSql,
+          risk = risk,
+          benefit = benefit,
+          exclude_indications = input$excludeIndications,
+          filter_outcome_types = length(outcomeCohortTypes) > 0,
+          outcome_types = outcomeCohortTypes,
+          risk_selection = rSelection,
+          benefit_selection = bSelection,
+          calibrated = calibrated,
+          show_exposure_classes = appContext$useExposureControls
+        )
         return(df)
     })
 
@@ -100,9 +107,8 @@ serverInstance <- function(input, output, session) {
 
     if (appContext$useExposureControls) {
         output$exposureClasses <- renderUI(
-            {
-
-            df <- queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.TARGET_EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
+        {
+            df <- queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
             picker <- pickerInput(
               "exposureClass",
               "Drug exposure classes:",
@@ -130,6 +136,11 @@ serverInstance <- function(input, output, session) {
         if (length(input$targetCohorts)) {
             filtered <- filtered[filtered$TARGET_COHORT_NAME %in% input$targetCohorts, ]
         }
+
+        if (appContext$useExposureControls & length(input$exposureClass)) {
+            filtered <- filtered[filtered$ECN %in% input$exposureClass, ]
+        }
+
         return(filtered)
     })
 
@@ -148,6 +159,9 @@ serverInstance <- function(input, output, session) {
             colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
             colnames(df)[colnames(df) == "IS_NC"] <- "Control Cohort"
 
+            if (appContext$useExposureControls) {
+                colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
+            }
             table <- DT::datatable(
               df, selection = "single",
               rownames = FALSE
