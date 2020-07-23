@@ -11,7 +11,7 @@ select
 from @cohort_database_schema.@outcome_cohort_table hoc1
 inner join @cohort_database_schema.@outcome_cohort_definition_table hocd1
 	on hoc1.cohort_definition_id = hocd1.cohort_definition_id
-{@use_custom_outcome_cohort_ids} ? {WHERE hoc1.cohort_definition_id IN @custom_outcome_cohort_ids}
+{@use_custom_outcome_cohort_ids} ? {WHERE hoc1.cohort_definition_id IN (@custom_outcome_cohort_ids)}
 ;
 
 if object_id('tempdb..#drug_summary', 'U') is not null

@@ -34,9 +34,12 @@ fullExecution <- function(
   }
   
   if (.createOutcomeCohorts) {
-    for (aid in config$maintinedAtlasCohortList) {
-      base::writeLines(paste("Generating custom outcome cohort", aid))
-      addAtlasOutcomeCohort(connection, config, aid)
+    
+    if(addDefaultAtlasCohorts) {
+      for (aid in config$maintinedAtlasCohortList) {
+        base::writeLines(paste("Generating custom outcome cohort", aid))
+        addAtlasOutcomeCohort(connection, config, aid)
+      }
     }
 
     base::writeLines("Creating outcome cohorts")
@@ -66,18 +69,18 @@ addAtlasCohort <- function(configFilePath = "config/global-cfg.yml", atlasId, re
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
   if (removeExisting) {
-    removeAtlasCohort(connection, config, atlasId)
-  }
-  insertAtlasCohortRef(connection, config, atlasId)
+    removeAtlasCohort(connection, config, atlasId) # tested and works
+  } 
+  insertAtlasCohortRef(connection, config, atlasId) # tested and works
 
   # Removes then adds cohort with atlas generated sql
-  addAtlasOutcomeCohort(connection, config, atlasId)
+  addAtlasOutcomeCohort(connection, config, atlasId) # tested and works
 
   # Adds new cohort to summary table
-  addOutcomeSummary(connection, config, atlasId)
+  addOutcomeSummary(connection, config, atlasId) # untested
 
   for (dataSource in config$dataSources) {
-    generateCustomOutcomeResult(connection, config, dataSource, atlasId)
+    generateCustomOutcomeResult(connection, config, dataSource, atlasId) # untested
   }
-  addAtlasResultsToMergedTable(connection, config, atlasId)
+  addAtlasResultsToMergedTable(connection, config, atlasId) # untested
 }
