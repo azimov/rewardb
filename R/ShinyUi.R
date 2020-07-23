@@ -61,6 +61,7 @@ dashboardUi  <- function (request) {
               uiOutput("outcomeCohorts")
             ),
             box(
+              uiOutput("exposureClasses"),
               pickerInput(
               "outcomeCohortTypes",
               "Outcome Cohort Types:",

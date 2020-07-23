@@ -98,6 +98,27 @@ serverInstance <- function(input, output, session) {
         return(picker)
     })
 
+    if (appContext$showExposureFilter) {
+        output$exposureClasses <- renderUI(
+            {
+
+            df <- queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.TARGET_EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
+            picker <- pickerInput(
+              "exposureClass",
+              "Drug exposure classes:",
+              choices = df$EXPOSURE_CLASS_NAME,
+              selected = c(),
+              options = shinyWidgets::pickerOptions(
+                noneSelectedText = "Filter by subset",
+                actionsBox = TRUE,
+                liveSearch = TRUE
+              ),
+              multiple = TRUE
+            )
+            return(picker)
+        })
+    }
+
     # Subset of results for harm, risk and treatement categories
     # Logic: either select everything or select a user defined subset
     mainTableRiskHarmFilters <- reactive({
