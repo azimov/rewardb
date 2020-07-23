@@ -28,7 +28,7 @@ dashboardUi  <- function (request) {
             plotOutput("calibrationPlot", height = 800, hover = hoverOpts("calibrationPlot")),
             div(
               strong("Figure 2."),
-              paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates of", textOutput("treatmentOutcomeStr"))
+              paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates")
             )
           )
         ),
