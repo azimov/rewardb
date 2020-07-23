@@ -1,4 +1,5 @@
 extractTargetCohortNames <- function (appContext) {
+  library(dplyr)
   sql <- "
   SELECT
     t.cohort_definition_id AS target_cohort_id,
@@ -14,15 +15,40 @@ extractTargetCohortNames <- function (appContext) {
       ";
 
 
-  nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
-                                                            cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
-                                                            fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
-                                                            target_cohort_ids = appContext$target_concept_ids * 1000,
-                                                            cohort_definition_table=appContext$resultsDatabase$cohortDefinitionTable,
-                                                            results_database_schema=appContext$resultsDatabase$schema)
- 
+  nameSet <- DatabaseConnector::renderTranslateQuerySql(
+    appContext$cdmConnection,
+    sql,
+    cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
+    fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
+    target_cohort_ids = appContext$target_concept_ids * 1000,
+    cohort_definition_table = appContext$resultsDatabase$cohortDefinitionTable,
+    results_database_schema = appContext$resultsDatabase$schema
+  )
+
 
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target"), nameSet)
+
+  # Add exposure classes
+  sql <- "SELECT t.cohort_definition_id as target_cohort_id, c.concept_id as exposure_class_id, c.concept_name as exposure_class_name
+    FROM @cdm_vocabulary.concept_ancestor ca
+    INNER JOIN @cdm_vocabulary.concept c on (ca.ancestor_concept_id = c.concept_id AND c.concept_class_id = 'ATC 3rd')
+    INNER JOIN @results_database_schema.@cohort_definition_table t ON (t.cohort_definition_id/1000 = ca.descendant_concept_id)
+   {@fixed_target_cohorts} ? {WHERE t.cohort_definition_id IN (@target_cohort_ids)}"
+
+
+  nameSet <- DatabaseConnector::renderTranslateQuerySql(
+    appContext$cdmConnection, sql,
+    cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
+    fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
+    target_cohort_ids = appContext$target_concept_ids * 1000,
+    cohort_definition_table = appContext$resultsDatabase$cohortDefinitionTable,
+    results_database_schema = appContext$resultsDatabase$schema
+  )
+
+  exposureClasses <- distinct(nameSet, EXPOSURE_CLASS_ID, EXPOSURE_CLASS_NAME)
+  DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".exposure_class"), exposureClasses)
+  exposureClasses <- distinct(nameSet, TARGET_COHORT_ID, EXPOSURE_CLASS_ID)
+  DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target_exposure_class"), exposureClasses)
 }
 
 extractOutcomeCohortNames <- function (appContext) {
@@ -114,17 +140,17 @@ extractResultsSubset <- function(appContext){
       {@target_cohort_ids_length} ? {AND target_cohort_id in (@target_cohort_ids)}
       {@outcome_cohort_ids_length} ? {AND outcome_cohort_id in (@outcome_cohort_ids)}
   "
-  
+
   targetCohorts <- appContext$target_concept_ids * 1000
   outcomeCohortIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
-  resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
+  resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
                                                            target_cohort_ids = targetCohorts,
                                                            target_cohort_ids_length = length(targetCohorts)  > 0,
                                                            outcome_cohort_ids = outcomeCohortIds,
                                                            outcome_cohort_ids_length = length(outcomeCohortIds)  > 0,
                                                            scca_results = appContext$resultsDatabase$asurvResultsTable,
                                                            results_database_schema = appContext$resultsDatabase$schema)
-  
+
   resultSet$study_design <- "scc"
   DatabaseConnector::dbAppendTable(appContext$connection,paste0(appContext$short_name, ".result"), resultSet)
 }
@@ -306,7 +332,7 @@ metaAnalysis <- function(table) {
     sm = "IRR",
     model.glmm = "UM.RS"
   )
-  
+
   row <- data.frame(
     SOURCE_ID = -99,
     T_AT_RISK = sum(table$T_AT_RISK),
@@ -341,7 +367,7 @@ performMetaAnalysis <- function(appContext) {
   results <- fullResults %>%
     group_by(TARGET_COHORT_ID, OUTCOME_COHORT_ID) %>%
     group_modify(~ metaAnalysis(.x))
-  
+
   results$STUDY_DESIGN <- "scc"
   results$CALIBRATED <- 0
 
@@ -355,7 +381,7 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposur
   DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
   DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA ", appContext$short_name))
   createTables(appContext)
-  
+
   print("Extracting results from CDM data source")
   extractResultsSubset(appContext)
   print("Extracting cohort names")
@@ -369,7 +395,7 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposur
   print("Adding positive indications from CEM")
   addCemIndications(appContext)
   print("Running meta analysis")
-  performMetaAnalysis(appContext) 
+  performMetaAnalysis(appContext)
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
 
