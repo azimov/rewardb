@@ -190,6 +190,7 @@ addCemEvidence <- function(appContext) {
 
   outcomeIds$counts <- lapply(outcomeIds$CONDITION_CONCEPT_ID, function (id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
 
+  # TODO Map counts to cohorts so cohort sum determines if step up is made - not the cohort
   if (nrow(outcomeIds[outcomeIds$counts == 0, ])) {
     # Only if we can't map evidence, go up to the level of parent of concept id
     sql <- SqlRender::readSql(system.file("sql/queries", "cemSummaryParents.sql", package = "rewardb"))
@@ -221,6 +222,7 @@ addCemEvidence <- function(appContext) {
       INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
       WHERE ncc.evidence = 1;
   "
+  # TODO: optimise negative control sets for cohorts
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema=appContext$short_name)
 }
 
