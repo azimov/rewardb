@@ -82,3 +82,7 @@ getMetaAnalysisData <- function(table) {
 
   return(row)
 }
+
+calibrationPlot <- function(negativeControls, positiveControls) {
+
+}

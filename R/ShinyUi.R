@@ -22,6 +22,14 @@ dashboardUi  <- function (request) {
             "Forest plot",
             plotOutput("forestPlot", height = 800, hover = hoverOpts("plotHoverForestPlot")),
             div(strong("Figure 1."), "Forest plot of effect estimates from each database")
+          ),
+          tabPanel(
+            "Calibration plot",
+            plotOutput("calibrationPlot", height = 800, hover = hoverOpts("calibrationPlot")),
+            div(
+              strong("Figure 2."),
+              paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates of", textOutput("treatmentOutcomeStr"))
+            )
           )
         ),
         width = 12
