@@ -33,7 +33,7 @@ SELECT
         WHEN benefit_t.THRESH_COUNT >= 4 THEN 'all'
         WHEN benefit_t.THRESH_COUNT > 1 THEN 'most'
     END AS benefit_count,
-    mr.I2 as I2,
+    mr2.I2 as I2,
     ROUND(mr.RR, 2) as meta_RR,
     {@show_exposure_classes}?{ec.EXPOSURE_CLASS_NAME as ECN,}
     CASE
@@ -56,12 +56,17 @@ FROM @schema.result fr
         nc.outcome_cohort_id = fr.outcome_cohort_id AND nc.target_cohort_id = fr.target_cohort_id
     )
 
-    --LEFT JOIN exposure_classes ec ON ec.CONCEPT_ID = tc.TARGET_CONCEPT_ID
     LEFT JOIN @schema.result mr ON (
         fr.outcome_cohort_id = mr.outcome_cohort_id AND
         fr.target_cohort_id = mr.target_cohort_id AND
-        mr.calibrated = 0 AND -- BUG NO META ANALYSIS I2 fo calibrated data, but it should be the same
+        mr.calibrated = @calibrated AND
         mr.source_id = -99
+    )
+    LEFT JOIN @schema.result mr2 ON (
+        fr.outcome_cohort_id = mr2.outcome_cohort_id AND
+        fr.target_cohort_id = mr2.target_cohort_id AND
+        mr2.calibrated = 0 AND -- BUG NO META ANALYSIS I2 fo calibrated data, but it should be the same
+        mr2.source_id = -99
     )
     {@show_exposure_classes}?{
     INNER JOIN @schema.target_exposure_class tec ON tec.target_cohort_id = t.target_cohort_id
@@ -69,18 +74,24 @@ FROM @schema.result fr
     }
     WHERE fr.calibrated = @calibrated
     {@exclude_indications == TRUE} ? {AND pi.outcome_cohort_id IS NULL}
-    AND 1 = CASE
-        WHEN risk_t.THRESH_COUNT IS NULL AND 'none' IN (@risk_selection) THEN 1
-        WHEN risk_t.THRESH_COUNT = 1 AND 'one' in (@risk_selection) THEN 1
-        WHEN risk_t.THRESH_COUNT >= 4 AND 'all' in (@risk_selection) THEN 1
-        WHEN risk_t.THRESH_COUNT > 1 AND 'most' in (@risk_selection) THEN 1
-        ELSE 0
-    END
+
+    {@filter_by_meta_analysis} ? {
+       AND mr.RR <= @benefit
+    } : {
     AND 1 = CASE
         WHEN benefit_t.THRESH_COUNT IS NULL AND 'none' IN (@benefit_selection) THEN 1
         WHEN benefit_t.THRESH_COUNT = 1 AND 'one' in (@benefit_selection) THEN 1
         WHEN benefit_t.THRESH_COUNT >= 4 AND 'all' in (@benefit_selection) THEN 1
         WHEN benefit_t.THRESH_COUNT > 1 AND 'most' in (@benefit_selection) THEN 1
+        ELSE 0
+    END
+    }
+
+    AND 1 = CASE
+        WHEN risk_t.THRESH_COUNT IS NULL AND 'none' IN (@risk_selection) THEN 1
+        WHEN risk_t.THRESH_COUNT = 1 AND 'one' in (@risk_selection) THEN 1
+        WHEN risk_t.THRESH_COUNT >= 4 AND 'all' in (@risk_selection) THEN 1
+        WHEN risk_t.THRESH_COUNT > 1 AND 'most' in (@risk_selection) THEN 1
         ELSE 0
     END
     {@filter_outcome_types} ? {AND o.type_id IN (@outcome_types)}

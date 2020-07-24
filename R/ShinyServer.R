@@ -49,6 +49,7 @@ serverInstance <- function(input, output, session) {
     mainTableRe <- reactive({
         benefit <- input$cutrange1
         risk <- input$cutrange2
+        filterByMeta <- input$filterThreshold == "Meta analysis"
         outcomeCohortTypes <- getOutcomeCohortTypes()
         mainTableSql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
         calibrated <- ifelse(input$calibrated, 1, 0)
@@ -64,7 +65,8 @@ serverInstance <- function(input, output, session) {
           risk_selection = rSelection,
           benefit_selection = bSelection,
           calibrated = calibrated,
-          show_exposure_classes = appContext$useExposureControls
+          show_exposure_classes = appContext$useExposureControls,
+          filter_by_meta_analysis = filterByMeta
         )
         return(df)
     })

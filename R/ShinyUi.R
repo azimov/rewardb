@@ -102,7 +102,8 @@ dashboardUi  <- function (request) {
       menuItem("Results", tabName = "results", icon = icon("table")),
       sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
       sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2),
-      checkboxInput("calibrated", "Threshold with empirically calibrated results", TRUE),
+      checkboxInput("calibrated", "Threshold with empirically calibrated IRR", TRUE),
+      radioButtons("filterThreshold", "Threshold benefit by:", c("Data sources", "Meta analysis")),
       pickerInput(
         "scBenefit",
         "Sources with self control benefit:",
