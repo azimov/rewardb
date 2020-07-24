@@ -38,6 +38,12 @@ dashboardUi  <- function (request) {
 
   aboutTab <- fluidRow(
     box(
+      p("Mission:"),
+      includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
+      width = 6,
+      title=paste("Real World Assessment and Research of Drug Benefits (REWARD-B)")
+    ),
+    box(
       p(appContext$description),
       p("Click the dashboard option to see the results. The sidebar options allow filtering of results based on risk and benift IRR thresholds"),
       downloadButton(
@@ -45,12 +51,12 @@ dashboardUi  <- function (request) {
         "Download filtered results as a csv"
       ),
       width = 6,
-      title=paste("About", appContext$name)
+      title=paste("About this dashboard -", appContext$name)
     ),
     box(
-      includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
+      includeHTML(system.file("html", "contact.html", package = "rewardb")),
       width = 6,
-      title=paste("About REWARD-B")
+      title=paste("Contact")
     )
   )
 
