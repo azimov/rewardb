@@ -301,7 +301,7 @@ serverInstance <- function(input, output, session) {
         s <- filteredTableSelected()
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
-
+        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
         positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
 
         if (appContext$useExposureControls) {
