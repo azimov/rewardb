@@ -26,7 +26,7 @@ createAtlasReference <- function(connection, config, dataSource, customOutcomeCo
 }
 
 createReferenceTables <- function(connection, config) {
-  base::writeLines("Removing and inserting references")
+  ParallelLogger::logInfo("Removing and inserting references")
   sql <- SqlRender::readSql(system.file("sql/create", "createReferenceTables.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
@@ -46,7 +46,7 @@ createReferenceTables <- function(connection, config) {
     atlas_concept_reference = config$cdmDatabase$atlasConceptReferenceTable
   )
 
-  base::writeLines("Inserting ingredient/ATC cohorts")
+  ParallelLogger::logInfo("Inserting ingredient/ATC cohorts")
   createTargetDefinitions(connection, config)
 
   sql <- SqlRender::readSql(system.file("sql/create", "outcomeCohortDefinitions.sql", package = "rewardb"))

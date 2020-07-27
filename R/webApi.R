@@ -14,7 +14,7 @@ getWebObject <- function(webApiUrl, resource, id) {
 # Maps condition concepts of interest, any desecdants or if they're excluded from the cohort
 insertAtlasCohortRef <- function(connection, config, atlasId) {
 
-  base::writeLines(paste("Checking if cohort already exists", atlasId))
+  ParallelLogger::logInfo(paste("Checking if cohort already exists", atlasId))
   count <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT COUNT(*) FROM @cohort_database_schema.@atlas_reference_table WHERE cohort_definition_id = @cohort_definition_id",
@@ -24,11 +24,11 @@ insertAtlasCohortRef <- function(connection, config, atlasId) {
   )
 
   if (count == 0) {
-    base::writeLines(paste("pulling", atlasId))
+    ParallelLogger::logInfo(paste("pulling", atlasId))
     content <- rewardb::getWebObject(config$webApiUrl, "cohortdefinition", atlasId)
     cohortDef <- RJSONIO::fromJSON(content$expression)
 
-    base::writeLines(paste("inserting", atlasId))
+    ParallelLogger::logInfo(paste("inserting", atlasId))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = "INSERT INTO @cohort_database_schema.@atlas_reference_table (cohort_definition_id, cohort_name)
@@ -39,7 +39,7 @@ insertAtlasCohortRef <- function(connection, config, atlasId) {
       cohort_name = gsub("'","''", content$name)
     )
 
-    base::writeLines(paste("Getting concept sets", atlasId))
+    ParallelLogger::logInfo(paste("Getting concept sets", atlasId))
     sql <- SqlRender::readSql(system.file("sql/create", "customAtlasCohortsConcepts.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,

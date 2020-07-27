@@ -63,13 +63,14 @@ getAllOutcomeIds <- function(connection, config) {
 batchScc <- function(connection, config, dataSource, batchSize = 100) {
   exposureIds <- getAllExposureIds(connection, config)
   outcomeIds <- getAllOutcomeIds(connection, config)
-  base::writeLines("Starting SCC batch analysis...")
+  ParallelLogger::logInfo(paste("Starting SCC batch analysis on", datSource$databse))
 
   eIndex <- 1
   oIndex <- 1
   while (eIndex < length(exposureIds)) {
     eEnd <- min(eIndex + batchSize - 1, length(exposureIds))
     while (oIndex < length(outcomeIds)) {
+      ParallelLogger::logInfo(paste(datSource$databse, "scc batch", eIndex, oIndex, eEnd, oEnd))
       oEnd <- min(oIndex + batchSize - 1, length(outcomeIds))
       sccSummary <- runScc(config, dataSource, exposureIds[eIndex:eEnd], outcomeIds[oIndex:oEnd])
       DatabaseConnector::dbAppendTable(connection, getResultsDatabaseTableName(config, dataSource), sccSummary)
@@ -78,6 +79,8 @@ batchScc <- function(connection, config, dataSource, batchSize = 100) {
     }
     eIndex <- eIndex + batchSize
   }
+
+  ParallelLogger::logInfo(paste("Completed SCC batch analysis on", datSource$databse))
 }
 
 # Add an individual atlas outcome (or outcomes) to the results set

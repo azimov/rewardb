@@ -6,54 +6,61 @@ fullExecution <- function(
   .createExposureCohorts = TRUE,
   .createOutcomeCohorts = TRUE,
   .generateSummaryTables = TRUE,
-  .runSCC = TRUE
+  .runSCC = TRUE,
+  logFileName = "rbDataBuild.log"
 ) {
+  logger <- ParallelLogger::createLogger(
+    name="DataGen",
+    threshold="INFO",
+    appenders = list(createFileAppender(layout = layoutTimestamp, fileName = logFileName))
+  )
+  ParallelLogger::registerLogger(logger)
   # load config
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
 
   if (createReferences) {
-    base::writeLines("Creating and populating reference tables...")
+    ParallelLogger::logInfo("Creating and populating reference tables...")
     createReferenceTables(connection, config)
   }
 
   if (length(config$maintinedAtlasCohortList) & addDefaultAtlasCohorts) {
-    base::writeLines(paste("removing atlas cohort", config$maintinedAtlasCohortList))
+    ParallelLogger::logInfo(paste("removing atlas cohort", config$maintinedAtlasCohortList))
     removeAtlasCohort(connection, config, config$maintinedAtlasCohortList)
-    base::writeLines("Adding maintained atlas cohorts from config")
+    ParallelLogger::logInfo("Adding maintained atlas cohorts from config")
 
     for (aid in config$maintinedAtlasCohortList) {
-      base::writeLines(paste("adding cohort reference", aid))
+      ParallelLogger::logInfo(paste("adding cohort reference", aid))
       insertAtlasCohortRef(connection, config, aid)
     }
   }
  
   if (.createExposureCohorts) {
-    base::writeLines("Creating exposure cohorts")
+    ParallelLogger::logInfo("Creating exposure cohorts")
     createCohorts(connection, config)
   }
   
   if (.createOutcomeCohorts) {
     for (aid in config$maintinedAtlasCohortList) {
-      base::writeLines(paste("Generating custom outcome cohort", aid))
+      ParallelLogger::logInfo(paste("Generating custom outcome cohort", aid))
       addAtlasOutcomeCohort(connection, config, aid)
     }
 
-    base::writeLines("Creating outcome cohorts")
+    ParallelLogger::logInfo("Creating outcome cohorts")
     createOutcomeCohorts(connection, config)
   }
   # generate summary tables
   if (.generateSummaryTables) {
-    base::writeLines("Generating cohort summary tables")
+    ParallelLogger::logInfo("Generating cohort summary tables")
     createSummaryTables(connection, config)
   }
 
   if (.runSCC) {
-    base::writeLines("Generating fresh scc results tables")
+    ParallelLogger::logInfo("Generating fresh scc results tables")
     createResultsTables(connection, config)
     # run SCC
     for (dataSource in config$dataSources) {
-      base::writeLines(paste("Running scc on", dataSource$database))
+      ParallelLogger::logInfo(paste("Running scc on", dataSource$database))
       batchScc(connection, config, dataSource)
     }
   }

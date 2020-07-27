@@ -46,7 +46,7 @@ addAtlasOutcomeCohort <- function (connection, config, atlasId) {
     cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, config$webApiUrl)
     sql <- ROhdsiWebApi::getCohortSql(cohortDefinition, config$webApiUrl, generateStats = FALSE)
 
-    base::writeLines(paste("Generating cohort",  atlasId, "from ATLAS SQL definition"))
+    ParallelLogger::logInfo(paste("Generating cohort",  atlasId, "from ATLAS SQL definition"))
     for (dataSource in config$dataSources) {
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
