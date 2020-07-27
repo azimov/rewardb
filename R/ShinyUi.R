@@ -8,6 +8,7 @@ dashboardUi  <- function (request) {
 
   mainResults <- box(
     DT::dataTableOutput("mainTable"),
+    downloadButton("downloadFullTable", "Download"),
     width = 12
   )
 
@@ -17,7 +18,11 @@ dashboardUi  <- function (request) {
         HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
         tabsetPanel(
           id = "tabsetPanelResults",
-          tabPanel("Detailed results", DT::dataTableOutput("fullResultsTable")),
+        tabPanel(
+          "Detailed results",
+          DT::dataTableOutput("fullResultsTable"),
+            downloadButton("downloadSubTable", "Download")
+          ),
           tabPanel(
             "Forest plot",
             plotOutput("forestPlot", height = 800, hover = hoverOpts("plotHoverForestPlot")),

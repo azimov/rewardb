@@ -207,7 +207,7 @@ serverInstance <- function(input, output, session) {
         return(data.frame())
     })
 
-    fullResultsTable <- function() {
+    fullResultsTable <- reactive({
         option = list(columnDefs = list(list(targets = c(8, 11), class = "dt-right")))
         table3 <- metaAnalysisTbl()
         if(nrow(table3) >= 1) {
@@ -232,7 +232,7 @@ serverInstance <- function(input, output, session) {
             table4 <- DT::datatable(table3[, headers], rownames = FALSE, escape = FALSE, )
             return(table4)
         }
-    }
+    })
 
     fullDataDownload <- reactive({
         benefit <- input$cutrange1
@@ -252,6 +252,27 @@ serverInstance <- function(input, output, session) {
       },
       content = function(file) {
         write.csv(fullDataDownload(), file, row.names = FALSE)
+      }
+    )
+
+    output$downloadFullTable <- downloadHandler(
+      filename = function() {
+        paste0(appContext$short_name, '-filtered-', input$cutrange1, '-', input$cutrange2, '.csv')
+      },
+      content = function(file) {
+        write.csv(mainTableRiskHarmFilters(), file, row.names = FALSE)
+      }
+    )
+
+     output$downloadSubTable <- downloadHandler(
+      filename = function() {
+        s <- filteredTableSelected()
+        treatment <- s$TARGET_COHORT_ID
+        outcome <- s$OUTCOME_COHORT_ID
+        paste0(appContext$short_name, '-results-', treatment, "-", outcome, '.csv')
+      },
+      content = function(file) {
+        write.csv(metaAnalysisTbl(), file, row.names = FALSE)
       }
     )
 
