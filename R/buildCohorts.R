@@ -54,7 +54,7 @@ addAtlasOutcomeCohort <- function (connection, config, atlasId) {
         cdm_database_schema = dataSource$cdmDatabaseSchema,
         vocabulary_database_schema = config$cdmDatabase$vocabularySchema,
         target_database_schema = config$cdmDatabase$schema,
-        target_cohort_table = dataSource$cohortTable,
+        target_cohort_table = dataSource$outcomeCohortTable,
         target_cohort_id = atlasId
       )
     }

@@ -34,7 +34,7 @@ runScc <- function(config, dataSource, exposureIds, outcomeIds, cores = parallel
 }
 
 getResultsDatabaseTableName <- function(config, dataSource) {
-  return(paste0(config$cdmDatabase$schema, ".", config$resultsTablePrefix, dataSource$database))
+  return(paste0(config$resultsTablePrefix, dataSource$database))
 }
 
 
@@ -60,7 +60,7 @@ getAllOutcomeIds <- function(connection, config) {
   return(queryRes$COHORT_DEFINITION_ID)
 }
 
-batchScc <- function(connection, config, dataSource, batchSize = 100) {
+batchScc <- function(connection, config, dataSource, batchSize = 1000) {
   exposureIds <- getAllExposureIds(connection, config)
   outcomeIds <- getAllOutcomeIds(connection, config)
   ParallelLogger::logInfo(paste("Starting SCC batch analysis on", datSource$databse))
@@ -73,7 +73,7 @@ batchScc <- function(connection, config, dataSource, batchSize = 100) {
       ParallelLogger::logInfo(paste(datSource$databse, "scc batch", eIndex, oIndex, eEnd, oEnd))
       oEnd <- min(oIndex + batchSize - 1, length(outcomeIds))
       sccSummary <- runScc(config, dataSource, exposureIds[eIndex:eEnd], outcomeIds[oIndex:oEnd])
-      DatabaseConnector::dbAppendTable(connection, getResultsDatabaseTableName(config, dataSource), sccSummary)
+      DatabaseConnector::dbAppendTable(connection, paste0(config$cdmDatabase$schema, ".", getResultsDatabaseTableName(config, dataSource)), sccSummary)
       # Write result to table
       oIndex <- oIndex + batchSize
     }
@@ -86,11 +86,15 @@ batchScc <- function(connection, config, dataSource, batchSize = 100) {
 # Add an individual atlas outcome (or outcomes) to the results set
 generateCustomOutcomeResult <- function(connection, config, dataSource, outcomeIds, batchSize = 1000) {
   exposureIds <- getAllExposureIds(connection, config)
+  resultsTableName <- paste0(config$cdmDatabase$schema, ".", getResultsDatabaseTableName(config, dataSource))
   eIndex <- 1
+  base::writeLines("Starting SCC batch analysis...")
   while (eIndex < length(exposureIds)) {
     eEnd <- min(eIndex + batchSize - 1, length(exposureIds))
+    base::writeLines(paste("Stariting batch", eIndex, eEnd))
     sccSummary <- runScc(config, dataSource, exposureIds[eIndex:eEnd], outcomeIds)
-    DatabaseConnector::dbAppendTable(connection, getResultsDatabaseTableName(config, dataSource), sccSummary)
+    base::writeLines(paste("Appending data to table", resultsTableName))
+    DatabaseConnector::dbAppendTable(connection, resultsTableName, sccSummary)
     eIndex <- eIndex + batchSize
   }
 }
