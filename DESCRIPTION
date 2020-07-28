@@ -16,9 +16,7 @@ Imports:
     scales,
     DT,
     EmpiricalCalibration,
-    yaml,
-    RJSONIO,
-    ROhdsiWebApi
+    yaml
 Suggests:
     doParallel,
     foreach,
