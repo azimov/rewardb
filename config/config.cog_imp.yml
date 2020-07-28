@@ -1,0 +1,26 @@
+name: cognitive impairment
+short_name: cog_imp
+description: 'Patients with cognitive impairment'
+outcome_concept_ids: ~
+custom_outcome_cohort_ids: [12047]
+target_concept_ids: ~
+connectionDetails:
+  dbms: "postgresql"
+  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
+  port: 5432
+  user: "reward_admin"
+
+resultsDatabase:
+  schema: "scratch.jgilber2"
+  cohortDefinitionTable: "rewardb_cohort_definition_dev"
+  outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
+  asurvResultsTable: "rewarbd_results_copy"
+  cemSchema: "CEM_V2_0_0_20200226.dbo"
+  negativeControlTable: "matrix_summary"
+  atlasCohorts: "rewardb_atlas_cohort"
+
+  cdmDataSource:
+    dbms: pdw
+    server: JRDUSAPSCTL01
+    port: 17001
+

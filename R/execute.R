@@ -12,7 +12,10 @@ fullExecution <- function(
   logger <- ParallelLogger::createLogger(
     name="DataGen",
     threshold="INFO",
-    appenders = list(createFileAppender(layout = layoutTimestamp, fileName = logFileName))
+    appenders = list(
+      ParallelLogger::createFileAppender(layout = ParallelLogger::layoutTimestamp, fileName = logFileName ),
+      ParallelLogger::createConsoleAppender(layout = ParallelLogger::layoutTimestamp)
+    )
   )
   ParallelLogger::registerLogger(logger)
   # load config
@@ -71,22 +74,39 @@ fullExecution <- function(
   # TODO: run SCCS
 }
 
-addAtlasCohort <- function(configFilePath = "config/global-cfg.yml", atlasId, removeExisting = FALSE) {
+addAtlasCohort <- function(configFilePath = "config/global-cfg.yml", atlasId, removeExisting = FALSE, logFileName = "rbAtlasCohort.log") {
+  logger <- ParallelLogger::createLogger(
+    name="SIMPLE",
+    threshold="INFO",
+    appenders = list(
+      ParallelLogger::createFileAppender(layout = ParallelLogger::layoutTimestamp, fileName = logFileName ),
+      ParallelLogger::createConsoleAppender(layout = ParallelLogger::layoutTimestamp)
+    )
+  )
+  ParallelLogger::registerLogger(logger)
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
   if (removeExisting) {
+    ParallelLogger::logInfo("Removing existing cohort")
     removeAtlasCohort(connection, config, atlasId) # tested and works
   }
+  
+  ParallelLogger::logInfo("Inserting references")
   insertAtlasCohortRef(connection, config, atlasId) # tested and works
-
+  
+  ParallelLogger::logInfo("Running cohort")
   # Removes then adds cohort with atlas generated sql
   addAtlasOutcomeCohort(connection, config, atlasId) # tested and works
-
+  
+  ParallelLogger::logInfo("Adding summary")
   # Adds new cohort to summary table
   addOutcomeSummary(connection, config, atlasId) # untested
-
+  
   for (dataSource in config$dataSources) {
+    ParallelLogger::logInfo(paste("Getting scc", dataSource$database))
     generateCustomOutcomeResult(connection, config, dataSource, atlasId) # untested
   }
+  
+  ParallelLogger::logInfo(paste("Adding to final results table", dataSource$database))
   addAtlasResultsToMergedTable(connection, config, atlasId) # untested
 }
