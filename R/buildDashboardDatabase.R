@@ -280,7 +280,7 @@ performMetaAnalysis <- function(appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, data.frame(results))
 }
 
-buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateOutcomes = FALSE) {
+buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateOutcomes = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   print("Creating schema")
   DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
@@ -308,7 +308,7 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateOutcome
     rewardb::calibrateCustomCohorts(appContext, appContext$target_concept_ids * 1000)
   }
 
-  if (calibrateExposures) {
+  if (calibrateOutcomes) {
    print("Calibrating outcomes")
    rewardb::calibrateOutcomes(appContext)
    rewardb::calibrateOutcomesCustomCohorts(appContext)
