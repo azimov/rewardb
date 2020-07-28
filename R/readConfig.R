@@ -16,6 +16,20 @@ getPasswordSecurely <- function() {
     return(pass)
 }
 
+.setDefaultOptions <- function (appContext) {
+    defaults <- list(
+        useExposureControls = FALSE
+    )
+
+    for(n in names(defaults)) {
+      if(is.null(appContext[[n]])) {
+        appContext[[n]] <- defaults[[n]]
+      }
+    }
+
+    return(appContext)
+}
+
 #' Loads the application configuration and creates an application object
 #' By default, loads the database connections in to this object
 #'
@@ -28,7 +42,7 @@ getPasswordSecurely <- function() {
 #' @examples
 #' loadAppContext('config/config.dev.yml')
 loadAppContext <- function(configPath, createConnection = FALSE, useCdm = FALSE, .env=.GlobalEnv) {
-    appContext <- yaml::read_yaml(configPath)
+    appContext <- .setDefaultOptions(yaml::read_yaml(configPath))
     appContext$connectionDetails$password <- getPasswordSecurely()
     if (createConnection) {
       appContext$connection <- DatabaseConnector::connect(appContext$connectionDetails)

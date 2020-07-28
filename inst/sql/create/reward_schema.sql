@@ -30,6 +30,17 @@ CREATE TABLE @schema.target (
     is_atc_4 INT
 );
 
+CREATE TABLE @schema.target_exposure_class (
+    target_cohort_id BIGINT NOT NULL,
+    exposure_class_id BIGINT NOT NULL
+);
+
+CREATE TABLE @schema.exposure_class (
+    exposure_class_id BIGINT NOT NULL,
+    exposure_class_name VARCHAR,
+    exposure_class_type INT DEFAULT 0 -- Will be used when there are multiple meta data types
+);
+
 DROP TABLE IF EXISTS @schema.outcome;
 -- Maps outcomes to names and outcome types.
 CREATE TABLE @schema.outcome (

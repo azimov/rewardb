@@ -1,4 +1,5 @@
 extractTargetCohortNames <- function (appContext) {
+  library(dplyr)
   sql <- "
   SELECT
     t.cohort_definition_id AS target_cohort_id,
@@ -14,15 +15,40 @@ extractTargetCohortNames <- function (appContext) {
       ";
 
 
-  nameSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
-                                                            cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
-                                                            fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
-                                                            target_cohort_ids = appContext$target_concept_ids * 1000,
-                                                            cohort_definition_table=appContext$resultsDatabase$cohortDefinitionTable,
-                                                            results_database_schema=appContext$resultsDatabase$schema)
- 
+  nameSet <- DatabaseConnector::renderTranslateQuerySql(
+    appContext$cdmConnection,
+    sql,
+    cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
+    fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
+    target_cohort_ids = appContext$target_concept_ids * 1000,
+    cohort_definition_table = appContext$resultsDatabase$cohortDefinitionTable,
+    results_database_schema = appContext$resultsDatabase$schema
+  )
+
 
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target"), nameSet)
+
+  # Add exposure classes
+  sql <- "SELECT t.cohort_definition_id as target_cohort_id, c.concept_id as exposure_class_id, c.concept_name as exposure_class_name
+    FROM @cdm_vocabulary.concept_ancestor ca
+    INNER JOIN @cdm_vocabulary.concept c on (ca.ancestor_concept_id = c.concept_id AND c.concept_class_id = 'ATC 3rd')
+    INNER JOIN @results_database_schema.@cohort_definition_table t ON (t.cohort_definition_id/1000 = ca.descendant_concept_id)
+   {@fixed_target_cohorts} ? {WHERE t.cohort_definition_id IN (@target_cohort_ids)}"
+
+
+  nameSet <- DatabaseConnector::renderTranslateQuerySql(
+    appContext$cdmConnection, sql,
+    cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
+    fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
+    target_cohort_ids = appContext$target_concept_ids * 1000,
+    cohort_definition_table = appContext$resultsDatabase$cohortDefinitionTable,
+    results_database_schema = appContext$resultsDatabase$schema
+  )
+
+  exposureClasses <- distinct(nameSet, EXPOSURE_CLASS_ID, EXPOSURE_CLASS_NAME)
+  DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".exposure_class"), exposureClasses)
+  exposureClasses <- distinct(nameSet, TARGET_COHORT_ID, EXPOSURE_CLASS_ID)
+  DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target_exposure_class"), exposureClasses)
 }
 
 extractOutcomeCohortNames <- function (appContext) {
@@ -114,17 +140,17 @@ extractResultsSubset <- function(appContext){
       {@target_cohort_ids_length} ? {AND target_cohort_id in (@target_cohort_ids)}
       {@outcome_cohort_ids_length} ? {AND outcome_cohort_id in (@outcome_cohort_ids)}
   "
-  
+
   targetCohorts <- appContext$target_concept_ids * 1000
   outcomeCohortIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
-  resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql, 
+  resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
                                                            target_cohort_ids = targetCohorts,
                                                            target_cohort_ids_length = length(targetCohorts)  > 0,
-                                                           outcome_cohort_ids = outcomeCohortIds,
+                                                           outcome_cohort_ids = append(outcomeCohortIds, appContext$custom_outcome_cohort_ids),
                                                            outcome_cohort_ids_length = length(outcomeCohortIds)  > 0,
                                                            scca_results = appContext$resultsDatabase$asurvResultsTable,
                                                            results_database_schema = appContext$resultsDatabase$schema)
-  
+
   resultSet$study_design <- "scc"
   DatabaseConnector::dbAppendTable(appContext$connection,paste0(appContext$short_name, ".result"), resultSet)
 }
@@ -137,7 +163,7 @@ createTables <- function (appContext) {
   DatabaseConnector::executeSql(appContext$connection, sql = sql)
 }
 
-addCemNagativeControls <- function(appContext) {
+addCemEvidence <- function(appContext) {
   cdmConnection <- appContext$cdmConnection
 
   outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
@@ -151,70 +177,35 @@ addCemNagativeControls <- function(appContext) {
   DatabaseConnector::insertTable(appContext$cdmConnection, "#outcome_nc_tmp", outcomeIds, tempTable=TRUE)
   DatabaseConnector::insertTable(appContext$cdmConnection, "#target_nc_tmp", targetIds, tempTable=TRUE)
 
-  sql <- "
-  -- Top level conditions that match out hierarchy, we assume that siblings do not have evidence
-  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
-    FROM @schema.@summary_table evi
-    INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
-    INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-    WHERE ttmp.is_atc_4 = 0
-    AND evi.evidence_exists = 0
 
-  UNION
-  (
-    -- Roll up any descendent conditions
-    SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, otmp.condition_concept_id AS condition_concept_id
-      FROM @schema.@summary_table evi
-      INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
-      INNER JOIN @vocab_schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
-      INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = ca.descendant_concept_id
-      WHERE ttmp.is_atc_4 = 0
-      AND evi.evidence_exists = 0
-
-      EXCEPT
-        -- Any descendants that have evidence
-        SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, otmp.condition_concept_id AS condition_concept_id
-          FROM @schema.@summary_table evi
-          INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
-          INNER JOIN @vocab_schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
-          INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = ca.descendant_concept_id
-          WHERE ttmp.is_atc_4 = 0
-          AND evi.evidence_exists = 1
-  )
-  UNION
-  -- GET all ATC level 4 concept mappings
-  (
-    SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
-      FROM @schema.@summary_table evi
-      INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-      INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
-      INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
-      INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
-      WHERE ttmp.is_atc_4 = 1
-      AND evi.evidence_exists = 0
-
-      -- Any descendants that have evidence
-      EXCEPT
-        SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID AS condition_concept_id
-          FROM @schema.@summary_table evi
-          INNER JOIN #outcome_nc_tmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-          INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
-          INNER JOIN #target_nc_tmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
-          INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
-          WHERE ttmp.is_atc_4 = 1
-          AND evi.evidence_exists = 1
-   )
-  "
-  negativeControlsConcepts <- DatabaseConnector::renderTranslateQuerySql(
+  sql <- SqlRender::readSql(system.file("sql/queries", "cemSummary.sql", package = "rewardb"))
+  # First, method of mapping evidence at the normal level
+  evidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
     cdmConnection,
     sql,
     schema = appContext$resultsDatabase$cemSchema,
     vocab_schema = appContext$resultsDatabase$vocabularySchema,
     summary_table = appContext$resultsDatabase$negativeControlTable
   )
-  print(paste("Found ", nrow(negativeControlsConcepts), "negative controls"))
 
-  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", negativeControlsConcepts, tempTable=TRUE)
+  outcomeIds$counts <- lapply(outcomeIds$CONDITION_CONCEPT_ID, function (id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
+
+  # TODO Map counts to cohorts so cohort sum determines if step up is made - not the cohort
+  if (nrow(outcomeIds[outcomeIds$counts == 0, ])) {
+    # Only if we can't map evidence, go up to the level of parent of concept id
+    sql <- SqlRender::readSql(system.file("sql/queries", "cemSummaryParents.sql", package = "rewardb"))
+    parentLevelEvidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
+      cdmConnection,
+      sql,
+      schema = appContext$resultsDatabase$cemSchema,
+      summary_table = appContext$resultsDatabase$negativeControlTable,
+      outcome_concepts_of_interest = outcomeIds[outcomeIds$counts == 0, ]$CONDITION_CONCEPT_ID
+    )
+    evidenceConcepts <- rbind(evidenceConcepts, parentLevelEvidenceConcepts)
+  }
+  print(paste("Found ", nrow(evidenceConcepts), "mappings"))
+
+  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", evidenceConcepts, tempTable=TRUE)
 
   sql <- "
     INSERT INTO @schema.negative_control (outcome_cohort_id, target_cohort_id)
@@ -222,78 +213,18 @@ addCemNagativeControls <- function(appContext) {
       FROM #ncc_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
       INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
-  "
-  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql,
-                                               schema=appContext$short_name)
-}
+      WHERE ncc.evidence = 0;
 
-addCemIndications <- function(appContext) {
-  cdmConnection <- appContext$cdmConnection
-
-  outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                           "SELECT DISTINCT condition_concept_id FROM @schema.outcome_concept",
-                                                           schema=appContext$short_name)
-  DatabaseConnector::insertTable(appContext$cdmConnection, "#oindtmp", outcomeIds, tempTable=TRUE)
-  
-  targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                          "SELECT DISTINCT target_concept_id, is_atc_4 FROM @schema.target",
-                                                          schema=appContext$short_name)
-  DatabaseConnector::insertTable(appContext$cdmConnection, "#targetindtmp", targetIds, tempTable=TRUE)
-
-  sql <- "
-  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
-  FROM @schema.@summary_table evi
-  INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
-  INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-  WHERE ttmp.is_atc_4 = 0
-  AND evi.evidence_exists = 1
-  
-  UNION
-  -- SELECTS THE DESCENDANT CONDITION
-  SELECT evi.INGREDIENT_CONCEPT_ID AS INGREDIENT_CONCEPT_ID, otmp.condition_concept_id
-  FROM @schema.@summary_table evi
-  INNER JOIN @schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
-  INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = evi.ingredient_concept_id
-  INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = ca.descendant_concept_id
-  WHERE ttmp.is_atc_4 = 0
-  AND evi.evidence_exists = 1
-
-  UNION
-  -- GET all ATC level 4 concept mappings
-  SELECT ttmp.target_concept_id AS INGREDIENT_CONCEPT_ID, evi.CONDITION_CONCEPT_ID
-  FROM @schema.@summary_table evi
-  INNER JOIN #oindtmp otmp ON otmp.condition_concept_id = evi.condition_concept_id
-  INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.ingredient_concept_id
-  INNER JOIN #targetindtmp ttmp ON ttmp.target_concept_id = ca.ancestor_concept_id
-  INNER JOIN @vocab_schema.concept c ON (c.concept_id = evi.ingredient_concept_id AND c.concept_class_id = 'Ingredient')
-  WHERE ttmp.is_atc_4 = 1
-  AND evi.evidence_exists = 1
-  
-  "
-  negativeControlsConcepts <- DatabaseConnector::renderTranslateQuerySql(
-    cdmConnection,
-    sql,
-    schema = appContext$resultsDatabase$cemSchema,
-    vocab_schema = appContext$resultsDatabase$vocabularySchema,
-    summary_table = appContext$resultsDatabase$negativeControlTable
-  )
-  print(paste("Found ", nrow(negativeControlsConcepts), "mapped indications"))
-
-  DatabaseConnector::insertTable(appContext$connection, "#indication_ids", negativeControlsConcepts, tempTable=TRUE)
-
-  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, "DELETE FROM @schema.positive_indication",
-                                               schema=appContext$short_name)
-  sql <- "
     INSERT INTO @schema.positive_indication (outcome_cohort_id, target_cohort_id)
       SELECT DISTINCT outcome_cohort_id, target_cohort_id
-      FROM #indication_ids ncc
+      FROM #ncc_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
       INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
+      WHERE ncc.evidence = 1;
   "
-  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql,
-                                               schema=appContext$short_name)
+  # TODO: optimise negative control sets for cohorts
+  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema=appContext$short_name)
 }
-
 
 metaAnalysis <- function(table) {
   # Compute meta analysis with random effects model
@@ -306,7 +237,7 @@ metaAnalysis <- function(table) {
     sm = "IRR",
     model.glmm = "UM.RS"
   )
-  
+
   row <- data.frame(
     SOURCE_ID = -99,
     T_AT_RISK = sum(table$T_AT_RISK),
@@ -341,7 +272,7 @@ performMetaAnalysis <- function(appContext) {
   results <- fullResults %>%
     group_by(TARGET_COHORT_ID, OUTCOME_COHORT_ID) %>%
     group_modify(~ metaAnalysis(.x))
-  
+
   results$STUDY_DESIGN <- "scc"
   results$CALIBRATED <- 0
 
@@ -349,13 +280,13 @@ performMetaAnalysis <- function(appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, data.frame(results))
 }
 
-buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposures = FALSE) {
+buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateOutcomes = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   print("Creating schema")
   DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
   DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA ", appContext$short_name))
   createTables(appContext)
-  
+
   print("Extracting results from CDM data source")
   extractResultsSubset(appContext)
   print("Extracting cohort names")
@@ -365,11 +296,9 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposur
   print("Extracting outcome cohort mapping")
   createOutcomeConceptMapping(appContext)
   print("Adding negative controls from CEM")
-  addCemNagativeControls(appContext)
-  print("Adding positive indications from CEM")
-  addCemIndications(appContext)
+  addCemEvidence(appContext)
   print("Running meta analysis")
-  performMetaAnalysis(appContext) 
+  performMetaAnalysis(appContext)
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
 
@@ -380,7 +309,8 @@ buildFromConfig <- function(filePath, calibrateTargets = FALSE, calibrateExposur
   }
 
   if (calibrateExposures) {
-     rewardb::calibrateOutcomes(appContext)
-     rewardb::calibrateOutcomesCustomCohorts(appContext)
+   print("Calibrating outcomes")
+   rewardb::calibrateOutcomes(appContext)
+   rewardb::calibrateOutcomesCustomCohorts(appContext)
   }
 }

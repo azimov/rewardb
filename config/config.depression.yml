@@ -1,9 +1,10 @@
 name: Depression outcomes
-short_name: depression_outcomes
+short_name: depression_outcomes_dev
 description: ''
 outcome_concept_ids: [4151170]
 custom_outcome_cohort_ids: [10357, 7543]
 target_concept_ids: ~
+useExposureControls: True
 connectionDetails:
   dbms: "postgresql"
   server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
@@ -13,11 +14,13 @@ connectionDetails:
 
 resultsDatabase:
   schema: "scratch.dbo"
+  vocabularySchema: "Vocabulary_20200525.dbo"
   cohortDefinitionTable: "homer_cohort_definition_May2020"
   outcomeCohortDefinitionTable: "homer_outcome_cohort_definition_May2020"
   asurvResultsTable: "homer_AllbyAll_results_May2020"
   cemSchema: "CEM_V2_0_0_20200226.dbo"
   negativeControlTable: "matrix_summary"
+  atlasCohorts: "rewardb_atlas_cohorts"
 
   cdmDataSource:
     dbms: pdw

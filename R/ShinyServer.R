@@ -49,16 +49,25 @@ serverInstance <- function(input, output, session) {
     mainTableRe <- reactive({
         benefit <- input$cutrange1
         risk <- input$cutrange2
+        filterByMeta <- input$filterThreshold == "Meta analysis"
         outcomeCohortTypes <- getOutcomeCohortTypes()
         mainTableSql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
         calibrated <- ifelse(input$calibrated, 1, 0)
         bSelection <- paste0("'", paste0(input$scBenefit, sep="'"))
         rSelection <- paste0("'", paste0(input$scRisk, sep="'"))
-        df <- queryDb(mainTableSql, risk = risk, benefit = benefit, exclude_indications = input$excludeIndications,
-                      filter_outcome_types = length(outcomeCohortTypes) > 0,
-                      outcome_types = outcomeCohortTypes, risk_selection = rSelection,
-                      benefit_selection = bSelection, calibrated=calibrated)
-
+        df <- queryDb(
+          mainTableSql,
+          risk = risk,
+          benefit = benefit,
+          exclude_indications = input$excludeIndications,
+          filter_outcome_types = length(outcomeCohortTypes) > 0,
+          outcome_types = outcomeCohortTypes,
+          risk_selection = rSelection,
+          benefit_selection = bSelection,
+          calibrated = calibrated,
+          show_exposure_classes = appContext$useExposureControls,
+          filter_by_meta_analysis = filterByMeta
+        )
         return(df)
     })
 
@@ -98,6 +107,26 @@ serverInstance <- function(input, output, session) {
         return(picker)
     })
 
+    if (appContext$useExposureControls) {
+        output$exposureClasses <- renderUI(
+        {
+            df <- queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
+            picker <- pickerInput(
+              "exposureClass",
+              "Drug exposure classes:",
+              choices = df$EXPOSURE_CLASS_NAME,
+              selected = c(),
+              options = shinyWidgets::pickerOptions(
+                noneSelectedText = "Filter by subset",
+                actionsBox = TRUE,
+                liveSearch = TRUE
+              ),
+              multiple = TRUE
+            )
+            return(picker)
+        })
+    }
+
     # Subset of results for harm, risk and treatement categories
     # Logic: either select everything or select a user defined subset
     mainTableRiskHarmFilters <- reactive({
@@ -109,6 +138,11 @@ serverInstance <- function(input, output, session) {
         if (length(input$targetCohorts)) {
             filtered <- filtered[filtered$TARGET_COHORT_NAME %in% input$targetCohorts, ]
         }
+
+        if (appContext$useExposureControls & length(input$exposureClass)) {
+            filtered <- filtered[filtered$ECN %in% input$exposureClass, ]
+        }
+
         return(filtered)
     })
 
@@ -127,6 +161,9 @@ serverInstance <- function(input, output, session) {
             colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
             colnames(df)[colnames(df) == "IS_NC"] <- "Control Cohort"
 
+            if (appContext$useExposureControls) {
+                colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
+            }
             table <- DT::datatable(
               df, selection = "single",
               rownames = FALSE
@@ -170,7 +207,7 @@ serverInstance <- function(input, output, session) {
         return(data.frame())
     })
 
-    fullResultsTable <- function() {
+    fullResultsTable <- reactive({
         option = list(columnDefs = list(list(targets = c(8, 11), class = "dt-right")))
         table3 <- metaAnalysisTbl()
         if(nrow(table3) >= 1) {
@@ -195,7 +232,7 @@ serverInstance <- function(input, output, session) {
             table4 <- DT::datatable(table3[, headers], rownames = FALSE, escape = FALSE, )
             return(table4)
         }
-    }
+    })
 
     fullDataDownload <- reactive({
         benefit <- input$cutrange1
@@ -215,6 +252,27 @@ serverInstance <- function(input, output, session) {
       },
       content = function(file) {
         write.csv(fullDataDownload(), file, row.names = FALSE)
+      }
+    )
+
+    output$downloadFullTable <- downloadHandler(
+      filename = function() {
+        paste0(appContext$short_name, '-filtered-', input$cutrange1, '-', input$cutrange2, '.csv')
+      },
+      content = function(file) {
+        write.csv(mainTableRiskHarmFilters(), file, row.names = FALSE)
+      }
+    )
+
+     output$downloadSubTable <- downloadHandler(
+      filename = function() {
+        s <- filteredTableSelected()
+        treatment <- s$TARGET_COHORT_ID
+        outcome <- s$OUTCOME_COHORT_ID
+        paste0(appContext$short_name, '-results-', treatment, "-", outcome, '.csv')
+      },
+      content = function(file) {
+        write.csv(metaAnalysisTbl(), file, row.names = FALSE)
       }
     )
 
@@ -258,6 +316,27 @@ serverInstance <- function(input, output, session) {
         if (nrow(df)) {
             return(rewardb::forestPlot(df))
         }
+    })
+    output$calibrationPlot <- renderPlot(
+    {
+        s <- filteredTableSelected()
+        treatment <- s$TARGET_COHORT_ID
+        outcome <- s$OUTCOME_COHORT_ID
+        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+        positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+
+        if (appContext$useExposureControls) {
+            negatives <- rewardb::getExposureControls(appContext, outcome)
+        } else {
+            negatives <- rewardb::getOutcomeControls(appContext, treatment)
+        }
+        plot <- EmpiricalCalibration::plotCalibrationEffect(
+          logRrNegatives = log(negatives$RR),
+          seLogRrNegatives = negatives$SE_LOG_RR,
+          logRrPositives = log(positives$RR),
+          seLogRrPositives = positives$SE_LOG_RR
+        )
+        return(plot)
     })
 }
 

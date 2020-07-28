@@ -8,6 +8,7 @@ dashboardUi  <- function (request) {
 
   mainResults <- box(
     DT::dataTableOutput("mainTable"),
+    downloadButton("downloadFullTable", "Download"),
     width = 12
   )
 
@@ -17,11 +18,23 @@ dashboardUi  <- function (request) {
         HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
         tabsetPanel(
           id = "tabsetPanelResults",
-          tabPanel("Detailed results", DT::dataTableOutput("fullResultsTable")),
+        tabPanel(
+          "Detailed results",
+          DT::dataTableOutput("fullResultsTable"),
+            downloadButton("downloadSubTable", "Download")
+          ),
           tabPanel(
             "Forest plot",
             plotOutput("forestPlot", height = 800, hover = hoverOpts("plotHoverForestPlot")),
             div(strong("Figure 1."), "Forest plot of effect estimates from each database")
+          ),
+          tabPanel(
+            "Calibration plot",
+            plotOutput("calibrationPlot", height = 800, hover = hoverOpts("calibrationPlot")),
+            div(
+              strong("Figure 2."),
+              paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates")
+            )
           )
         ),
         width = 12
@@ -30,6 +43,12 @@ dashboardUi  <- function (request) {
 
   aboutTab <- fluidRow(
     box(
+      p("Mission:"),
+      includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
+      width = 6,
+      title=paste("Real World Assessment and Research of Drug Benefits (REWARD-B)")
+    ),
+    box(
       p(appContext$description),
       p("Click the dashboard option to see the results. The sidebar options allow filtering of results based on risk and benift IRR thresholds"),
       downloadButton(
@@ -37,12 +56,12 @@ dashboardUi  <- function (request) {
         "Download filtered results as a csv"
       ),
       width = 6,
-      title=paste("About", appContext$name)
+      title=paste("About this dashboard -", appContext$name)
     ),
     box(
-      includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
+      includeHTML(system.file("html", "contact.html", package = "rewardb")),
       width = 6,
-      title=paste("About REWARD-B")
+      title=paste("Contact")
     )
   )
 
@@ -61,6 +80,7 @@ dashboardUi  <- function (request) {
               uiOutput("outcomeCohorts")
             ),
             box(
+              uiOutput("exposureClasses"),
               pickerInput(
               "outcomeCohortTypes",
               "Outcome Cohort Types:",
@@ -93,7 +113,8 @@ dashboardUi  <- function (request) {
       menuItem("Results", tabName = "results", icon = icon("table")),
       sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
       sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2),
-      checkboxInput("calibrated", "Threshold with empirically calibrated results", TRUE),
+      checkboxInput("calibrated", "Threshold with empirically calibrated IRR", TRUE),
+      radioButtons("filterThreshold", "Threshold benefit by:", c("Data sources", "Meta analysis")),
       pickerInput(
         "scBenefit",
         "Sources with self control benefit:",
