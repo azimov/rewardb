@@ -58,8 +58,8 @@ extractOutcomeCohortNames <- function (appContext) {
         o.short_name AS cohort_name, 
         o.cohort_definition_id % 100 as type_id
       from @results_database_schema.@outcome_cohort_definition_table o
-      LEFT JOIN @results_database_schema.@atlas_cohort_definition_table acd ON acd.atlas_id = o.cohort_definition_id
-      WHERE acd.atlas_id IS NULL
+      LEFT JOIN @results_database_schema.@atlas_cohort_definition_table acd ON acd.cohort_definition_id = o.cohort_definition_id
+      WHERE acd.cohort_definition_id IS NULL
       {@outcome_cohort_ids_length} ? {AND o.cohort_definition_id IN (@outcome_cohort_ids)}
     UNION
     -- Only pull specified subset of atlas cohorts
@@ -94,16 +94,16 @@ createOutcomeConceptMapping <- function (appContext) {
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema=appContext$short_name)
 
   sql <- "
-  SELECT acd.atlas_id as outcome_cohort_id, acd.concept_id as condition_concept_id
+  SELECT acd.cohort_definition_id as outcome_cohort_id, acd.concept_id as condition_concept_id
   FROM @results_database_schema.@atlas_cohort_definition_table acd
-  WHERE acd.atlas_id IN (@atlas_cohort_ids)
+  WHERE acd.cohort_definition_id IN (@atlas_cohort_ids) AND acd.is_excluded = 0
 
   UNION
 
-  SELECT acd.atlas_id as outcome_cohort_id, ca.descendant_concept_id as condition_concept_id
+  SELECT acd.cohort_definition_id as outcome_cohort_id, ca.descendant_concept_id as condition_concept_id
   FROM @results_database_schema.@atlas_cohort_definition_table acd
   INNER JOIN @cdm_vocabulary.concept_ancestor ca ON ca.ancestor_concept_id = acd.concept_id
-  WHERE acd.descendants = 1 AND acd.atlas_id IN (@atlas_cohort_ids)
+  WHERE acd.include_descendants = 1 AND acd.cohort_definition_id IN (@atlas_cohort_ids) AND acd.is_excluded = 0
   "
 
   data <- DatabaseConnector::renderTranslateQuerySql(

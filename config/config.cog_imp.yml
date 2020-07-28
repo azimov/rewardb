@@ -1,7 +1,7 @@
 name: cognitive impairment
 short_name: cog_imp
 description: 'Patients with cognitive impairment'
-outcome_concept_ids: ~
+outcome_concept_ids: [4009705, 443432, 439795]
 custom_outcome_cohort_ids: [12047]
 target_concept_ids: ~
 connectionDetails:
@@ -12,12 +12,13 @@ connectionDetails:
 
 resultsDatabase:
   schema: "scratch.jgilber2"
+  vocabularySchema: "Vocabulary_20200525.dbo"
   cohortDefinitionTable: "rewardb_cohort_definition_dev"
   outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
-  asurvResultsTable: "rewarbd_results_copy"
+  asurvResultsTable: "rewardb_results_copy"
   cemSchema: "CEM_V2_0_0_20200226.dbo"
   negativeControlTable: "matrix_summary"
-  atlasCohorts: "rewardb_atlas_cohort"
+  atlasCohorts: "rewardb_atlas_concept_reference"
 
   cdmDataSource:
     dbms: pdw
