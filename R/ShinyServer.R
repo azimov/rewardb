@@ -74,60 +74,15 @@ serverInstance <- function(input, output, session) {
         return(df)
     })
 
-    output$outcomeCohorts <- renderUI(
-    {
-        df <- mainTableRe()
-        picker <- pickerInput(
-          "outcomeCohorts",
-          "Disease outcomes:",
-          choices = sort(unique(df$OUTCOME_COHORT_NAME)),
-          selected = c(),
-          options = shinyWidgets::pickerOptions(
-            noneSelectedText = "Filter by subset",
-            actionsBox = TRUE,
-            liveSearch = TRUE
-          ),
-          multiple = TRUE
-        )
-        return(picker)
-    })
+    df <- queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME")
+    updateSelectizeInput(session, "outcomeCohorts", choices = df$COHORT_NAME, server = TRUE)
 
-    output$targetCohorts <- renderUI(
-    {
-        df <- queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.TARGET ORDER BY COHORT_NAME")
-        picker <- pickerInput(
-          "targetCohorts",
-          "Drug exposures:",
-          choices = df$COHORT_NAME,
-          selected = c(),
-          options = shinyWidgets::pickerOptions(
-                noneSelectedText = "Filter by subset",
-                actionsBox = TRUE,
-                liveSearch = TRUE
-          ),
-          multiple = TRUE
-        )
-        return(picker)
-    })
+    df <- queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.TARGET ORDER BY COHORT_NAME")
+    updateSelectizeInput(session, "targetCohorts", choices = df$COHORT_NAME, server = TRUE)
 
     if (appContext$useExposureControls) {
-        output$exposureClasses <- renderUI(
-        {
-            df <- queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
-            picker <- pickerInput(
-              "exposureClass",
-              "Drug exposure classes:",
-              choices = df$EXPOSURE_CLASS_NAME,
-              selected = c(),
-              options = shinyWidgets::pickerOptions(
-                noneSelectedText = "Filter by subset",
-                actionsBox = TRUE,
-                liveSearch = TRUE
-              ),
-              multiple = TRUE
-            )
-            return(picker)
-        })
+        df <- queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
+        updateSelectizeInput(session, "exposureClass", choices = df$EXPOSURE_CLASS_NAME, server = TRUE)
     }
 
     # Subset of results for harm, risk and treatement categories
@@ -152,32 +107,31 @@ serverInstance <- function(input, output, session) {
     output$mainTable <- DT::renderDataTable({
         df <- mainTableRiskHarmFilters()
         tryCatch(
-            {
-            df$I2 <- formatC(df$I2, digits = 2, format = "f")
-            colnames(df)[colnames(df) == "I2"] <- "I-squared"
-            colnames(df)[colnames(df) == "META_RR"] <- "IRR (meta analysis)"
-            colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
-            colnames(df)[colnames(df) == "BENEFIT_COUNT"] <- "Sources with scc benefit"
-            colnames(df)[colnames(df) == "OUTCOME_COHORT_NAME"] <- "Outcome cohort name"
-            colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
-            colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
-            colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
-            colnames(df)[colnames(df) == "IS_NC"] <- "Control Cohort"
+          {
+          df$I2 <- formatC(df$I2, digits = 2, format = "f")
+          colnames(df)[colnames(df) == "I2"] <- "I-squared"
+          colnames(df)[colnames(df) == "META_RR"] <- "IRR (meta analysis)"
+          colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
+          colnames(df)[colnames(df) == "BENEFIT_COUNT"] <- "Sources with scc benefit"
+          colnames(df)[colnames(df) == "OUTCOME_COHORT_NAME"] <- "Outcome cohort name"
+          colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
+          colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
+          colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
+          colnames(df)[colnames(df) == "IS_NC"] <- "Control Cohort"
 
-            if (appContext$useExposureControls) {
-                colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
-            }
-            table <- DT::datatable(
-              df, selection = "single",
-              rownames = FALSE
-            )
-            return(table)
-        },
-        # Handles messy response
-        error = function(e) {
+          if (appContext$useExposureControls) {
+            colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
+          }
+          table <- DT::datatable(
+            df, selection = "single",
+            rownames = FALSE
+          )
+          return(table)
+          },
+          # Handles messy response
+          error = function(e) {
             return(DT::datatable(data.frame()))
-        }
-        )
+        })
     })
 
     filteredTableSelected <- reactive({

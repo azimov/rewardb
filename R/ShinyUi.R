@@ -78,11 +78,11 @@ dashboardUi  <- function (request) {
         fluidRow(
           box(
             box(
-              uiOutput("targetCohorts"),
-              uiOutput("outcomeCohorts")
+              selectizeInput("targetCohorts", label = "Drug exposures:", choices = NULL, multiple = TRUE),
+              selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = TRUE),
             ),
             box(
-              uiOutput("exposureClasses"),
+              selectizeInput("exposureClass", label = "Drug exposure classes:", choices = NULL, multiple = TRUE),
               pickerInput(
               "outcomeCohortTypes",
               "Outcome Cohort Types:",
