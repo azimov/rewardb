@@ -8,12 +8,15 @@ serverInstance <- function(input, output, session) {
 
     # Simple wrapper for always ensuring that database connection is opened and closed
     # Postgres + DatabaseConnector has problems with connections hanging around
+    dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
     queryDb <- function (query, ...) {
-        dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
         df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = appContext$short_name, ...)
-        DatabaseConnector::disconnect(dbConn)
         return (df)
     }
+    session$onSessionEnded(function() {
+        writeLines("Closing connection")
+        DatabaseConnector::disconnect(dbConn)
+    })
 
     niceColumnName <- list(
       SOURCE_NAME = "Database",
@@ -326,9 +329,9 @@ serverInstance <- function(input, output, session) {
         positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
 
         if (appContext$useExposureControls) {
-            negatives <- rewardb::getExposureControls(appContext, outcome)
+            negatives <- rewardb::getExposureControls(appContext, dbConn, outcome)
         } else {
-            negatives <- rewardb::getOutcomeControls(appContext, treatment)
+            negatives <- rewardb::getOutcomeControls(appContext, dbConn, treatment)
         }
         plot <- EmpiricalCalibration::plotCalibrationEffect(
           logRrNegatives = log(negatives$RR),
