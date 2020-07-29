@@ -79,7 +79,7 @@ dashboardUi  <- function (request) {
           box(
             box(
               selectizeInput("targetCohorts", label = "Drug exposures:", choices = NULL, multiple = TRUE),
-              selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = TRUE),
+              selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = TRUE)
             ),
             box(
               selectizeInput("exposureClass", label = "Drug exposure classes:", choices = NULL, multiple = TRUE),
