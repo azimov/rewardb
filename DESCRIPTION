@@ -11,6 +11,7 @@ Imports:
     shiny,
     shinyWidgets,
     shinydashboard,
+    shinycssloaders,
     ggplot2,
     scales,
     DT,

@@ -1,4 +1,4 @@
-getOutcomeControls <- function(appContext, targetCohortIds, minCohortSize=10) {
+getOutcomeControls <- function(appContext, dbConn, targetCohortIds, minCohortSize=10) {
 
   sql <- "
     SELECT r.*, o.type_id as outcome_type
@@ -11,8 +11,6 @@ getOutcomeControls <- function(appContext, targetCohortIds, minCohortSize=10) {
     AND r.calibrated = 0
     AND T_CASES >= @min_cohort_size
   "
-
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   negatives <- DatabaseConnector::renderTranslateQuerySql(
     dbConn,
     sql,
@@ -20,12 +18,10 @@ getOutcomeControls <- function(appContext, targetCohortIds, minCohortSize=10) {
     schema=appContext$short_name,
     min_cohort_size=minCohortSize
   )
-  DatabaseConnector::disconnect(dbConn)
-
   return(negatives)
 }
 
-getExposureControls <- function(appContext, outcomeCohortIds, minCohortSize=10) {
+getExposureControls <- function(appContext, dbConn, outcomeCohortIds, minCohortSize=10) {
 
   sql <- "
     SELECT r.*, o.type_id as outcome_type
@@ -38,8 +34,6 @@ getExposureControls <- function(appContext, outcomeCohortIds, minCohortSize=10) 
     AND r.calibrated = 0
     AND T_CASES >= @min_cohort_size
   "
-
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   negatives <- DatabaseConnector::renderTranslateQuerySql(
     dbConn,
     sql,
@@ -47,7 +41,6 @@ getExposureControls <- function(appContext, outcomeCohortIds, minCohortSize=10) 
     schema=appContext$short_name,
     min_cohort_size=minCohortSize
   )
-  DatabaseConnector::disconnect(dbConn)
 
   return(negatives)
 }
@@ -64,7 +57,6 @@ getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
   positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target_cohort_ids = targetCohortIds,
                                                           schema=appContext$short_name)
   DatabaseConnector::disconnect(dbConn)
-
   return(positives)
 }
 
@@ -95,7 +87,6 @@ getUncalibratedAtlasCohorts <- function(appContext) {
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, schema=appContext$short_name)
   DatabaseConnector::disconnect(dbConn)
-
   return(positives)
 }
 
@@ -129,7 +120,8 @@ computeCalibratedRows <- function (interest, negatives, idCol, calibrationType =
 #'@export
 calibrateTargets <- function(appContext, targetCohortIds) {
   # get negative control data rows
-  controlOutcomes <- getOutcomeControls(appContext, targetCohortIds)
+  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  controlOutcomes <- getOutcomeControls(appContext, dbConn, targetCohortIds)
   # get positives
   positives <- getUncalibratedOutcomes(appContext, targetCohortIds)
   print(paste("calibrating", nrow(positives) ,"outcomes"))
@@ -144,17 +136,16 @@ calibrateTargets <- function(appContext, targetCohortIds) {
       controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
     ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
   DatabaseConnector::disconnect(dbConn)
 }
 
 #'@export
 calibrateOutcomes <- function(appContext) {
-
+  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   outcomeIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
   # get negative control data rows
-  controlExposures <- getExposureControls(appContext, outcomeIds)
+  controlExposures <- getExposureControls(appContext, dbConn, outcomeIds)
   # get positives
   positives <- getUncalibratedExposures(appContext, outcomeIds)
   print(paste("calibrating", nrow(positives) ,"exposures"))
@@ -169,7 +160,7 @@ calibrateOutcomes <- function(appContext) {
       controlExposures$SOURCE_ID == .x$SOURCE_ID[1],
     ], idCol = "TARGET_COHORT_ID"), .keep=TRUE)
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
   DatabaseConnector::disconnect(dbConn)
 }
@@ -178,7 +169,8 @@ calibrateOutcomes <- function(appContext) {
 #'@export
 calibrateCustomCohorts <- function(appContext, targetCohortIds) {
   # get negative control data rows
-  controlOutcomes <- getOutcomeControls(appContext, targetCohortIds)
+  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  controlOutcomes <- getOutcomeControls(appContext, dbConn, targetCohortIds)
   positives <- getUncalibratedAtlasCohorts(appContext)
 
   print(paste("calibrating", nrow(positives) ,"outcomes"))
@@ -195,7 +187,6 @@ calibrateCustomCohorts <- function(appContext, targetCohortIds) {
     ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
 
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
   DatabaseConnector::disconnect(dbConn)
 }
@@ -204,7 +195,8 @@ calibrateCustomCohorts <- function(appContext, targetCohortIds) {
 #'@export
 calibrateOutcomesCustomCohorts <- function(appContext) {
   # get negative control data rows -- type 0 outcomes only
-  controlExposures <- getExposureControls(appContext, appContext$custom_outcome_cohort_ids)
+  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  controlExposures <- getExposureControls(appContext, dbConn, appContext$custom_outcome_cohort_ids)
   positives <- getUncalibratedAtlasCohorts(appContext)
 
   print(paste("calibrating", nrow(positives) ,"exposures"))
@@ -220,7 +212,6 @@ calibrateOutcomesCustomCohorts <- function(appContext) {
     ], idCol = "TARGET_COHORT_ID"), .keep=TRUE)
 
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
   DatabaseConnector::disconnect(dbConn)
 }

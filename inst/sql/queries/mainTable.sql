@@ -76,7 +76,7 @@ FROM @schema.result fr
     {@exclude_indications == TRUE} ? {AND pi.outcome_cohort_id IS NULL}
 
     {@filter_by_meta_analysis} ? {
-       AND mr.RR <= @benefit
+       AND mr.RR <= @benefit AND mr.P_VALUE < 0.05
     } : {
     AND 1 = CASE
         WHEN benefit_t.THRESH_COUNT IS NULL AND 'none' IN (@benefit_selection) THEN 1
