@@ -115,7 +115,9 @@ serverInstance <- function(input, output, session) {
         df <- mainTableRiskHarmFilters()
         tryCatch(
           {
-          df$I2 <- formatC(df$I2, digits = 2, format = "f")
+          if(length(df$I2)) {
+            df$I2 <- formatC(df$I2, digits = 2, format = "f")
+          }
           colnames(df)[colnames(df) == "I2"] <- "I-squared"
           colnames(df)[colnames(df) == "META_RR"] <- "IRR (meta analysis)"
           colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
@@ -137,6 +139,7 @@ serverInstance <- function(input, output, session) {
           },
           # Handles messy response
           error = function(e) {
+            ParallelLogger::logError(paste(e))
             return(DT::datatable(data.frame()))
         })
     })
