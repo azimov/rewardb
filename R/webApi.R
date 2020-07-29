@@ -71,7 +71,7 @@ insertAtlasCohortRef <- function(connection, config, atlasId) {
   }
 }
 
-removeAtlasCohort <- function (connection, config, atlasId) {
+removeAtlasCohort <- function (connection, config, atlasIds, dataSources) {
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql = "DELETE FROM @cohort_database_schema.@outcome_cohort_definition_table WHERE cohort_definition_id IN (@cohort_definition_id);
@@ -79,18 +79,19 @@ removeAtlasCohort <- function (connection, config, atlasId) {
     DELETE FROM @cohort_database_schema.@atlas_reference_table WHERE cohort_definition_id IN (@cohort_definition_id);",
     cohort_database_schema = config$cdmDatabase$schema,
     outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
-    cohort_definition_id = atlasId,
+    cohort_definition_id = atlasIds,
     atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
     atlas_concept_reference = config$cdmDatabase$atlasConceptReferenceTable
   )
 
-  for (dataSource in config$dataSources) {
-      DatabaseConnector::renderTranslateExecuteSql(
-        connection,
-        sql = "DELETE FROM @cohort_database_schema.@outcome_cohort_table WHERE cohort_definition_id IN (@cohort_definition_id)",
-        cohort_definition_id = atlasId,
-        cohort_database_schema = config$cdmDatabase$schema,
-        outcome_cohort_table = dataSource$outcomeCohortTable
-      )
-    }
+  for (ds in dataSources) {
+    dataSource <- config$dataSources[[ds]]
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection,
+      sql = "DELETE FROM @cohort_database_schema.@outcome_cohort_table WHERE cohort_definition_id IN (@cohort_definition_id)",
+      cohort_definition_id = atlasIds,
+      cohort_database_schema = config$cdmDatabase$schema,
+      outcome_cohort_table = dataSource$outcomeCohortTable
+    )
+  }
 }

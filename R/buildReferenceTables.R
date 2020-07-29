@@ -25,7 +25,7 @@ createAtlasReference <- function(connection, config, dataSource, customOutcomeCo
   )
 }
 
-createReferenceTables <- function(connection, config) {
+createReferenceTables <- function(connection, config, dataSources) {
   ParallelLogger::logInfo("Removing and inserting references")
   sql <- SqlRender::readSql(system.file("sql/create", "createReferenceTables.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
@@ -51,8 +51,8 @@ createReferenceTables <- function(connection, config) {
 
   sql <- SqlRender::readSql(system.file("sql/create", "outcomeCohortDefinitions.sql", package = "rewardb"))
 
-  for (dataSource in config$dataSources) {
-
+  for (ds in dataSources) {
+    dataSource <- config$dataSources[[ds]]
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,
@@ -63,7 +63,8 @@ createReferenceTables <- function(connection, config) {
   }
 
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortTable.sql", package = "rewardb"))
-  for (dataSource in config$dataSources) {
+  for (ds in dataSources) {
+    dataSource <- config$dataSources[[ds]]
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,

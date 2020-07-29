@@ -29,7 +29,6 @@ dataSources:
     cohortTable: "homer_cohort_ccae_v1151_dev" # will be created and saved on scratch.dbo
     outcomeCohortTable: "homer_outcome_cohort_ccae_v1151_dev" # will be created and saved on scratch.dbo
     outcomeSummaryTable: "homer_outcome_summary_ccae_v1151_dev" # will be created and saved on scratch.dbo
-    cdmOutcomeCohortSchema: "CDM_IBM_ccae_v1151.ohdsi_results" #schema for user defined cohorts in Atlas
 
   Optum SES_1156:
     sourceId: 10
@@ -39,7 +38,6 @@ dataSources:
     cohortTable: "homer_cohort_optum_v1156_dev"
     outcomeCohortTable: "homer_outcome_cohort_optum_v1156_dev"
     outcomeSummaryTable: "homer_outcome_summary_optum_v1156_dev"
-    cdmOutcomeCohortSchema: "CDM_Optum_Extended_SES_v1156.ohdsi_results"
 
   MDCD_1153:
     sourceId: 12
@@ -49,7 +47,6 @@ dataSources:
     cohortTable: "homer_cohort_mdcd_v1153_dev"
     outcomeCohortTable: "homer_outcome_cohort_mdcd_v1153_dev"
     outcomeSummaryTable: "homer_outcome_summary_mdcd_v1153_dev"
-    cdmOutcomeCohortSchema: "CDM_IBM_MDCD_v1153.ohdsi_results"
 
   MDCR_1152:
     sourceId: 13
@@ -59,4 +56,3 @@ dataSources:
     cohortTable: "homer_cohort_mdcr_v1152_dev"
     outcomeCohortTable: "homer_outcome_cohort_mdcr_v1152_dev"
     outcomeSummaryTable: "homer_outcome_summary_mdcr_v1152_dev"
-    cdmOutcomeCohortSchema: "CDM_IBM_MDCR_v1152.ohdsi_results"

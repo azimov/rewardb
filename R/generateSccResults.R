@@ -88,12 +88,12 @@ generateCustomOutcomeResult <- function(connection, config, dataSource, outcomeI
   exposureIds <- getAllExposureIds(connection, config)
   resultsTableName <- paste0(config$cdmDatabase$schema, ".", getResultsDatabaseTableName(config, dataSource))
   eIndex <- 1
-  base::writeLines("Starting SCC batch analysis...")
+  ParallelLogger::logInfo("Starting SCC batch analysis...")
   while (eIndex < length(exposureIds)) {
     eEnd <- min(eIndex + batchSize - 1, length(exposureIds))
-    base::writeLines(paste("Stariting batch", eIndex, eEnd))
+    ParallelLogger::logInfo(paste("Stariting batch", eIndex, eEnd))
     sccSummary <- runScc(config, dataSource, exposureIds[eIndex:eEnd], outcomeIds)
-    base::writeLines(paste("Appending data to table", resultsTableName))
+    ParallelLogger::logInfo(paste("Appending data to table", resultsTableName))
     DatabaseConnector::dbAppendTable(connection, resultsTableName, sccSummary)
     eIndex <- eIndex + batchSize
   }
@@ -101,10 +101,10 @@ generateCustomOutcomeResult <- function(connection, config, dataSource, outcomeI
 
 
 #' @export
-createResultsTables <- function(connection, config) {
-  for (dataSource in config$dataSources) {
+createResultsTables <- function(connection, config, dataSources) {
+  for (ds in dataSources) {
+    dataSource <- config$dataSources[[ds]]
     sql <- SqlRender::readSql(system.file("sql/create", "createResultsTable.sql", package = "rewardb"))
-
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql,
@@ -128,7 +128,8 @@ compileResults <- function(connection, config) {
   )
 
   # compile results from different data sources
-  for (dataSource in config$dataSources) {
+  for (ds in dataSources) {
+    dataSource <- config$dataSources[[ds]]
     sql <- SqlRender::readSql(system.file("sql/create", "compileResults.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
@@ -142,8 +143,9 @@ compileResults <- function(connection, config) {
   }
 }
 
-addAtlasResultsToMergedTable <- function(connection, config, atlasIds) {
-  for (dataSource in config$dataSources) {
+addAtlasResultsToMergedTable <- function(connection, config, atlasIds, dataSources) {
+  for (ds in dataSources) {
+    dataSource <- config$dataSources[[ds]]
     sql <- SqlRender::readSql(system.file("sql/create", "compileResults.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,

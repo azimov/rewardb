@@ -1,5 +1,6 @@
-createCohorts <- function(connection, config) {
-  for (dataSource in config$dataSources) {
+createCohorts <- function(connection, config, dataSources) {
+  for (ds in dataSources) {
+    dataSource <- config$dataSources[[ds]]
     sql <- SqlRender::readSql(system.file("sql/cohorts", "createCohortTable.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
@@ -27,9 +28,10 @@ createCohorts <- function(connection, config) {
   }
 }
 
-createOutcomeCohorts <- function(connection, config) {
+createOutcomeCohorts <- function(connection, config, dataSources) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
-  for (dataSource in config$dataSources) {
+  for (ds in dataSources) {
+    dataSource <- config$dataSources[[ds]]
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,
@@ -42,12 +44,13 @@ createOutcomeCohorts <- function(connection, config) {
   }
 }
 
-addAtlasOutcomeCohort <- function (connection, config, atlasId) {
+addAtlasOutcomeCohort <- function (connection, config, atlasId, dataSources) {
     cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, config$webApiUrl)
     sql <- ROhdsiWebApi::getCohortSql(cohortDefinition, config$webApiUrl, generateStats = FALSE)
 
     ParallelLogger::logInfo(paste("Generating cohort",  atlasId, "from ATLAS SQL definition"))
-    for (dataSource in config$dataSources) {
+    for (ds in dataSources) {
+      dataSource <- config$dataSources[[ds]]
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = sql,
