@@ -2,12 +2,14 @@ dashboardUi  <- function (request) {
   library(shiny, warn.conflicts=FALSE)
   library(shinyWidgets, warn.conflicts=FALSE)
   library(shinydashboard, warn.conflicts=FALSE)
+  library(shinycssloaders, warn.conflicts=FALSE)
+
   scBenefitRisk <- c("none", "one", "most", "all")
   # This hides the outcome exporues/result pairing
   metaDisplayCondtion <- "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0"
 
   mainResults <- box(
-    DT::dataTableOutput("mainTable"),
+    withSpinner(DT::dataTableOutput("mainTable")),
     downloadButton("downloadFullTable", "Download"),
     width = 12
   )
@@ -20,17 +22,17 @@ dashboardUi  <- function (request) {
           id = "tabsetPanelResults",
         tabPanel(
           "Detailed results",
-          DT::dataTableOutput("fullResultsTable"),
+          withSpinner(DT::dataTableOutput("fullResultsTable")),
             downloadButton("downloadSubTable", "Download")
           ),
           tabPanel(
             "Forest plot",
-            plotOutput("forestPlot", height = 800, hover = hoverOpts("plotHoverForestPlot")),
+            withSpinner(plotOutput("forestPlot", height = 800, hover = hoverOpts("plotHoverForestPlot"))),
             div(strong("Figure 1."), "Forest plot of effect estimates from each database")
           ),
           tabPanel(
             "Calibration plot",
-            plotOutput("calibrationPlot", height = 800, hover = hoverOpts("calibrationPlot")),
+            withSpinner(plotOutput("calibrationPlot", height = 800, hover = hoverOpts("calibrationPlot"))),
             div(
               strong("Figure 2."),
               paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates")
