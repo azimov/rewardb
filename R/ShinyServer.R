@@ -10,8 +10,15 @@ serverInstance <- function(input, output, session) {
     # Postgres + DatabaseConnector has problems with connections hanging around
     dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
     queryDb <- function (query, ...) {
+     tryCatch({
         df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = appContext$short_name, ...)
         return (df)
+      },
+      error = function(e) {
+        DatabaseConnector::disconnect(dbConn)
+        dbConn <<- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+      }
+     )
     }
     session$onSessionEnded(function() {
         writeLines("Closing connection")
