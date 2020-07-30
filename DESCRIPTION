@@ -21,3 +21,4 @@ Suggests:
     doParallel,
     foreach,
     meta
+RoxygenNote: 7.1.0
