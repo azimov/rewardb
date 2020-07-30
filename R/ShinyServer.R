@@ -1,4 +1,8 @@
 #' Requires a server appContext instance to be loaded in environment see scoping of launchDashboard
+#' This can be obtained with rewardb::loadAppContext(...)
+#' @param input shiny input object
+#' @param output shiny output object
+#' @param session
 serverInstance <- function(input, output, session) {
     library(shiny, warn.conflicts=FALSE)
     library(shinyWidgets, warn.conflicts=FALSE)
@@ -308,12 +312,9 @@ serverInstance <- function(input, output, session) {
 }
 
 #' Launch the REWARD-B Shiny app
-#'
-#' @param configPath path to configuration file
-#'
+#' @param configPath path to configuration file. This is loaded in to the local environment with the appContext variable
 #' @details
 #' Launches a Shiny app for a given configuration file
-#'
 #' @export
 launchDashboard <- function (configPath) {
   e <- environment()

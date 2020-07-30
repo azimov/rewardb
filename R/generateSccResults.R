@@ -1,3 +1,5 @@
+
+#' Peform SCC from self controlled cohort package with rewardbs settings
 runScc <- function(config, dataSource, exposureIds, outcomeIds, cores = parallel::detectCores() - 1) {
   sccResult <- SelfControlledCohort::runSelfControlledCohort(
     connectionDetails = config$cdmDataSource,

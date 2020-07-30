@@ -1,18 +1,8 @@
-#'@export
-manhattanPlot <- function(dfFunc, xCol, yFunc) {
-  df <- dfFunc()
-  f <- list()
-  x <- list(title = xCol(), titlefont = f)
-  y <- list(title = yFunc, titlefont = f)
-  plot <- plot_ly(df, x = ~df[, xCol()], y = ~get(yFunc), color = ~SOURCE_NAME, type = "scatter", mode = "markers",
-                  text = ~paste(TARGET_COHORT_NAME, "\n", OUTCOME_COHORT_NAME))
-  plot <- plot %>% layout(xaxis = x, yaxis = y)
-  return(plot)
-}
-
+#' Create a forest plot
+#' @param table data.frame with columns RR, LB_95, UB_95
+#' @return ggplot plot
 #'@export
 forestPlot <- function(table) {
-
   label <- paste0("IRR= ", round(table$`RR` * 1, 2),
                   "; 95% CI= (", round(table$`LB_95`, 2), " - ", round(table$`UB_95`, 2), ")")
   plot <- ggplot2::ggplot(
@@ -34,24 +24,8 @@ forestPlot <- function(table) {
   return(plot)
 }
 
-#'@export
-distPlot <- function(dfFunc, xCol, yFunc) {
-  df <- dfFunc()
-  plot <- ggplot(df) +
-    aes_string(x = xCol(), y = yFunc) +
-    geom_boxplot(aes(fill = SOURCE_NAME))
-  return(plot)
-}
-
-#'@export
-outcomeDistribution <- function(df, dfScores, target, outcome) {
-  plot <- ggplot(df, aes(x = RR)) + geom_density(adjust = 3, trim = TRUE, alpha = 0.4, aes(fill = SOURCE_NAME))
-
-  plot <- plot + geom_vline(data = dfScores, aes(xintercept = RR, color = SOURCE_NAME))
-  return(ggplotly(plot))
-}
-
-#' Peform meta analysis on a dataframe of elements and append result to last row
+#' Peform meta analysis on a dataframe of elements and return row (e.g. to be appended with rbind
+#' @param table expected data.frame containing fielsds: T_AT_RISK, T_PT, T_CASES, C_AT_RISK, C_PT, C_CASES, IRR
 #'@export
 getMetaAnalysisData <- function(table) {
   table$I2 <- NA

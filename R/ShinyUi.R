@@ -1,3 +1,5 @@
+#' Ui for rewardb dashboard
+#' @param request shiny request object
 dashboardUi  <- function (request) {
   library(shiny, warn.conflicts=FALSE)
   library(shinyWidgets, warn.conflicts=FALSE)

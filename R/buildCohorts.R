@@ -1,3 +1,7 @@
+#' Create exposures cohorts in the CDM - this function can take a long time
+#' @param connection DatabaseConnector connection to cdm
+#' @param config
+#' @param dataSources dataSources to run cohort on
 createCohorts <- function(connection, config, dataSources) {
   for (ds in dataSources) {
     dataSource <- config$dataSources[[ds]]
@@ -28,6 +32,10 @@ createCohorts <- function(connection, config, dataSources) {
   }
 }
 
+#' Create outcome cohorts in the CDM - this function can take a very very long time
+#' @param connection DatabaseConnector connection to cdm
+#' @param config
+#' @param dataSources dataSources to run cohort on
 createOutcomeCohorts <- function(connection, config, dataSources) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
   for (ds in dataSources) {
@@ -44,6 +52,11 @@ createOutcomeCohorts <- function(connection, config, dataSources) {
   }
 }
 
+#' Pulls cohort from atlas and then creates it in the rewardb outcome cohorts table
+#' @param connection DatabaseConnector connection to cdm
+#' @param config
+#' @param atlasId atlasId in WebAPI
+#' @param dataSources dataSources to run cohort on
 addAtlasOutcomeCohort <- function (connection, config, atlasId, dataSources) {
     cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, config$webApiUrl)
     sql <- ROhdsiWebApi::getCohortSql(cohortDefinition, config$webApiUrl, generateStats = FALSE)
@@ -63,9 +76,14 @@ addAtlasOutcomeCohort <- function (connection, config, atlasId, dataSources) {
     }
 }
 
-createCustomDrugEras <- function (connection, config) {
+#' create the custom drug eras, these are for drugs with nonstandard eras (e.g. where doeses aren't picked up by
+#' repeat perscriptions). Could be something like a vaccine where exposed time is non trivial.
+#' @param connection DatabaseConnector connection to cdm
+#' @param
+createCustomDrugEras <- function (connection, config, dataSources) {
     sql <- SqlRender::readSql(system.file("sql/create", "customDrugEra.sql", package = "rewardb"))
-    for (dataSource in config$dataSources) {
+    for (ds in dataSources) {
+      dataSource <- config$dataSources[[ds]]
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = sql,

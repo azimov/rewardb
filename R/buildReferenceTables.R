@@ -1,3 +1,6 @@
+#' Names for target cohorts
+#' @param connection DatabaseConnector connection to cdm
+#' @param config
 createTargetDefinitions <- function(connection, config) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createIngredientConceptReferences.sql", package = "rewardb"))
   ingredients <- DatabaseConnector::renderTranslateExecuteSql(
@@ -10,6 +13,11 @@ createTargetDefinitions <- function(connection, config) {
   )
 }
 
+#' Create atlas cohort references in specified data source
+#' @param connection DatabaseConnector connection to cdm
+#' @param config
+#' @param dataSources dataSource to run cohort on
+#' @param customOutcomeCohortList custom cohorts to create
 createAtlasReference <- function(connection, config, dataSource, customOutcomeCohortList) {
 
   sql <- SqlRender::readSql(system.file("sql/create", "customAtalsCohorts.sql", package = "rewardb"))
@@ -25,6 +33,11 @@ createAtlasReference <- function(connection, config, dataSource, customOutcomeCo
   )
 }
 
+#' Create reference tables used to compute things in rewardb
+#' TODO: split up data sources and main reference tables in to different function calls
+#' @param connection DatabaseConnector connection to cdm
+#' @param config
+#' @param dataSources dataSources to run cohort on
 createReferenceTables <- function(connection, config, dataSources) {
   ParallelLogger::logInfo("Removing and inserting references")
   sql <- SqlRender::readSql(system.file("sql/create", "createReferenceTables.sql", package = "rewardb"))

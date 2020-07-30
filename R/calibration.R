@@ -1,4 +1,10 @@
-getOutcomeControls <- function(appContext, dbConn, targetCohortIds, minCohortSize=10) {
+#' Returns a set of specified negative controls for input target cohorts
+#' @param appContext rewardb app context
+#' @param connection DatabaseConnector connection to postgres rewardb instance
+#' @param outcomeCohortIds cohorts to get negative controls for
+#' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
+#' @return data.frame of negative control exposures for specified outcomes
+getOutcomeControls <- function(appContext, connection, targetCohortIds, minCohortSize=10) {
 
   sql <- "
     SELECT r.*, o.type_id as outcome_type
@@ -12,7 +18,7 @@ getOutcomeControls <- function(appContext, dbConn, targetCohortIds, minCohortSiz
     AND T_CASES >= @min_cohort_size
   "
   negatives <- DatabaseConnector::renderTranslateQuerySql(
-    dbConn,
+    connection,
     sql,
     target_cohort_ids = targetCohortIds,
     schema=appContext$short_name,
@@ -21,7 +27,13 @@ getOutcomeControls <- function(appContext, dbConn, targetCohortIds, minCohortSiz
   return(negatives)
 }
 
-getExposureControls <- function(appContext, dbConn, outcomeCohortIds, minCohortSize=10) {
+#' Returns a set of specified negative controls for input outcome cohorts
+#' @param appContext rewardb app context
+#' @param connection DatabaseConnector connection to postgres rewardb instance
+#' @param outcomeCohortIds cohorts to get negative controls for
+#' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
+#' @return data.frame of negative control exposures for specified outcomes
+getExposureControls <- function(appContext, connection, outcomeCohortIds, minCohortSize=10) {
 
   sql <- "
     SELECT r.*, o.type_id as outcome_type
@@ -35,7 +47,7 @@ getExposureControls <- function(appContext, dbConn, outcomeCohortIds, minCohortS
     AND T_CASES >= @min_cohort_size
   "
   negatives <- DatabaseConnector::renderTranslateQuerySql(
-    dbConn,
+    connection,
     sql,
     outcome_cohort_ids = outcomeCohortIds,
     schema=appContext$short_name,
@@ -45,6 +57,9 @@ getExposureControls <- function(appContext, dbConn, outcomeCohortIds, minCohortS
   return(negatives)
 }
 
+#' get outcomes that are not calibrated
+#' param appContext rewardb app context
+#' @return data.frame of uncalibrated results from databases
 getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
   sql <- "
       SELECT r.*, o.type_id as outcome_type FROM @schema.result r
@@ -60,6 +75,9 @@ getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
   return(positives)
 }
 
+#' get exposures that are not calibrated
+#' @param appContext rewardb app context
+#' @return data.frame of uncalibrated results from databases
 getUncalibratedExposures <- function(appContext, outcomeCohortIds) {
   sql <- "
       SELECT r.*, o.type_id as outcome_type FROM @schema.result r
@@ -76,6 +94,9 @@ getUncalibratedExposures <- function(appContext, outcomeCohortIds) {
   return(positives)
 }
 
+#' Get atlas cohorts results pre-calibration
+#' @param appContext rewardb app context
+#' @return data.frame of uncalibrated results from databases
 getUncalibratedAtlasCohorts <- function(appContext) {
   sql <- "
       SELECT r.*, o.type_id as outcome_type
@@ -90,6 +111,11 @@ getUncalibratedAtlasCohorts <- function(appContext) {
   return(positives)
 }
 
+#' Actual calibration is performed here in a dplyr friendly way
+#' @param interest this is the cohort set that should be calibrated
+#' @param negatives these are the negative control cohort results
+#' @param idCol - either target_cohort_id or outcome_cohort_id, this function is used in p
+#' @return data.frame
 computeCalibratedRows <- function (interest, negatives, idCol, calibrationType = 1) {
   nullDist <- EmpiricalCalibration::fitNull(logRr = log(negatives$RR), seLogRr = negatives$SE_LOG_RR)
   calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(interest$RR), interest$SE_LOG_RR)
@@ -117,7 +143,11 @@ computeCalibratedRows <- function (interest, negatives, idCol, calibrationType =
   return(result)
 }
 
-#'@export
+#' Compute the calibrated results for cohort targets
+#' Requires negative control cohorts to be set
+#' @param appContext takes a rewardb application context
+#' @param targetCohortIds - these are the cohort ids in the db and (currently) must be specified manually. TODO: remove
+#' @export
 calibrateTargets <- function(appContext, targetCohortIds) {
   # get negative control data rows
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
@@ -140,7 +170,10 @@ calibrateTargets <- function(appContext, targetCohortIds) {
   DatabaseConnector::disconnect(dbConn)
 }
 
-#'@export
+#' Compute the calibrated results for cohort outcomes
+#' Requires negative control cohorts to be set
+#' @param appContext takes a rewardb application context
+#' @export
 calibrateOutcomes <- function(appContext) {
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   outcomeIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
@@ -165,8 +198,11 @@ calibrateOutcomes <- function(appContext) {
   DatabaseConnector::disconnect(dbConn)
 }
 
-
-#'@export
+#' Compute the calibrated results for custom cohort outcomes
+#' Requires negative control cohorts to be set
+#' @param appContext takes a rewardb application context
+#' @param targetCohortIds - these are the cohort ids in the db and (currently) must be specified manually. TODO: remove
+#' @export
 calibrateCustomCohorts <- function(appContext, targetCohortIds) {
   # get negative control data rows
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
@@ -191,8 +227,10 @@ calibrateCustomCohorts <- function(appContext, targetCohortIds) {
   DatabaseConnector::disconnect(dbConn)
 }
 
-
-#'@export
+#' Compute the calibrated results for custom cohort outcomes
+#' Requires negative control cohorts to be set
+#' @param appContext takes a rewardb application context
+#' @export
 calibrateOutcomesCustomCohorts <- function(appContext) {
   # get negative control data rows -- type 0 outcomes only
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
@@ -217,7 +255,9 @@ calibrateOutcomesCustomCohorts <- function(appContext) {
 }
 
 #' Input should specify a csv file with the columns target_concept_id and outcome_concept_id
-#' This script will then work out which cohorts they should apply to
+#' This function will then work out which cohorts they should apply to as it is done on the concept level
+#' This is not needed if automated manual controls are specified from the cem
+#' @param appContext takes a rewardb application context
 #'@export
 addManualNegativeOutcomeControls <- function (appContext) {
 

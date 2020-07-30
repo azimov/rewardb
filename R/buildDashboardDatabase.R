@@ -1,3 +1,5 @@
+#' Map target cohorts to names and exposure classes
+#' @param appContext rewardb app context
 extractTargetCohortNames <- function (appContext) {
   library(dplyr)
   sql <- "
@@ -14,7 +16,6 @@ extractTargetCohortNames <- function (appContext) {
   {@fixed_target_cohorts} ? {WHERE t.cohort_definition_id IN (@target_cohort_ids)}
       ";
 
-
   nameSet <- DatabaseConnector::renderTranslateQuerySql(
     appContext$cdmConnection,
     sql,
@@ -24,7 +25,6 @@ extractTargetCohortNames <- function (appContext) {
     cohort_definition_table = appContext$resultsDatabase$cohortDefinitionTable,
     results_database_schema = appContext$resultsDatabase$schema
   )
-
 
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target"), nameSet)
 
@@ -51,6 +51,8 @@ extractTargetCohortNames <- function (appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target_exposure_class"), exposureClasses)
 }
 
+#' Map outcome cohorts to names
+#' @param appContext rewardb app context
 extractOutcomeCohortNames <- function (appContext) {
   sql <- " 
       SELECT 
@@ -86,6 +88,8 @@ extractOutcomeCohortNames <- function (appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".outcome"), nameSet)
 }
 
+#' Map outcomes to concept ids
+#' @param appContext rewardb app context
 createOutcomeConceptMapping <- function (appContext) {
   sql <- "INSERT INTO @schema.outcome_concept (outcome_cohort_id, condition_concept_id)
     SELECT outcome_cohort_id, outcome_cohort_id/100 AS condition_concept_id
@@ -117,6 +121,8 @@ createOutcomeConceptMapping <- function (appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, paste(appContext$short_name, ".outcome_concept"), unique(data))
 }
 
+#' Takes results from a CDM and puts them in the rewardb schema
+#' @param appContext rewardb app context
 extractResultsSubset <- function(appContext){
 
   sql <- "
@@ -155,7 +161,6 @@ extractResultsSubset <- function(appContext){
   DatabaseConnector::dbAppendTable(appContext$connection,paste0(appContext$short_name, ".result"), resultSet)
 }
 
-
 createTables <- function (appContext) {
   pathToSqlFile <- system.file("sql/create", "reward_schema.sql", package = "rewardb")
   sql <- SqlRender::readSql(pathToSqlFile)
@@ -163,6 +168,10 @@ createTables <- function (appContext) {
   DatabaseConnector::executeSql(appContext$connection, sql = sql)
 }
 
+#' Using a CEM source finds any evidence related to conditions and exposures
+#' This is used for the automated construction of negative control sets and the indication labels
+#' TODO: test and improve this logic and move to its own R file
+#' @param appContext rewardb app context
 addCemEvidence <- function(appContext) {
   cdmConnection <- appContext$cdmConnection
 
@@ -226,6 +235,9 @@ addCemEvidence <- function(appContext) {
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema=appContext$short_name)
 }
 
+#' Perform meta-analysis on data sources
+#' @param table data.frame
+#' @return data.frame - results of meta analysis
 metaAnalysis <- function(table) {
   # Compute meta analysis with random effects model
   results <- meta::metainc(
@@ -257,6 +269,8 @@ metaAnalysis <- function(table) {
   return(row)
 }
 
+#' Runs and saves metanalayis on data
+#' @param appContext
 performMetaAnalysis <- function(appContext) {
   library(dplyr, warn.conflicts = FALSE)
   fullResults <- DatabaseConnector::renderTranslateQuerySql(
@@ -280,6 +294,13 @@ performMetaAnalysis <- function(appContext) {
   DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, data.frame(results))
 }
 
+#' Builds a rewardb dashboard for all exposures for subset outcomes or all outcomes for subset exposures
+#' Requires the rewardb results to be generated already.
+#' This exports the data to a db backend and allows the config file to be used to run the shiny dashboard
+#' @param filePath - path to a yaml configuration file used
+#' @param calibrateOutcomes - where subset of outcomes is specified
+#' @param calibrateTargets - where a subset of target exposures is specified
+#' @export
 buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTargets = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   print("Creating schema")

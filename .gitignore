@@ -8,3 +8,4 @@ errorReport.txt
 errorReportSql.txt
 /.idea/
 /.Rbuildignore
+shiny_bookmarks/*

@@ -1,3 +1,7 @@
+#' Create outcome summary tables
+#' @param connection DatabaseConnector connection object
+#' @param config
+#' @param dataSources
 createSummaryTables <- function (connection, config, dataSources) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "insertOutcomeSummary.sql", package = "rewardb"))
   createSql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeSummary.sql", package = "rewardb"))
@@ -24,6 +28,11 @@ createSummaryTables <- function (connection, config, dataSources) {
   }
 }
 
+#' Add outcome summary resultS
+#' @param connection DatabaseConnector connection object
+#' @param config
+#' @param outcomeCohortIds
+#' @param dataSources
 addOutcomeSummary <- function (connection, config, outcomeCohortIds, dataSources) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "insertOutcomeSummary.sql", package = "rewardb"))
   deleteSql <- "DELETE FROM @cohort_database_schema.@outcome_summary_table WHERE outcome_cohort_definition_id IN (@custom_outcome_cohort_ids)"
