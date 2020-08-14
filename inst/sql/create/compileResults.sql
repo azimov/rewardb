@@ -18,6 +18,7 @@ insert into @results_database_schema.@merged_results_table
   , p_value
 )
 select
+    DISTINCT
   1 as analysis_id
   , @source_id as source_id
   , exposureId as target_cohort_id

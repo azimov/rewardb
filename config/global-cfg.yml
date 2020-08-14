@@ -11,7 +11,7 @@ cdmDatabase:
   cohortDefinitionTable: "rewardb_cohort_definition_dev"
   outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
   conceptSetDefinitionTable: "rewardb_conceptset_definition_dev"
-  mergedResultsTable: "rewardb_results_dev"
+  mergedResultsTable: "rewardb_results_copy"
   atlasCohortReferenceTable: "rewardb_atlas_cohort_reference"
   atlasConceptReferenceTable: "rewardb_atlas_concept_reference"
 

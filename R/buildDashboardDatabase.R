@@ -127,6 +127,7 @@ extractResultsSubset <- function(appContext){
 
   sql <- "
     select
+    DISTINCT
       scca.source_id,
       scca.target_cohort_id,
       scca.outcome_cohort_id,
