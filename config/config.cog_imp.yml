@@ -7,9 +7,9 @@ target_concept_ids: ~
 useExposureControls: true
 connectionDetails:
   dbms: "postgresql"
-  server: "AWSASJNVA4216.jnj.com/rewardb_dev"
+  server: "reward-restore.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
   port: 5432
-  user: "postgres"
+  user: "reward_admin"
 
 resultsDatabase:
   schema: "scratch.jgilber2"
