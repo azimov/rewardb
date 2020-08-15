@@ -7,7 +7,7 @@ target_concept_ids: ~
 useExposureControls: true
 connectionDetails:
   dbms: "postgresql"
-  server: "reward-restore.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
+  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws/rewardb_dev"
   port: 5432
   user: "reward_admin"
 
