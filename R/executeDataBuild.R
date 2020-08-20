@@ -92,7 +92,7 @@ fullExecution <- function(
     # run SCC
     for (ds in dataSources) {
       dataSource <- config$dataSources[[ds]]
-      batchScc(connection, config, dataSource)
+      runScc(connection, config, dataSource)
     }
   }
   compileResults(connection, config, dataSources)
@@ -156,7 +156,7 @@ addAtlasCohort <- function(
   for (ds in dataSources) {
     dataSource <- config$dataSources[[ds]]
     ParallelLogger::logInfo(paste("Getting scc", dataSource$database))
-    generateCustomOutcomeResult(connection, config, dataSource, atlasId) # untested
+    runScc(connection, config, dataSource, outcomeIds = atlasId) # untested
   }
 
   ParallelLogger::logInfo(paste("Adding to final results table", dataSource$database))
