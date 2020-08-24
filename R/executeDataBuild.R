@@ -1,3 +1,19 @@
+getLogger <- function(logFileName, .clearLoggers = TRUE) {
+  if (.clearLoggers) {
+    ParallelLogger::clearLoggers()
+  }
+  logger <- ParallelLogger::createLogger(
+    name = "SIMPLE",
+    threshold = "INFO",
+    appenders = list(
+      ParallelLogger::createFileAppender(layout = ParallelLogger::layoutTimestamp, fileName = logFileName),
+      ParallelLogger::createConsoleAppender(layout = ParallelLogger::layoutTimestamp)
+    )
+  )
+  ParallelLogger::registerLogger(logger)
+  return(logger)
+}
+
 #' Run a full execution of the rewardb pipeline on the CDM sets specified
 #' This creates a set of reference tables, creates exposure cohorts, creates outcome cohorts, generates summary tables
 #' of combined outcome, exposure pairs and runs SCC analysis.
@@ -23,15 +39,7 @@ fullExecution <- function(
   dataSources = NULL,
   logFileName = "rbDataBuild.log"
 ) {
-  logger <- ParallelLogger::createLogger(
-    name = "DataGen",
-    threshold = "INFO",
-    appenders = list(
-      ParallelLogger::createFileAppender(layout = ParallelLogger::layoutTimestamp, fileName = logFileName),
-      ParallelLogger::createConsoleAppender(layout = ParallelLogger::layoutTimestamp)
-    )
-  )
-  ParallelLogger::registerLogger(logger)
+  logger <- getLogger(logFileName)
   # load config
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
@@ -115,14 +123,7 @@ addAtlasCohort <- function(
   dataDir = "data",
   addResult = TRUE
 ) {
-  logger <- ParallelLogger::createLogger(
-    name = "SIMPLE",
-    threshold = "INFO",
-    appenders = list(
-      ParallelLogger::createFileAppender(layout = ParallelLogger::layoutTimestamp, fileName = logFileName),
-      ParallelLogger::createConsoleAppender(layout = ParallelLogger::layoutTimestamp)
-    )
-  )
+  logger <- getLogger(logFileName)
   ParallelLogger::registerLogger(logger)
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
