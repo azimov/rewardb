@@ -189,3 +189,82 @@ addAtlasCohort <- function(
   }
 
 }
+
+checkDataSources <- function(dataSources, config) {
+  if(is.null(dataSources)) {
+    dataSources <- names(config$dataSources)
+  }
+
+  for (ds in dataSources) {
+    if (!(ds %in% names(config$dataSources) )) {
+      errorMsg <- paste(ds, "not found in configuration")
+      ParallelLogger::logError(errorMsg)
+      stop(errorMsg)
+    }
+  }
+
+  return(dataSources)
+}
+
+#' Add custom exposure cohort
+#' @description
+#' Add custom atlas cohorts to the results dataset. Just needs an atlasId and cdm and the cohort will be generated with the
+#' result being added to the final dataset.
+#'
+#' @param conceptSetId add specified atlas id
+#' @param removeExisting removes any already existing data (useful if you change the cohort definition in atlas as rewardb does not track definition verions)
+#' @param configFilePath path on disk to a yaml configuration file containing all needed config setting to point at relevant cdm
+#' @param dataSources vector of strings or null - keys to cdm stores to use. By default all cdms are added for a given config file
+#' @param logFileName location to store parallel logger logfile
+addCustomExposureConcept <- function(
+  conceptSetId,
+  cohortName,
+  configFilePath = "config/global-cfg.yml",
+  removeExisting = FALSE,
+  dataSources = NULL,
+  logFileName = "rbAtlasCohort.log",
+  outputPath = "data"
+) {
+  logger <- getLogger(logFileName)
+  # load config
+  config <- yaml::read_yaml(configFilePath)
+  dataSources <- checkDataSources(dataSources, config)
+  conceptSetDefinition <- ROhdsiWebApi::getConceptSetDefinition(conceptSetId, config$webApiUrl)
+
+   if (!dir.exists(outputPath)) {
+    dir.create(outputPath)
+  }
+
+  for (dataSourceKey in names(dataSources)) {
+    dataSource <- dataSources[[dataSourceKey]]
+    connection <- DatabaseConnector::connect(dataSource$connectionDetails)
+    tryCatch(
+      {
+      if (removeExisting) {
+        ParallelLogger::logInfo("Removing existing cohort")
+        removeCustomExposureCohort(connection, config, conceptSetId, dataSource)
+      }
+
+      ParallelLogger::logInfo("Inserting references")
+      insertCustomExposureRef(connection, config, conceptSetId, conceptSetDefinition, cohortName)
+
+      ParallelLogger::logInfo("Running cohort")
+      # Removes then adds cohort with atlas generated sql
+      addCustomExposureCohort(connection, config, conceptSetId, dataSource)
+
+      ParallelLogger::logInfo(paste("Getting scc", dataSource$database))
+      dataFileName <- paste0(outputPath, "/", dataSourceKey, "-SCC-CustomExposure", conceptSetId, ".csv")
+      sccSummary <- runScc(connection = connection, config = config, dataSource = dataSource, exposureIds = conceptSetId, storeResults=FALSE)
+
+    },
+      error = function(err) {
+        ParallelLogger::logError(err)
+      },
+      finally = {
+        # Cleanup database connections
+        DatabaseConnector::disconnect(connection)
+        ParallelLogger::unregisterLogger(logger)
+      }
+    )
+  }
+}
