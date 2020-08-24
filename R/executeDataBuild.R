@@ -111,7 +111,9 @@ addAtlasCohort <- function(
   configFilePath = "config/global-cfg.yml",
   removeExisting = FALSE,
   dataSources = NULL,
-  logFileName = "rbAtlasCohort.log"
+  logFileName = "rbAtlasCohort.log",
+  dataDir = "data",
+  addResult = TRUE
 ) {
   logger <- ParallelLogger::createLogger(
     name = "SIMPLE",
@@ -153,12 +155,37 @@ addAtlasCohort <- function(
   # Adds new cohort to summary table
   addOutcomeSummary(connection, config, atlasId, dataSources)
 
+  getDataFileName <- function(dataSource) {
+    paste0(dataDir, "/scc-results-", atlasId, "-", dataSource$database, ".csv")
+  }
+
   for (ds in dataSources) {
     dataSource <- config$dataSources[[ds]]
     ParallelLogger::logInfo(paste("Getting scc", dataSource$database))
-    runScc(connection, config, dataSource, outcomeIds = atlasId) # untested
+    sccSummary <- runScc(connection = connection, config = config, dataSource = dataSource, outcomeIds = atlasId, storeResults=FALSE)
+    dataFileName <- getDataFileName(dataSource)
+    ParallelLogger::logInfo(paste("Saving result", dataFileName))
+    write.csv(sccSummary, dataFileName, row.names = FALSE)
   }
 
   ParallelLogger::logInfo(paste("Adding to final results table", dataSource$database))
-  addAtlasResultsToMergedTable(connection, config, atlasId, dataSources)
+
+  if (addResult) {
+    results <- data.frame()
+
+    # Merge data files and append them to the table
+    for (ds in dataSources) {
+      dataSource <- config$dataSources[[ds]]
+      dataFileName <- getDataFileName(dataSource)
+      ParallelLogger::logInfo(paste("Adding result to merged table", dataFileName))
+      if (file.exists(dataFileName)) {
+        results <- rbind(results, read.csv(dataFileName))
+      }
+    }
+
+    if (length(results)) {
+      addCsvAtlasResultsToMergedTable(connection = connection, config = config, results = results, removeOutcomeIds = TRUE)
+    }
+  }
+
 }
