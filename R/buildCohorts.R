@@ -32,6 +32,34 @@ createCohorts <- function(connection, config, dataSources) {
   }
 }
 
+#' Pulls concept set from webApi and adds cohort
+#' @param connection DatabaseConnector connection to cdm
+#' @param config
+#' @param conceptSetId concept set in WebAPI
+#' @param dataSources dataSources to run cohort on
+addCustomExposureCohort <- function (connection, config, conceptSetIds, dataSources) {
+  # Add conceptSetId/name to custom_exposure_cohort table
+  # Get all items, add them to the custom_exposure_concept table
+  for (ds in dataSources) {
+     dataSource <- config$dataSources[[ds]]
+     options <- list(
+       connection = connection,
+       sql = SqlRender::readSql(system.file("sql/cohorts", "addCustomExposureCohorts.sql", package = "rewardb")),
+       cdm_database_schema = dataSource$cdmDatabaseSchema,
+       drug_era_schema = dataSource$cdmDatabaseSchema, # Use cdm drug eras
+       cohort_database_schema = config$cdmDatabase$schema,
+       vocab_schema = config$cdmDatabase$vocabularySchema,
+       cohort_table = dataSource$cohortTable,
+       only_add_subset = 1,
+       custom_exposure_subset = conceptSetIds
+     )
+     do.call(DatabaseConnector::renderTranslateExecuteSql, options)
+     # Custom drug eras
+     options$drug_era_schema <- dataSource$drugEraSchema # Custom drug era tables live here
+     do.call(DatabaseConnector::renderTranslateExecuteSql, options)
+  }
+}
+
 #' Create outcome cohorts in the CDM - this function can take a very very long time
 #' @param connection DatabaseConnector connection to cdm
 #' @param config
