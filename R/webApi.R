@@ -129,7 +129,7 @@ insertCustomExposureRef <- function(connection, config, conceptSetId, conceptSet
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       "INSERT INTO @cohort_database_schema.custom_exposure
-                (CUSTOM_EXPOSURE_ID, COHORT_NAME, ATLAS_SOURCE) VALUES (@conceptSetId, '@atlasSource', '@cohortName')",
+                (CUSTOM_EXPOSURE_ID, COHORT_NAME, ATLAS_SOURCE) VALUES (@conceptSetId, '@cohortName', '@atlasSource')",
       cohort_database_schema = config$cdmDatabase$schema,
       cohortName = gsub("'","''", cohortName),
       conceptSetId = conceptSetId,
@@ -154,7 +154,7 @@ insertCustomExposureRef <- function(connection, config, conceptSetId, conceptSet
     tableName <- paste0(config$cdmDatabase$schema, ".custom_exposure_concept")
     DatabaseConnector::dbAppendTable(connection, tableName, results)
   } else {
-    print(paste("Concept set", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))
+    print(paste("Concept set", conceptSetId, "Already in database, use removeAtlasCohort to clear entry references"))
   }
 }
 

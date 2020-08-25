@@ -44,12 +44,12 @@ fullExecution <- function(
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
 
-  if(is.null(dataSources)) {
+  if (is.null(dataSources)) {
     dataSources <- names(config$dataSources)
   }
 
   for (ds in dataSources) {
-    if (!(ds %in% names(config$dataSources) )) {
+    if (!(ds %in% names(config$dataSources))) {
       errorMsg <- paste(ds, "not found in configuration")
       ParallelLogger::logError(errorMsg)
       stop(errorMsg)
@@ -128,12 +128,12 @@ addAtlasCohort <- function(
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
 
-  if(is.null(dataSources)) {
+  if (is.null(dataSources)) {
     dataSources <- names(config$dataSources)
   }
 
   for (ds in dataSources) {
-    if (!(ds %in% names(config$dataSources) )) {
+    if (!(ds %in% names(config$dataSources))) {
       errorMsg <- paste(ds, "not found in configuration")
       ParallelLogger::logError(errorMsg)
       stop(errorMsg)
@@ -163,7 +163,7 @@ addAtlasCohort <- function(
   for (ds in dataSources) {
     dataSource <- config$dataSources[[ds]]
     ParallelLogger::logInfo(paste("Getting scc", dataSource$database))
-    sccSummary <- runScc(connection = connection, config = config, dataSource = dataSource, outcomeIds = atlasId, storeResults=FALSE)
+    sccSummary <- runScc(connection = connection, config = config, dataSource = dataSource, outcomeIds = atlasId, storeResults = FALSE)
     dataFileName <- getDataFileName(dataSource)
     ParallelLogger::logInfo(paste("Saving result", dataFileName))
     write.csv(sccSummary, dataFileName, row.names = FALSE)
@@ -192,19 +192,22 @@ addAtlasCohort <- function(
 }
 
 checkDataSources <- function(dataSources, config) {
-  if(is.null(dataSources)) {
+  if (is.null(dataSources)) {
     dataSources <- names(config$dataSources)
   }
 
+  dsVals <- list()
   for (ds in dataSources) {
-    if (!(ds %in% names(config$dataSources) )) {
+    if (!(ds %in% names(config$dataSources))) {
       errorMsg <- paste(ds, "not found in configuration")
       ParallelLogger::logError(errorMsg)
       stop(errorMsg)
     }
+
+    dsVals[[ds]] <- config$dataSources[[ds]]
   }
 
-  return(dataSources)
+  return(dsVals)
 }
 
 #' Add custom exposure cohort
@@ -224,7 +227,8 @@ addCustomExposureConcept <- function(
   removeExisting = FALSE,
   dataSources = NULL,
   logFileName = "rbAtlasCohort.log",
-  outputPath = "data"
+  outputPath = "data",
+  addResult = TRUE
 ) {
   logger <- getLogger(logFileName)
   # load config
@@ -232,40 +236,51 @@ addCustomExposureConcept <- function(
   dataSources <- checkDataSources(dataSources, config)
   conceptSetDefinition <- ROhdsiWebApi::getConceptSetDefinition(conceptSetId, config$webApiUrl)
 
-   if (!dir.exists(outputPath)) {
+  if (!dir.exists(outputPath)) {
     dir.create(outputPath)
   }
 
+  getDataFileName <- function(dataSourceKey) {
+    paste0(outputPath, "/", dataSourceKey, "-SCC-CustomExposure", conceptSetId, ".csv")
+  }
+
+  ParallelLogger::logInfo("Adding for data sources", paste(names(dataSources)))
+
+  connection <- DatabaseConnector::connect(config$cdmDataSource)
+  if (removeExisting) {
+    ParallelLogger::logInfo("Removing existing cohort")
+    removeCustomExposureCohort(connection, config, conceptSetId, dataSource)
+  }
+
+  ParallelLogger::logInfo("Inserting references")
+  insertCustomExposureRef(connection, config, conceptSetId, conceptSetDefinition, cohortName)
+
   for (dataSourceKey in names(dataSources)) {
     dataSource <- dataSources[[dataSourceKey]]
-    connection <- DatabaseConnector::connect(dataSource$connectionDetails)
-    tryCatch(
-      {
-      if (removeExisting) {
-        ParallelLogger::logInfo("Removing existing cohort")
-        removeCustomExposureCohort(connection, config, conceptSetId, dataSource)
+    ParallelLogger::logInfo("Running cohort")
+    # Removes then adds cohort with atlas generated sql
+    addCustomExposureCohort(connection, config, conceptSetId, dataSource)
+
+    ParallelLogger::logInfo(paste("Getting scc", dataSource$database))
+    dataFileName <- getDataFileName(dataSourceKey)
+    sccSummary <- runScc(connection = connection, config = config, dataSource = dataSource, exposureIds = conceptSetId, storeResults = FALSE)
+    write.csv(sccSummary, dataFileName, row.names = FALSE)
+  }
+
+  if (addResult) {
+    results <- data.frame()
+
+    # Merge data files and append them to the table
+    for (dataSourceKey in names(dataSources)) {
+      dataFileName <- getDataFileName(dataSourceKey)
+      ParallelLogger::logInfo(paste("Adding result to merged table", dataFileName))
+      if (file.exists(dataFileName)) {
+        results <- rbind(results, read.csv(dataFileName))
       }
+    }
 
-      ParallelLogger::logInfo("Inserting references")
-      insertCustomExposureRef(connection, config, conceptSetId, conceptSetDefinition, cohortName)
-
-      ParallelLogger::logInfo("Running cohort")
-      # Removes then adds cohort with atlas generated sql
-      addCustomExposureCohort(connection, config, conceptSetId, dataSource)
-
-      ParallelLogger::logInfo(paste("Getting scc", dataSource$database))
-      dataFileName <- paste0(outputPath, "/", dataSourceKey, "-SCC-CustomExposure", conceptSetId, ".csv")
-      sccSummary <- runScc(connection = connection, config = config, dataSource = dataSource, exposureIds = conceptSetId, storeResults=FALSE)
-
-    },
-      error = function(err) {
-        ParallelLogger::logError(err)
-      },
-      finally = {
-        # Cleanup database connections
-        DatabaseConnector::disconnect(connection)
-        ParallelLogger::unregisterLogger(logger)
-      }
-    )
+    if (length(results)) {
+      addCsvAtlasResultsToMergedTable(connection = connection, config = config, results = results, removeOutcomeIds = TRUE)
+    }
   }
 }

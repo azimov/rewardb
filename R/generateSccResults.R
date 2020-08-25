@@ -86,13 +86,13 @@ runScc <- function(
 
   sccSummary$source_id <- dataSource$sourceId
   sccSummary$analysis_id <- 1
+  sccSummary$c_at_risk <- sccSummary$numPersons
   sccSummary <- dplyr::rename(sccSummary, c(
       "target_cohort_id" = "exposureId",
       "outcome_cohort_id" = "outcomeId",
       "t_at_risk" = "numPersons",
       "t_pt" = "timeAtRiskExposed",
       "t_cases" = "numOutcomesExposed",
-      "c_at_risk" = "numPersons",
       "c_cases" = "numOutcomesUnexposed",
       "c_pt" = "timeAtRiskUnexposed",
       "relative_risk" = "irr",
@@ -197,6 +197,9 @@ addCsvAtlasResultsToMergedTable <- function(connection,
       exposure_cohort_ids = unique(results$exposure_cohort_id)
      )
   }
-  tableName <- paste0(config$cdmDatabase$schema, config$cdmDatabase$mergedResultsTable)
-  DatabaseConnector::dbAppendTable(connection, tableName, results)
+  tableName <- paste0(config$cdmDatabase$schema, ".", config$cdmDatabase$mergedResultsTable)
+
+  colnames <- c("analysis_id", "source_id", "target_cohort_id", "outcome_cohort_id", "t_at_risk", "t_pt", "t_cases",
+                "c_at_risk", "c_cases" , "c_pt", "relative_risk", "lb_95", "ub_95", "log_rr", "se_log_rr", "p_value")
+  DatabaseConnector::dbAppendTable(connection, tableName, results[colnames])
 }
