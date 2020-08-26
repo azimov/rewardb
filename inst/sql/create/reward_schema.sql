@@ -25,9 +25,16 @@ DROP TABLE IF EXISTS @schema.target;
 -- Maps to CDM drug concept. Only one drug concept may be associated with a target cohort
 CREATE TABLE @schema.target (
     target_cohort_id BIGINT NOT NULL PRIMARY KEY,
-    target_concept_id BIGINT NOT NULL,
     cohort_name VARCHAR,
-    is_atc_4 INT
+    is_atc_4 INT,
+    is_custom_cohort INT
+);
+
+CREATE TABLE @schema.target_concept (
+    target_cohort_id BIGINT NOT NULL,
+    concept_id INT NOT NULL,
+    is_excluded INT,
+    include_descendants INT
 );
 
 CREATE TABLE @schema.target_exposure_class (
@@ -87,7 +94,7 @@ create table @schema.reward_version(
    CONSTRAINT uni CHECK (id)
 );
 
-INSERT INTO @schema.reward_version (version) values ('0.0.1');
+INSERT INTO @schema.reward_version (version) values ('0.0.2');
 
 -- Valid negative controls target,outcome pairs
 DROP TABLE IF EXISTS @schema.negative_control;
