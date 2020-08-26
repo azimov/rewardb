@@ -375,8 +375,8 @@ buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTarget
 
   if (calibrateTargets) {
     print("Calibrating targets")
-    rewardb::calibrateTargets(appContext, append(appContext$target_concept_ids * 1000, appContext$custom_outcome_cohort_ids))
-    rewardb::calibrateCustomCohorts(appContext, append(appContext$target_concept_ids * 1000, appContext$custom_outcome_cohort_ids))
+    rewardb::calibrateTargets(appContext, append(appContext$target_concept_ids * 1000, appContext$custom_exposure_ids))
+    rewardb::calibrateCustomCohorts(appContext, append(appContext$target_concept_ids * 1000, appContext$custom_exposure_ids))
   }
 
   if (calibrateOutcomes) {
