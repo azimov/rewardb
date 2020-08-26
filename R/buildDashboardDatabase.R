@@ -5,28 +5,77 @@ extractTargetCohortNames <- function (appContext) {
   sql <- "
   SELECT
     t.cohort_definition_id AS target_cohort_id,
-    t.cohort_definition_id/1000 AS target_concept_id,
     t.short_name AS cohort_name,
     CASE
       WHEN c1.concept_class_id = 'ATC 4th' THEN 1
       ELSE 0
-    END AS is_atc_4
+    END AS is_atc_4,
+    0 AS is_custom_cohort
   FROM @results_database_schema.@cohort_definition_table t
   INNER JOIN @cdm_vocabulary.concept c1 ON t.cohort_definition_id/1000 = c1.concept_id
-  {@fixed_target_cohorts} ? {WHERE t.cohort_definition_id IN (@target_cohort_ids)}
-      ";
+  {@fixed_target_cohorts} ? {   WHERE t.cohort_definition_id IN (@target_cohort_ids)}
+  {@use_custom_exposure_ids} ? {
+    UNION
 
+    SELECT
+      custom_exposure_id AS target_cohort_id,
+      cohort_name,
+      0 AS is_atc_4,
+      1 AS is_custom_cohort
+    FROM @results_database_schema.custom_exposure
+    {@fixed_custom_exposures} ? {   WHERE custom_exposure_id IN (@custom_exposure_ids)}
+  }
+  ";
+  useCustomExposureIds = (length(appContext$target_concept_ids) > 0 & length(appContext$custom_exposure_ids) > 0 ) | length(appContext$target_concept_ids) == 0
   nameSet <- DatabaseConnector::renderTranslateQuerySql(
     appContext$cdmConnection,
     sql,
     cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
     fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
+    use_custom_exposure_ids = useCustomExposureIds,
+    fixed_custom_exposures = length(appContext$custom_exposure_ids) > 0,
     target_cohort_ids = appContext$target_concept_ids * 1000,
+    custom_exposure_ids = appContext$custom_exposure_ids,
     cohort_definition_table = appContext$resultsDatabase$cohortDefinitionTable,
     results_database_schema = appContext$resultsDatabase$schema
   )
 
   DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target"), nameSet)
+
+  # Add target concept mappings
+  sql <- "
+  SELECT
+    t.cohort_definition_id AS target_cohort_id,
+    t.cohort_definition_id/1000 AS concept_id,
+    0 AS is_excluded,
+    0 AS include_descendants
+  FROM @results_database_schema.@cohort_definition_table t
+  {@fixed_target_cohorts} ? {   WHERE t.cohort_definition_id IN (@target_cohort_ids)}
+
+  {@use_custom_exposure_ids} ? {
+  UNION
+  SELECT
+    cec.custom_exposure_id AS target_cohort_id,
+    cec.concept_id AS concept_id,
+    cec.is_excluded AS is_excluded,
+    cec.include_descendants AS include_descendants
+  FROM @results_database_schema.custom_exposure_concept cec
+  {@fixed_custom_exposures} ? {   WHERE cec.custom_exposure_id IN (@custom_exposure_ids)} }
+  "
+
+  conceptMapping <- DatabaseConnector::renderTranslateQuerySql(
+    appContext$cdmConnection,
+    sql,
+    fixed_target_cohorts = length(appContext$target_concept_ids) > 0,
+    use_custom_exposure_ids = useCustomExposureIds,
+    fixed_custom_exposures = length(appContext$custom_exposure_ids) > 0,
+    target_cohort_ids = appContext$target_concept_ids * 1000,
+    custom_exposure_ids = appContext$custom_exposure_ids,
+    cohort_definition_table = appContext$resultsDatabase$cohortDefinitionTable,
+    results_database_schema = appContext$resultsDatabase$schema
+  )
+
+ DatabaseConnector::dbAppendTable(appContext$connection, paste0(appContext$short_name, ".target_concept"), conceptMapping)
 
   # Add exposure classes
   sql <- "SELECT t.cohort_definition_id as target_cohort_id, c.concept_id as exposure_class_id, c.concept_name as exposure_class_name
@@ -148,7 +197,7 @@ extractResultsSubset <- function(appContext){
       {@outcome_cohort_ids_length} ? {AND outcome_cohort_id in (@outcome_cohort_ids)}
   "
 
-  targetCohorts <- appContext$target_concept_ids * 1000
+  targetCohorts <- append(appContext$target_concept_ids * 1000, appContext$custom_exposure_ids)
   outcomeCohortIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
   resultSet <- DatabaseConnector::renderTranslateQuerySql(appContext$cdmConnection, sql,
                                                            target_cohort_ids = targetCohorts,
@@ -181,12 +230,12 @@ addCemEvidence <- function(appContext) {
                                                            schema=appContext$short_name)
 
   targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                          "SELECT DISTINCT target_concept_id, is_atc_4 FROM @schema.target",
+                                                          "SELECT DISTINCT tc.concept_id AS target_concept_id, t.is_atc_4 FROM @schema.target t
+                                                          INNER JOIN @schema.target_concept tc ON tc.target_cohort_id = t.target_cohort_id",
                                                           schema=appContext$short_name)
 
   DatabaseConnector::insertTable(appContext$cdmConnection, "#outcome_nc_tmp", outcomeIds, tempTable=TRUE)
   DatabaseConnector::insertTable(appContext$cdmConnection, "#target_nc_tmp", targetIds, tempTable=TRUE)
-
 
   sql <- SqlRender::readSql(system.file("sql/queries", "cemSummary.sql", package = "rewardb"))
   # First, method of mapping evidence at the normal level
@@ -222,14 +271,14 @@ addCemEvidence <- function(appContext) {
       SELECT DISTINCT outcome_cohort_id, target_cohort_id
       FROM #ncc_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
-      INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
+      INNER JOIN @schema.target_concept tc ON tc.concept_id = ncc.ingredient_concept_id
       WHERE ncc.evidence = 0;
 
     INSERT INTO @schema.positive_indication (outcome_cohort_id, target_cohort_id)
       SELECT DISTINCT outcome_cohort_id, target_cohort_id
       FROM #ncc_ids ncc
       INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
-      INNER JOIN @schema.target t ON t.target_concept_id = ncc.ingredient_concept_id
+      INNER JOIN @schema.target_concept tc ON tc.concept_id = ncc.ingredient_concept_id
       WHERE ncc.evidence = 1;
   "
   # TODO: optimise negative control sets for cohorts
@@ -326,8 +375,8 @@ buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTarget
 
   if (calibrateTargets) {
     print("Calibrating targets")
-    rewardb::calibrateTargets(appContext, appContext$target_concept_ids * 1000)
-    rewardb::calibrateCustomCohorts(appContext, appContext$target_concept_ids * 1000)
+    rewardb::calibrateTargets(appContext, append(appContext$target_concept_ids * 1000, appContext$custom_outcome_cohort_ids))
+    rewardb::calibrateCustomCohorts(appContext, append(appContext$target_concept_ids * 1000, appContext$custom_outcome_cohort_ids))
   }
 
   if (calibrateOutcomes) {
