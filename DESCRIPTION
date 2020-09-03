@@ -20,5 +20,6 @@ Imports:
 Suggests:
     doParallel,
     foreach,
-    meta
+    meta,
+    testthat
 RoxygenNote: 7.1.0

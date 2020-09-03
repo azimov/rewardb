@@ -1,0 +1,42 @@
+webApiUrl: "https://epi.jnj.com:8443/WebAPI"
+# These will be automatically included on any database rebuild. Other cohorts can still be added manually later
+maintinedAtlasCohortList: [ 12047 ]
+testMode: true
+resultsTablePrefix: reward_results_dev
+
+rewardbDatabase:
+  dbms: "postgresql"
+  server: "localhost/rewardb_test"
+  port: 5432
+  user: "rewardb_test"
+  password: "hangman252"
+
+rewardbResultsSchema: "test"
+
+cdmDatabase:
+  schema: "scratch.jgilber2"
+  vocabularySchema: "Vocabulary_20200525.dbo"
+  cemSchema: "CEM_V2_0_0_20200226.dbo"
+  cohortDefinitionTable: "test_rewardb_cohort_definition_dev"
+  outcomeCohortDefinitionTable: "test_rewardb_outcome_cohort_definition_dev"
+  conceptSetDefinitionTable: "test_rewardb_conceptset_definition_dev"
+  mergedResultsTable: "test_rewardb_results_dev"
+  atlasCohortReferenceTable: "test_rewardb_atlas_cohort_reference"
+  atlasConceptReferenceTable: "test_rewardb_atlas_concept_reference"
+
+cdmDataSource:
+  dbms: pdw
+  server: JRDUSAPSCTL01
+  port: 17001
+  user: webapi_dev
+  password: webApiDev1!
+
+dataSources:
+  Optum_SES_v515:
+    sourceId: 11
+    database: "DEV_CDM_Optum_Extended_SES_v515"
+    cdmDatabaseSchema: "DEV_CDM_Optum_Extended_SES_v515.dbo" #this is where we'll pull drug and condition history for patients
+    drugEraSchema: "CDM_Optum_SES_v515.reward"
+    cohortTable: "rb_cohort_Optum_SES_v515" # will be created and saved on scratch.dbo
+    outcomeCohortTable: "rb_outcome_cohort_Optum_SES_v515" # will be created and saved on scratch.dbo
+    outcomeSummaryTable: "rb_outcome_summary_Optum_SES_v515" # will be created and saved on scratch.dbo
