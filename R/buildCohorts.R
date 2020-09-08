@@ -63,8 +63,7 @@ addCustomExposureCohort <- function (connection, config, conceptSetIds, dataSour
 #' @param dataSources dataSources to run cohort on
 createOutcomeCohorts <- function(connection, config, dataSources) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,
