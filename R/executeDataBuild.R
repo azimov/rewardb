@@ -150,7 +150,7 @@ addAtlasCohort <- function(
 
       if (removeExisting) {
         ParallelLogger::logInfo("Removing existing cohort")
-        removeAtlasCohort(connection, config, atlasId, dataSources) # tested and works
+        removeAtlasCohort(connection, config, atlasId, names(dataSources)) # tested and works
       }
 
       ParallelLogger::logInfo("Inserting references")
@@ -158,17 +158,17 @@ addAtlasCohort <- function(
 
       ParallelLogger::logInfo("Running cohort")
       # Removes then adds cohort with atlas generated sql
-      addAtlasOutcomeCohort(connection, config, atlasId, dataSources) # tested and works
+      addAtlasOutcomeCohort(connection, config, atlasId, names(dataSources)) # tested and works
 
       ParallelLogger::logInfo("Adding summary")
       # Adds new cohort to summary table
-      addOutcomeSummary(connection, config, atlasId, dataSources)
+      addOutcomeSummary(connection, config, atlasId, names(dataSources))
 
       getDataFileName <- function(dataSource) {
         paste0(dataDir, "/scc-results-", atlasId, "-", dataSource$database, ".csv")
       }
 
-      for (ds in dataSources) {
+      for (ds in names(dataSources)) {
         dataSource <- config$dataSources[[ds]]
         ParallelLogger::logInfo(paste("Getting scc", dataSource$database))
         sccSummary <- runScc(connection = connection, config = config, dataSource = dataSource, outcomeIds = atlasId, storeResults = FALSE)
@@ -183,7 +183,7 @@ addAtlasCohort <- function(
         results <- data.frame()
 
         # Merge data files and append them to the table
-        for (ds in dataSources) {
+        for (ds in names(dataSources)) {
           dataSource <- config$dataSources[[ds]]
           dataFileName <- getDataFileName(dataSource)
           ParallelLogger::logInfo(paste("Adding result to merged table", dataFileName))
