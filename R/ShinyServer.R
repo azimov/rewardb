@@ -63,6 +63,7 @@ serverInstance <- function(input, output, session) {
     mainTableRe <- reactive({
         benefit <- input$cutrange1
         risk <- input$cutrange2
+        pCut <- input$pCut
         filterByMeta <- input$filterThreshold == "Meta analysis"
         outcomeCohortTypes <- getOutcomeCohortTypes()
         mainTableSql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
@@ -73,6 +74,7 @@ serverInstance <- function(input, output, session) {
           mainTableSql,
           risk = risk,
           benefit = benefit,
+          p_cut_value = pCut,
           exclude_indications = input$excludeIndications,
           filter_outcome_types = length(outcomeCohortTypes) > 0,
           outcome_types = outcomeCohortTypes,
