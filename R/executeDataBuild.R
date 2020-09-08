@@ -107,10 +107,9 @@ fullExecution <- function(
 
     if (.runSCC) {
       ParallelLogger::logInfo("Generating fresh scc results tables")
-      createResultsTables(connection, config, dataSources)
       # run SCC
-      for (ds in dataSources) {
-        dataSource <- config$dataSources[[ds]]
+      for (dataSource in dataSources) {
+        createResultsTable(connection, config, dataSource)
         runScc(connection, config, dataSource)
       }
     }

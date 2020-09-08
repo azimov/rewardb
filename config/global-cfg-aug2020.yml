@@ -48,7 +48,7 @@ dataSources:
     outcomeCohortTable: "outcome_cohort_mdcd_v1259"
     outcomeSummaryTable: "outcome_summary_mdcd_v1259"
 
-  MDCR_1259:
+  MDCR_1297:
     sourceId: 13
     database: "CDM_IBM_MDCR_v1297"
     cdmDatabaseSchema: "CDM_IBM_MDCR_v1297.dbo"
