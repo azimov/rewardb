@@ -76,7 +76,8 @@ runScc <- function(
   sccSummary <- base::summary(sccResult)
   sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
   sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
-
+  sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
+  
   if (storeResults) {
     tableName <- paste0(config$cdmDatabase$schema, ".", getResultsDatabaseTableName(config, dataSource))
     ParallelLogger::logInfo(paste("Appending result to", tableName))
@@ -84,7 +85,7 @@ runScc <- function(
       connection = connection,
       tableName = tableName,
       data = sccSummary,
-      useMppBulkLoad = TRUE,
+      useMppBulkLoad = FALSE,
       progressBar = TRUE
     )
   }
