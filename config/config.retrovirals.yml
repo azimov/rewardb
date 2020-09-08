@@ -7,7 +7,7 @@ target_concept_ids: [ 1703069, 1710281, 1704183, 1736971, 35605546, 1710612, 171
 custom_exposure_ids: []
 connectionDetails:
   dbms: "postgresql"
-  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
+  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.co
   port: 5432
   user: "reward_admin"
 
