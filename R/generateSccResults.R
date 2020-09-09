@@ -76,11 +76,18 @@ runScc <- function(
   sccSummary <- base::summary(sccResult)
   sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
   sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
-
+  sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
+  
   if (storeResults) {
     tableName <- paste0(config$cdmDatabase$schema, ".", getResultsDatabaseTableName(config, dataSource))
     ParallelLogger::logInfo(paste("Appending result to", tableName))
-    DatabaseConnector::dbAppendTable(connection, tableName, sccSummary)
+    DatabaseConnector::insertTable(
+      connection = connection,
+      tableName = tableName,
+      data = sccSummary,
+      useMppBulkLoad = FALSE,
+      progressBar = TRUE
+    )
   }
   ParallelLogger::logInfo(paste("Completed SCC analysis on", dataSource$databse))
 
@@ -111,18 +118,14 @@ getResultsDatabaseTableName <- function(config, dataSource) {
   return(paste0(config$resultsTablePrefix, dataSource$database))
 }
 
-#' @export
-createResultsTables <- function(connection, config, dataSources) {
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
-    sql <- SqlRender::readSql(system.file("sql/create", "createResultsTable.sql", package = "rewardb"))
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql,
-      results_database_schema = config$cdmDatabase$schema,
-      results_table = getResultsDatabaseTableName(config, dataSource)
-    )
-  }
+createResultsTable <- function(connection, config, dataSource) {
+  sql <- SqlRender::readSql(system.file("sql/create", "createResultsTable.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql,
+    results_database_schema = config$cdmDatabase$schema,
+    results_table = getResultsDatabaseTableName(config, dataSource)
+  )
 }
 
 # Place results from all data sources in a single table

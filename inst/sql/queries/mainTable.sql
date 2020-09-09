@@ -2,7 +2,7 @@ WITH benefit_t AS(
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS THRESH_COUNT
     FROM @schema.result
     WHERE RR <= @benefit
-        AND P_VALUE < 0.05
+        AND P_VALUE < @p_cut_value
         AND calibrated = @calibrated
         AND SOURCE_ID >= 0 -- NEGATIVE SOURCE IDS are reserved for meta analysis
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
@@ -12,7 +12,7 @@ risk_t AS (
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS THRESH_COUNT
     FROM @schema.result
     WHERE RR >= @risk
-        AND P_VALUE < 0.05
+        AND P_VALUE < @p_cut_value
         AND calibrated = @calibrated
         AND SOURCE_ID >= 0 -- NEGATIVE SOURCE IDS are reserved for meta analysis
     GROUP BY TARGET_COHORT_ID, OUTCOME_COHORT_ID
@@ -76,7 +76,7 @@ FROM @schema.result fr
     {@exclude_indications == TRUE} ? {AND pi.outcome_cohort_id IS NULL}
 
     {@filter_by_meta_analysis} ? {
-       AND mr.RR <= @benefit AND mr.P_VALUE < 0.05
+       AND mr.RR <= @benefit AND mr.P_VALUE < @p_cut_value
     } : {
     AND 1 = CASE
         WHEN benefit_t.THRESH_COUNT IS NULL AND 'none' IN (@benefit_selection) THEN 1
