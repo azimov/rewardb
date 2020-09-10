@@ -20,7 +20,8 @@ test_that("export works", {
   # Create a csv file
   createCsv(filename = "test_file.csv", path = folder)
   config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
-  rewardb::exportResults(config, exportPath = folder, exportZipFile = zipFilePath)
+  config$exportPath <- folder
+  rewardb::exportResults(config, exportZipFile = zipFilePath)
   expect_true(checkmate::check_file_exists(zipFilePath))
 
   rewardb::unzipAndVerify(zipFilePath, unzipPath, TRUE)
@@ -39,7 +40,8 @@ test_that("bad checksums fail - modify zipped csv after function", {
   # Create a csv file
   createCsv(filename = "test_file.csv", path = folder)
   config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
-  rewardb::exportResults(config, exportPath = folder, exportZipFile = zipFilePath)
+  config$exportPath <- folder
+  rewardb::exportResults(config, exportZipFile = zipFilePath)
   # Change the csv file inside the zip
   createCsv(filename = "test_file.csv", path = folder, data = data.frame(col_a = c(5, 6, 7, 8, 9)))
   zip::zipr_append(zipFilePath, file.path(folder, "test_file.csv"), include_directories = FALSE)
@@ -74,7 +76,8 @@ test_that("import copy functions", {
   unzipPath <- file.path(tmp, stringi::stri_rand_strings(1, 5))
   # Create a csv file
   createCsv(filename = "test_file.csv", path = folder)
-  rewardb::exportResults(config, exportPath = folder, exportZipFile = zipFilePath)
+  config$exportPath <- folder
+  rewardb::exportResults(config, exportZipFile = zipFilePath)
 
   ParallelLogger::logInfo(paste("Testing insert", schemaName))
   rewardb::importResults(config$rewardbDatabase, schemaName, zipFilePath, unzipPath = unzipPath, overwrite = TRUE)

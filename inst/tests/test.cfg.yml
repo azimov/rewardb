@@ -3,7 +3,7 @@ webApiUrl: "https://epi.jnj.com:8443/WebAPI"
 maintinedAtlasCohortList: [ 12047 ]
 testMode: true
 resultsTablePrefix: reward_results_dev
-exportPath: "export_test"
+exportPath: "export"
 
 rewardbDatabase:
   dbms: "postgresql"
@@ -39,7 +39,7 @@ dataSources:
     database: "eunomia"
     #this is where we'll pull drug and condition history for patients
     cdmDatabaseSchema: "eunomia"
-    drugEraSchema: "reward"
+    # drugEraSchema: "reward"
     # will be created
     cohortTable: "rewardb_exposure_cohort"
     outcomeCohortTable: "rewardb_outcome_cohort"

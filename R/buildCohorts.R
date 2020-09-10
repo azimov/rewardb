@@ -3,8 +3,7 @@
 #' @param config
 #' @param dataSources dataSources to run cohort on
 createCohorts <- function(connection, config, dataSources) {
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     sql <- SqlRender::readSql(system.file("sql/cohorts", "createCohortTable.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
@@ -27,8 +26,10 @@ createCohorts <- function(connection, config, dataSources) {
     )
     do.call(DatabaseConnector::renderTranslateExecuteSql, options)
     # Custom drug eras
-    options$drug_era_schema <- dataSource$drugEraSchema # Custom drug era tables live here
-    do.call(DatabaseConnector::renderTranslateExecuteSql, options)
+    if (!is.null(dataSource$drugEraSchema)) {
+      options$drug_era_schema <- dataSource$drugEraSchema # Custom drug era tables live here
+      do.call(DatabaseConnector::renderTranslateExecuteSql, options)
+    }
   }
 }
 

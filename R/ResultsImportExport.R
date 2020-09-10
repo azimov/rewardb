@@ -1,17 +1,17 @@
 CONST_META_FILE_NAME <- "rb-meta.json"
 
-exportResults <- function(config, exportPath = "export", exportZipFile = "rewardb-export.zip") {
+exportResults <- function(config, exportZipFile = "rewardb-export.zip") {
   # Collect all files and make a hash
   meta <- list()
   meta$config <- config
   meta$hashList <- list()
 
-  exportFiles <- Sys.glob(file.path(exportPath, "*.csv"))
+  exportFiles <- Sys.glob(file.path(config$exportPath, "*.csv"))
 
   for (file in exportFiles) {
     meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
   }
-  metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
+  metaDataFilename <- file.path(config$exportPath, rewardb::CONST_META_FILE_NAME)
   jsonlite::write_json(meta, metaDataFilename)
 
   zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)

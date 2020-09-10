@@ -120,7 +120,7 @@ fullExecution <- function(
       }
     }
 
-    exportResults()
+    exportResults(config)
   },
     error = ParallelLogger::logError,
     finally = function() {
