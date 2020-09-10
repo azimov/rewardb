@@ -3,20 +3,22 @@ webApiUrl: "https://epi.jnj.com:8443/WebAPI"
 maintinedAtlasCohortList: [ 12047 ]
 testMode: true
 resultsTablePrefix: reward_results_dev
+exportPath: "export_test"
 
 rewardbDatabase:
   dbms: "postgresql"
-  server: "localhost/rewardb_test"
-  port: 5432
-  user: "rewardb_test"
-  password: "hangman252"
+  server: "localhost/rewardb"
+  port: 54321
+  user: "postgres"
+  password: "postgres"
 
 rewardbResultsSchema: "test"
 
 cdmDatabase:
-  schema: "scratch.jgilber2"
-  vocabularySchema: "Vocabulary_20200525.dbo"
-  cemSchema: "CEM_V2_0_0_20200226.dbo"
+  schema: "eunomia"
+  vocabularySchema: "eunomia"
+  cemSchema: "CEM_V2_0_0_20200226"
+  # Generated tables
   cohortDefinitionTable: "test_rewardb_cohort_definition_dev"
   outcomeCohortDefinitionTable: "test_rewardb_outcome_cohort_definition_dev"
   conceptSetDefinitionTable: "test_rewardb_conceptset_definition_dev"
@@ -25,18 +27,20 @@ cdmDatabase:
   atlasConceptReferenceTable: "test_rewardb_atlas_concept_reference"
 
 cdmDataSource:
-  dbms: pdw
-  server: JRDUSAPSCTL01
-  port: 17001
-  user: webapi_dev
-  password: webApiDev1!
+  dbms: "postgresql"
+  server: "localhost/eunomia"
+  port: 54321
+  user: "postgres"
+  password: "postgres"
 
 dataSources:
-  Optum_SES_v515:
-    sourceId: 11
-    database: "DEV_CDM_Optum_Extended_SES_v515"
-    cdmDatabaseSchema: "DEV_CDM_Optum_Extended_SES_v515.dbo" #this is where we'll pull drug and condition history for patients
-    drugEraSchema: "CDM_Optum_SES_v515.reward"
-    cohortTable: "rb_cohort_Optum_SES_v515" # will be created and saved on scratch.dbo
-    outcomeCohortTable: "rb_outcome_cohort_Optum_SES_v515" # will be created and saved on scratch.dbo
-    outcomeSummaryTable: "rb_outcome_summary_Optum_SES_v515" # will be created and saved on scratch.dbo
+  eunomia:
+    sourceId: 0
+    database: "eunomia"
+    #this is where we'll pull drug and condition history for patients
+    cdmDatabaseSchema: "eunomia"
+    drugEraSchema: "reward"
+    # will be created
+    cohortTable: "rewardb_exposure_cohort"
+    outcomeCohortTable: "rewardb_outcome_cohort"
+    outcomeSummaryTable: "rewardb_outcome_summary"

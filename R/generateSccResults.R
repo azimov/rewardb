@@ -32,8 +32,7 @@ runScc <- function(
   dataSource,
   exposureIds = NULL,
   outcomeIds = NULL,
-  cores = parallel::detectCores() - 1,
-  storeResults = TRUE
+  cores = parallel::detectCores() - 1
 ) {
   ParallelLogger::logInfo(paste("Starting SCC analysis on", dataSource$database))
 
@@ -77,18 +76,7 @@ runScc <- function(
   sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
   sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
   sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
-  
-  if (storeResults) {
-    tableName <- paste0(config$cdmDatabase$schema, ".", getResultsDatabaseTableName(config, dataSource))
-    ParallelLogger::logInfo(paste("Appending result to", tableName))
-    DatabaseConnector::insertTable(
-      connection = connection,
-      tableName = tableName,
-      data = sccSummary,
-      useMppBulkLoad = FALSE,
-      progressBar = TRUE
-    )
-  }
+
   ParallelLogger::logInfo(paste("Completed SCC analysis on", dataSource$databse))
 
   sccSummary$source_id <- dataSource$sourceId
