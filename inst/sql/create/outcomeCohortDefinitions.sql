@@ -35,6 +35,10 @@ inner join
   on ca1.ancestor_concept_id = t1.concept_id
 ;
 
+-- Create index on pdw
+-- TODO: indexes on other DB platforms
+{@dbms == "pdw"} ? {create clustered columnstore index cci_cag1 on #cpt_anc_grp;}
+
 truncate table @cohort_database_schema.@outcome_cohort_definition_table;
 --incident outcomes - first diagnosis, which eventually leads to hospitalization for same outcome
 INSERT INTO @cohort_database_schema.@outcome_cohort_definition_table

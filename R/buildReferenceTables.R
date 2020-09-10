@@ -69,6 +69,7 @@ createReferenceTables <- function(connection, config, dataSources) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,
+      dbms = connection@dbms,
       cdm_database_schema = dataSource$cdmDatabaseSchema,
       cohort_database_schema = config$cdmDatabase$schema,
       outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
