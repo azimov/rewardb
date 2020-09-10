@@ -7,5 +7,5 @@ create table @cohort_database_schema.@outcome_cohort_table
 	, subject_id bigint
 	,	cohort_start_date date
 	,	cohort_end_date date
-) with (distribution = hash(subject_id))
+)
 ;

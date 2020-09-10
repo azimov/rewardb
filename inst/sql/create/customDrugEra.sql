@@ -1,9 +1,4 @@
-﻿--USE CDM_IBM_CCAE_V1151;
---USE CDM_IBM_MDCR_V1152;
---USE CDM_IBM_MDCD_V1153;
---USE CDM_OPTUM_EXTENDED_SES_V1156;
-
-USE @cdm_database;
+﻿USE @cdm_database;
 
 if object_id('@cdm_database.reward.drug_era_info', 'U') is not null
     drop table reward.drug_era_info;
@@ -15,7 +10,6 @@ create table reward.drug_era_info (
   ingredient_concept_id int NOT NULL,
 	ingredient_name varchar(50) NOT NULL,
 	maintenance_days int NOT NULL)
-WITH (DISTRIBUTION = REPLICATE)
 ;
 
 /*

@@ -5,4 +5,5 @@ test_that("create reference tables", {
   dataSources <- rewardb::checkDataSources(NULL, config)
   ParallelLogger::logInfo("Creating and populating reference tables...")
   rewardb::createReferenceTables(connection, config, names(dataSources))
+
 })
