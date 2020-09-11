@@ -1,4 +1,6 @@
-create table #custom_eras with (location = user_db, distribution = hash(person_id)) as
+
+--HINT DISTRIBUTE_ON_KEY(person_id)
+create table #custom_eras as
 select
   de1.cohort_definition_id
   , de1.concept_name
@@ -63,7 +65,10 @@ from #custom_eras
 ;
 
 truncate table #custom_eras;
-drop table #custom_eras;create table #custom_eras with (location = user_db, distribution = hash(person_id)) as
+drop table #custom_eras;
+
+--HINT DISTRIBUTE_ON_KEY(person_id)
+create table #custom_eras as
 select
   de1.cohort_definition_id
   , de1.concept_name

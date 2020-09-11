@@ -112,15 +112,23 @@ fullExecution <- function(
     if (.runSCC) {
       ParallelLogger::logInfo("Generating fresh scc results tables")
       # run SCC
+      if (!dir.exists(config$exportPath)) {
+        dir.create(config$exportPath)
+      }
+
       for (dataSource in dataSources) {
         createResultsTable(connection, config, dataSource)
         sccSummary <- runScc(connection, config, dataSource)
         dataFileName <- getDataFileName(dataSource)
+
+        ParallelLogger::logInfo(paste("Writing file", dataFileName))
         write.csv(sccSummary, dataFileName, row.names = FALSE)
       }
+
+      ParallelLogger::logInfo("Exporting results zip")
+      exportResults(config)
     }
 
-    exportResults(config)
   },
     error = ParallelLogger::logError,
     finally = function() {

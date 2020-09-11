@@ -87,8 +87,7 @@ addAtlasOutcomeCohort <- function (connection, config, atlasId, dataSources) {
     sql <- ROhdsiWebApi::getCohortSql(cohortDefinition, config$webApiUrl, generateStats = FALSE)
 
     ParallelLogger::logInfo(paste("Generating cohort",  atlasId, "from ATLAS SQL definition"))
-    for (ds in dataSources) {
-      dataSource <- config$dataSources[[ds]]
+    for (dataSource in dataSources) {
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = sql,
@@ -107,8 +106,7 @@ addAtlasOutcomeCohort <- function (connection, config, atlasId, dataSources) {
 #' @param
 createCustomDrugEras <- function (connection, config, dataSources) {
     sql <- SqlRender::readSql(system.file("sql/create", "customDrugEra.sql", package = "rewardb"))
-    for (ds in dataSources) {
-      dataSource <- config$dataSources[[ds]]
+    for (dataSource in dataSources) {
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = sql,
