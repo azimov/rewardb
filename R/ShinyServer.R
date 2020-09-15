@@ -117,7 +117,7 @@ serverInstance <- function(input, output, session) {
         return(filtered)
     })
 
-    output$mainTable <- DT::renderDataTable({
+    output$mainTable <- shiny::renderDataTable({
         df <- mainTableRiskHarmFilters()
         tryCatch(
           {
@@ -249,7 +249,7 @@ serverInstance <- function(input, output, session) {
       }
     )
 
-    output$fullResultsTable <- DT::renderDataTable(
+    output$fullResultsTable <- shiny::renderDataTable(
       expr = {
           tryCatch(
             expr = {
