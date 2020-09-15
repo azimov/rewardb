@@ -64,11 +64,10 @@ dropTestSchema <- function(connection, schemaName) {
   DatabaseConnector::renderTranslateExecuteSql(connection, "DROP SCHEMA IF EXISTS @schema_name CASCADE;", schema_name = schemaName)
 }
 
-config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
-connection <- DatabaseConnector::connect(config$rewardbDatabase)
-schemaName <- createTestSchema(connection)
-
 test_that("import copy functions", {
+  config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
+  connection <- DatabaseConnector::connect(config$rewardbDatabase)
+  schemaName <- createTestSchema(connection)
   tmp <- tempdir()
   folder <- file.path(tmp, stringi::stri_rand_strings(1, 5))
   dir.create(folder)
@@ -80,7 +79,7 @@ test_that("import copy functions", {
   rewardb::exportResults(config, exportZipFile = zipFilePath)
 
   ParallelLogger::logInfo(paste("Testing insert", schemaName))
-  rewardb::importResults(config$rewardbDatabase, schemaName, zipFilePath, unzipPath = unzipPath, overwrite = TRUE)
+  rewardb::importResultsFiles(config$rewardbDatabase, schemaName, zipFilePath, unzipPath = unzipPath, overwrite = TRUE)
 
   results <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
@@ -88,18 +87,18 @@ test_that("import copy functions", {
     schema = schemaName
   )
 
-  checkmate::assertDataFrame(
-    results,
-    min.cols = 1,
-    max.cols = 1,
-    min.rows = 4,
-    max.rows = 4
+  expect_true(
+    checkmate::checkDataFrame(
+      results,
+      min.cols = 1,
+      max.cols = 1,
+      min.rows = 4,
+      max.rows = 4
+    )
   )
-
   # cleanup
   unlink(folder, recursive = TRUE, force = TRUE)
   unlink(unzipPath)
+  dropTestSchema(connection, schemaName)
+  DatabaseConnector::disconnect(connection)
 })
-
-dropTestSchema(connection, schemaName)
-DatabaseConnector::disconnect(connection)

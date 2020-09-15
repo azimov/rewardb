@@ -47,7 +47,7 @@ unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   return(lapply(names(meta$hashList), function(file) { tools::file_path_as_absolute(file.path(unzipPath, file)) }))
 }
 
-importResults <- function(connectionDetails, resulstSchema, exportZipFilePath, unzipPath = "rb-import", overwrite = TRUE) {
+importResultsFiles <- function(connectionDetails, resulstSchema, exportZipFilePath, unzipPath = "rb-import", overwrite = TRUE) {
   files <- unzipAndVerify(exportZipFilePath, unzipPath, overwrite)
   connection <- DatabaseConnector::connect(connectionDetails)
   # Bulk insert data in to tables
@@ -76,4 +76,11 @@ importResults <- function(connectionDetails, resulstSchema, exportZipFilePath, u
     }
   )
 
+}
+
+
+importFullResults <- function(resultsZipPath, configPath="config/global-cfg.yml", unzipPath = "rb-import", overwrite = FALSE) {
+  config <- yaml::read_yaml(configPath)
+
+  rewardb::importResultsFiles(config$rewardbDatabase, config$rewardbResultsSchema, zipFilePath, unzipPath = unzipPath, overwrite = overwrite)
 }

@@ -19,8 +19,6 @@ createCohorts <- function(connection, config, dataSources) {
       cdm_database_schema = dataSource$cdmDatabaseSchema,
       drug_era_schema = dataSource$cdmDatabaseSchema, # Use cdm drug eras
       cohort_database_schema = config$cdmDatabase$schema,
-      cohort_definition_table = config$cdmDatabase$cohortDefinitionTable,
-      conceptset_definition_table = config$cdmDatabase$conceptSetDefinitionTable,
       vocab_schema = config$cdmDatabase$vocabularySchema,
       cohort_table = dataSource$cohortTable
     )
@@ -70,9 +68,7 @@ createOutcomeCohorts <- function(connection, config, dataSources) {
       sql = sql,
       cdm_database_schema = dataSource$cdmDatabaseSchema,
       cohort_database_schema = config$cdmDatabase$schema,
-      outcome_cohort_table = dataSource$outcomeCohortTable,
-      cdm_outcome_cohort_schema = dataSource$cdmOutcomeCohortSchema,
-      cdm_outcome_cohort_table = dataSource$cdmOutcomeCohortTable
+      outcome_cohort_table = dataSource$outcomeCohortTable
     )
   }
 }

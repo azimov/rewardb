@@ -105,8 +105,8 @@ select
 	, case when dos1.pt_itt > 0 then 1.0 * dos1.num_persons_post_itt / dos1.pt_itt else null end as ir_itt
 from #drug_outcome_summary dos1;
 
-if object_id('tempdb..#concept_ancestor_grouping', 'U') is not null
-	drop table #concept_ancestor_grouping
+if object_id('tempdb..#concept_ancestor_grp', 'U') is not null
+	drop table #concept_ancestor_grp
 ;
 
 if object_id('tempdb..#incident_outcomes', 'U') is not null
