@@ -84,9 +84,11 @@ test_that("import copy functions", {
     schema = schemaName
   )
 
+  connection <- DatabaseConnector::disconnect(connection)
   ParallelLogger::logInfo(paste("Testing insert", schemaName))
-  rewardb::importResultsFiles(config$rewardbDatabase, schemaName, zipFilePath, unzipPath = unzipPath)
+  rewardb::importResultsFiles(config$rewardbDatabase, schemaName, zipFilePath, unzipPath = unzipPath, .checkTables = FALSE)
 
+  connection <- DatabaseConnector::connect(config$rewardbDatabase)
   results <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
     sql = "SELECT * FROM @schema.test_file",

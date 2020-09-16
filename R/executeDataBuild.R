@@ -121,14 +121,13 @@ fullExecution <- function(
         createResultsTable(connection, config, dataSource)
         sccSummary <- runScc(connection, config, dataSource)
         dataFileName <- getDataFileName(dataSource)
-
         ParallelLogger::logInfo(paste("Writing file", dataFileName))
-        write.csv(sccSummary, dataFileName, row.names = FALSE)
+        write.csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, row.names = FALSE, na="")
         tableNames[[basename(dataFileName)]] <- "scc_result"
       }
 
       ParallelLogger::logInfo("Exporting results zip")
-      exportResults(config, tableNames=tableNames, csvPattern = "scc-results-full-*.csv")
+      exportResults(config, tableNames = tableNames, csvPattern = "scc-results-full-*.csv")
     }
 
   },

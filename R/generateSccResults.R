@@ -24,9 +24,23 @@ getResultsDatabaseTableName <- function(config, dataSource) {
   return(paste0(config$resultsTablePrefix, dataSource$database))
 }
 
+SCC_RESULT_COL_NAMES <- c(
+  "source_id" = "source_id",
+  "target_cohort_id" = "exposureId",
+  "outcome_cohort_id" = "outcomeId",
+  "t_at_risk" = "numPersons",
+  "t_pt" = "timeAtRiskExposed",
+  "t_cases" = "numOutcomesExposed",
+  "c_cases" = "numOutcomesUnexposed",
+  "c_pt" = "timeAtRiskUnexposed",
+  "rr" = "irr",
+  "lb_95" = "irrLb95",
+  "ub_95" = "irrUb95",
+  "se_log_rr" = "seLogRr",
+  "p_value" = "p"
+)
 
 #' Peform SCC from self controlled cohort package with rewardbs settings
-
 runScc <- function(
   connection,
   config,
@@ -81,21 +95,8 @@ runScc <- function(
   sccSummary$source_id <- dataSource$sourceId
   sccSummary$analysis_id <- 1
   sccSummary$c_at_risk <- sccSummary$numPersons
-  sccSummary <- dplyr::rename(sccSummary, c(
-    "target_cohort_id" = "exposureId",
-    "outcome_cohort_id" = "outcomeId",
-    "t_at_risk" = "numPersons",
-    "t_pt" = "timeAtRiskExposed",
-    "t_cases" = "numOutcomesExposed",
-    "c_cases" = "numOutcomesUnexposed",
-    "c_pt" = "timeAtRiskUnexposed",
-    "relative_risk" = "irr",
-    "lb_95" = "irrLb95",
-    "ub_95" = "irrUb95",
-    "log_rr" = "logRr",
-    "se_log_rr" = "seLogRr",
-    "p_value" = "p"
-  ))
+
+  sccSummary <- dplyr::rename(sccSummary, rewardb::SCC_RESULT_COL_NAMES)
 
   ParallelLogger::logInfo(paste("Generated results for SCC", dataSource$database))
 

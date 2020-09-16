@@ -10,7 +10,7 @@ exportResults <- function(
   meta <- list()
   meta$config <- config
   meta$hashList <- list()
-  meta$tableList <- tableNames
+  meta$tableNames <- tableNames
 
   exportFiles <- Sys.glob(file.path(config$exportPath, csvPattern))
 
@@ -65,38 +65,43 @@ getMetaDt <- function(unzipPath) {
   }
 }
 
-importResultsFiles <- function(connectionDetails, resulstSchema, exportZipFilePath, unzipPath = "rb-import") {
+#' Only works with postgres
+importResultsFiles <- function(connectionDetails, resultsSchema, exportZipFilePath, unzipPath = "rb-import", .checkTables = TRUE) {
   .checkPsqlExists()
   files <- unzipAndVerify(exportZipFilePath, unzipPath, TRUE)
   meta <- getMetaDt(unzipPath)
   hostServerDb <- strsplit(connectionDetails$server, "/")[[1]]
+
+  checkmate::assert(connectionDetails$dbms == "postgresql")
   connection <- DatabaseConnector::connect(connectionDetails)
   # Bulk insert data in to tables with pgcopy
   tryCatch(
     {
-      tables <- DatabaseConnector::getTableNames(connection, resulstSchema)
+      tables <- DatabaseConnector::getTableNames(connection, resultsSchema)
       for (csvFile in files) {
         ParallelLogger::logInfo(paste("Uploading file", csvFile))
-
-        if (basename(csvFile) %in% meta$tableList) {
-          tableName <- meta$tableList[[basename(csvFile)]]
-        } else {
+        tableName <- meta$tableNames[[basename(csvFile)]]
+        if (is.null(tableName)) {
           tableName <- stringr::str_split(basename(csvFile), ".csv")[[1]][[1]]
         }
 
-        if (!(tableName %in% tables)) {
-          ParallelLogger::logWarn(paste("Skipping table", tableName, "not found in schema"))
+        if (.checkTables & !(stringr::str_to_upper(tableName) %in% tables)) {
+          ParallelLogger::logWarn(paste("Skipping table", tableName, "not found in schema", tables))
+          next
         }
-
+        # Read first line to get header column order, we assume these are large files
+        head <- read.csv(file=csvFile, nrows=1)
+        headers <- stringi::stri_join(names(head),collapse = ", ")
         copyCommand <- paste(
           paste0("PGPASSWORD=", connectionDetails$password),
           "psql -h", hostServerDb[[1]],
           "-d", hostServerDb[[2]],
           "-p", connectionDetails$port,
           "-U", connectionDetails$user,
-          "-c \"\\copy", paste0(resulstSchema, ".", tableName),
+          "-c \"\\copy", paste0(resultsSchema, ".", tableName),
+          paste0("(", headers, ")"),
           "FROM", paste0("'", csvFile, "'"),
-          "WITH CSV HEADER;\""
+          "DELIMITER ',' CSV HEADER;\""
         )
 
         result <- base::system(copyCommand)

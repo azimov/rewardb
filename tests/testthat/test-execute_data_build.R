@@ -15,16 +15,6 @@ test_that("create reference tables", {
   expect_error(checkmate::assertFileExists("rewardb-export.zip"))
 })
 
-test_that("full data build", {
-
-  rewardb::fullExecution(
-    configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb")
-  )
-  ParallelLogger::logInfo("Performing full execution")
-  expect_true(checkmate::checkFileExists("rewardb-export.zip"))
-  unlink("rewardb-export.zip")
-})
-
 test_that("data import", {
   rewardb::fullExecution(
     configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb")
@@ -38,8 +28,6 @@ test_that("data import", {
     configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb")
   )
 
-  unlink("rewardb-export.zip")
-
   config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
   connection <- DatabaseConnector::connect(config$rewardbDatabase)
 
@@ -47,7 +35,11 @@ test_that("data import", {
   res <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT count(*) FROM @schema.scc_result",
-    rewardbResultsSchema = config$rewardb
+    schema = config$rewardbResultsSchema
   )
+  ParallelLogger::logInfo(paste("Found", res, "entries"))
   expect_true(res > 0)
+  DatabaseConnector::disconnect(connection)
+  unlink("rewardb-export.zip")
+  unlink("rb-import")
 })
