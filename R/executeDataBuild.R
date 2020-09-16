@@ -116,6 +116,7 @@ fullExecution <- function(
         dir.create(config$exportPath)
       }
 
+      tableNames <- list()
       for (dataSource in dataSources) {
         createResultsTable(connection, config, dataSource)
         sccSummary <- runScc(connection, config, dataSource)
@@ -123,10 +124,11 @@ fullExecution <- function(
 
         ParallelLogger::logInfo(paste("Writing file", dataFileName))
         write.csv(sccSummary, dataFileName, row.names = FALSE)
+        tableNames[[basename(dataFileName)]] <- "scc_result"
       }
 
       ParallelLogger::logInfo("Exporting results zip")
-      exportResults(config)
+      exportResults(config, tableNames=tableNames, csvPattern = "scc-results-full-*.csv")
     }
 
   },

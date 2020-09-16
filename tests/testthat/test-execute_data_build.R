@@ -31,6 +31,23 @@ test_that("data import", {
   )
   ParallelLogger::logInfo("Performing full execution")
   expect_true(checkmate::checkFileExists("rewardb-export.zip"))
+
+  rewardb::buildPgDatabase(configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb"))
+  rewardb::importResultsZip(
+    resultsZipPath = "rewardb-export.zip",
+    configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb")
+  )
+
   unlink("rewardb-export.zip")
 
+  config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
+  connection <- DatabaseConnector::connect(config$rewardbDatabase)
+
+  # Test that data has been inserted ok
+  res <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT count(*) FROM @schema.scc_result",
+    rewardbResultsSchema = config$rewardb
+  )
+  expect_true(res > 0)
 })

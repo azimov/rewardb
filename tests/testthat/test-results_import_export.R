@@ -78,8 +78,14 @@ test_that("import copy functions", {
   config$exportPath <- folder
   rewardb::exportResults(config, exportZipFile = zipFilePath)
 
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection = connection,
+    sql = "CREATE TABLE @schema.test_file (col_a numeric);",
+    schema = schemaName
+  )
+
   ParallelLogger::logInfo(paste("Testing insert", schemaName))
-  rewardb::importResultsFiles(config$rewardbDatabase, schemaName, zipFilePath, unzipPath = unzipPath, overwrite = TRUE)
+  rewardb::importResultsFiles(config$rewardbDatabase, schemaName, zipFilePath, unzipPath = unzipPath)
 
   results <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
