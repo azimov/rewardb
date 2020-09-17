@@ -15,12 +15,12 @@ forestPlot <- function(table) {
       label = label)
   ) +
     ggplot2::geom_pointrange() +
-    ggplot2::geom_text(vjust = 0, nudge_y = 0.2, size = 5) +
+    ggplot2::geom_text(vjust = 0, nudge_y = 0.2, size = 3) +
     ggplot2::geom_errorbarh(height = 0.1) +
     ggplot2::geom_vline(xintercept = 1.0, linetype = 2) +
     ggplot2::ylab("Database") +
     ggplot2::xlab("Relative Risk") +
-    ggplot2::theme(text = ggplot2::element_text(size = 15))
+    ggplot2::theme(text = ggplot2::element_text(size = 11))
   return(plot)
 }
 

@@ -284,13 +284,13 @@ serverInstance <- function(input, output, session) {
         return(data.frame())
     })
 
-    output$forestPlot <- renderPlot({
+    output$forestPlot <- plotly::renderPlotly({
         df <- forestPlotTable()
         if (nrow(df)) {
-            return(rewardb::forestPlot(df))
+            return(plotly::ggplotly(rewardb::forestPlot(df)))
         }
     })
-    output$calibrationPlot <- renderPlot(
+    output$calibrationPlot <- plotly::renderPlotly(
     {
         s <- filteredTableSelected()
         treatment <- s$TARGET_COHORT_ID
@@ -309,7 +309,7 @@ serverInstance <- function(input, output, session) {
           logRrPositives = log(positives$RR),
           seLogRrPositives = positives$SE_LOG_RR
         )
-        return(plot)
+        return(plotly::ggplotly(plot))
     })
 }
 
