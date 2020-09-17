@@ -249,7 +249,7 @@ serverInstance <- function(input, output, session) {
       }
     )
 
-    output$fullResultsTable <- shiny::renderDataTable(
+    output$fullResultsTable <- DT::renderDataTable(
       expr = {
           tryCatch(
             expr = {
