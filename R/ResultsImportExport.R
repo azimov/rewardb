@@ -58,21 +58,40 @@ getMetaDt <- function(unzipPath) {
   jsonlite::read_json(file.path(unzipPath, rewardb::CONST_META_FILE_NAME))
 }
 
-.checkPsqlExists <- function(testCmd = "psql --version") {
-  res <- base::system(testCmd)
+.checkPsqlExists <- function(cmd, testCmd = "--version") {
+  res <- base::system(paste(cmd, testCmd))
   if (res != 0) {
-    stop("Error psql command not found on system. Copy util will not function")
+    stop("Error psql command did not retrun a 0 status. Copy util will not function")
   }
 }
 
 #' Only works with postgres
-importResultsFiles <- function(connectionDetails, resultsSchema, exportZipFilePath, unzipPath = "rb-import", .checkTables = TRUE) {
-  .checkPsqlExists()
+importResultsFiles <- function(
+  connectionDetails,
+  resultsSchema,
+  exportZipFilePath,
+  unzipPath = "rb-import",
+  winPsqlPath = NULL,
+  .checkTables = TRUE)
+{
+  checkmate::assert(connectionDetails$dbms == "postgresql")
+  passwordCommand <- paste0("PGPASSWORD=", connectionDetails$password)
+  if (.Platform$OS.type == "windows") {
+    passwordCommand <- paste0("$env:", passwordCommand, ";")
+    command <- file.path(winPsqlPath, "psql.exe")
+
+    if (!file.exists(command)) {
+      stop("Error, could not find psql")
+    }
+  } else {
+    command <- "psql"
+  }
+
+  .checkPsqlExists(command)
   files <- unzipAndVerify(exportZipFilePath, unzipPath, TRUE)
   meta <- getMetaDt(unzipPath)
   hostServerDb <- strsplit(connectionDetails$server, "/")[[1]]
 
-  checkmate::assert(connectionDetails$dbms == "postgresql")
   connection <- DatabaseConnector::connect(connectionDetails)
   # Bulk insert data in to tables with pgcopy
   tryCatch(
@@ -92,9 +111,11 @@ importResultsFiles <- function(connectionDetails, resultsSchema, exportZipFilePa
         # Read first line to get header column order, we assume these are large files
         head <- read.csv(file=csvFile, nrows=1)
         headers <- stringi::stri_join(names(head),collapse = ", ")
+
         copyCommand <- paste(
-          paste0("PGPASSWORD=", connectionDetails$password),
-          "psql -h", hostServerDb[[1]],
+          passwordCommand,
+          command,
+          "-h", hostServerDb[[1]],
           "-d", hostServerDb[[2]],
           "-p", connectionDetails$port,
           "-U", connectionDetails$user,
