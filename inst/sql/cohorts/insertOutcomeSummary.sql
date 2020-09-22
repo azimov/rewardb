@@ -2,7 +2,8 @@ if object_id('tempdb..#incident_outcomes', 'U') is not null
 	drop table #incident_outcomes
 ;
 
-create table #incident_outcomes with (location=user_db, distribution=hash(subject_id)) as
+--HINT DISTRIBUTE_ON_KEY(subject_id)
+create table #incident_outcomes as
 select
 	hoc1.cohort_definition_id
 	, hoc1.subject_id
@@ -17,7 +18,7 @@ inner join @cohort_database_schema.@outcome_cohort_definition_table hocd1
 if object_id('tempdb..#drug_summary', 'U') is not null
 	drop table #drug_summary;
 
-create table #drug_summary with (location=user_db, distribution=replicate) as
+create table #drug_summary as
 select
 	c1.cohort_definition_id as target_cohort_definition_id
 	, count(c1.subject_id) as num_persons
@@ -37,7 +38,7 @@ if object_id('tempdb..#drug_outcome_count', 'U') is not null
 	drop table #drug_outcome_count
 ;
 
-create table #drug_outcome_count with (location=user_db, distribution=replicate) as
+create table #drug_outcome_count as
 select
 	c1.cohort_definition_id as target_cohort_definition_id
 	, io1.cohort_definition_id as outcome_cohort_definition_id
@@ -64,7 +65,7 @@ if object_id('tempdb..#drug_outcome_summary', 'U') is not null
 	drop table #drug_outcome_summary
 ;
 
-create table #drug_outcome_summary with (location=user_db, distribution=replicate) as
+create table #drug_outcome_summary as
 select
 	do1.target_cohort_definition_id
 	, do1.outcome_cohort_definition_id
@@ -104,8 +105,8 @@ select
 	, case when dos1.pt_itt > 0 then 1.0 * dos1.num_persons_post_itt / dos1.pt_itt else null end as ir_itt
 from #drug_outcome_summary dos1;
 
-if object_id('tempdb..#concept_ancestor_grouping', 'U') is not null
-	drop table #concept_ancestor_grouping
+if object_id('tempdb..#concept_ancestor_grp', 'U') is not null
+	drop table #concept_ancestor_grp
 ;
 
 if object_id('tempdb..#incident_outcomes', 'U') is not null

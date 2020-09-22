@@ -105,15 +105,31 @@ fullExecution <- function(
       createSummaryTables(connection, config, dataSources)
     }
 
+    getDataFileName <- function(dataSource) {
+        paste0(config$exportPath, "/scc-results-full-", dataSource$database, ".csv")
+    }
+
     if (.runSCC) {
       ParallelLogger::logInfo("Generating fresh scc results tables")
       # run SCC
+      if (!dir.exists(config$exportPath)) {
+        dir.create(config$exportPath)
+      }
+
+      tableNames <- list()
       for (dataSource in dataSources) {
         createResultsTable(connection, config, dataSource)
-        runScc(connection, config, dataSource)
+        sccSummary <- runScc(connection, config, dataSource)
+        dataFileName <- getDataFileName(dataSource)
+        ParallelLogger::logInfo(paste("Writing file", dataFileName))
+        write.csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, row.names = FALSE, na="")
+        tableNames[[basename(dataFileName)]] <- "scc_result"
       }
+
+      ParallelLogger::logInfo("Exporting results zip")
+      exportResults(config, tableNames = tableNames, csvPattern = "scc-results-full-*.csv")
     }
-    compileResults(connection, config, dataSources)
+
   },
     error = ParallelLogger::logError,
     finally = function() {

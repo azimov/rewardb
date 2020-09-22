@@ -1,5 +1,6 @@
 -- First, create ingredient level cohorts
-create table #ingredient_eras with (location = user_db, distribution = hash(person_id)) as
+--HINT DISTRIBUTE_ON_KEY(person_id)
+create table #ingredient_eras as
 select
   de1.cohort_definition_id
   , de1.concept_name
@@ -50,7 +51,8 @@ from #ingredient_eras
 
 
 -- Second, create ATC 4th level cohorts
-create table #ATC_eras with (location = user_db, distribution = hash(person_id)) as
+--HINT DISTRIBUTE_ON_KEY(person_id)
+create table #ATC_eras as
 select
   cast(de1.cohort_definition_id as bigint) * 1000 as cohort_definition_id
   , de1.concept_name

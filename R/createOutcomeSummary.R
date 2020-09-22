@@ -5,8 +5,7 @@
 createSummaryTables <- function (connection, config, dataSources) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "insertOutcomeSummary.sql", package = "rewardb"))
   createSql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeSummary.sql", package = "rewardb"))
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = createSql,
@@ -36,8 +35,7 @@ createSummaryTables <- function (connection, config, dataSources) {
 addOutcomeSummary <- function (connection, config, outcomeCohortIds, dataSources) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "insertOutcomeSummary.sql", package = "rewardb"))
   deleteSql <- "DELETE FROM @cohort_database_schema.@outcome_summary_table WHERE outcome_cohort_definition_id IN (@custom_outcome_cohort_ids)"
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     # Remove any existing entries first to prevent duplication of results
     DatabaseConnector::renderTranslateExecuteSql(
       connection,

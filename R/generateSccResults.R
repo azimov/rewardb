@@ -24,6 +24,21 @@ getResultsDatabaseTableName <- function(config, dataSource) {
   return(paste0(config$resultsTablePrefix, dataSource$database))
 }
 
+SCC_RESULT_COL_NAMES <- c(
+  "source_id" = "source_id",
+  "target_cohort_id" = "exposureId",
+  "outcome_cohort_id" = "outcomeId",
+  "t_at_risk" = "numPersons",
+  "t_pt" = "timeAtRiskExposed",
+  "t_cases" = "numOutcomesExposed",
+  "c_cases" = "numOutcomesUnexposed",
+  "c_pt" = "timeAtRiskUnexposed",
+  "rr" = "irr",
+  "lb_95" = "irrLb95",
+  "ub_95" = "irrUb95",
+  "se_log_rr" = "seLogRr",
+  "p_value" = "p"
+)
 
 #' Peform SCC from self controlled cohort package with rewardbs settings
 runScc <- function(
@@ -32,8 +47,7 @@ runScc <- function(
   dataSource,
   exposureIds = NULL,
   outcomeIds = NULL,
-  cores = parallel::detectCores() - 1,
-  storeResults = TRUE
+  cores = parallel::detectCores() - 1
 ) {
   ParallelLogger::logInfo(paste("Starting SCC analysis on", dataSource$database))
 
@@ -72,44 +86,19 @@ runScc <- function(
     followupPeriod = 0,
     computeThreads = cores
   )
-  ParallelLogger::logInfo(paste("completed SCC analysis on", dataSource$databse))
+  ParallelLogger::logInfo(paste("Completed SCC for", dataSource$database))
   sccSummary <- base::summary(sccResult)
   sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
   sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
   sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
-  
-  if (storeResults) {
-    tableName <- paste0(config$cdmDatabase$schema, ".", getResultsDatabaseTableName(config, dataSource))
-    ParallelLogger::logInfo(paste("Appending result to", tableName))
-    DatabaseConnector::insertTable(
-      connection = connection,
-      tableName = tableName,
-      data = sccSummary,
-      useMppBulkLoad = FALSE,
-      progressBar = TRUE
-    )
-  }
-  ParallelLogger::logInfo(paste("Completed SCC analysis on", dataSource$databse))
 
   sccSummary$source_id <- dataSource$sourceId
   sccSummary$analysis_id <- 1
   sccSummary$c_at_risk <- sccSummary$numPersons
-  sccSummary <- dplyr::rename(sccSummary, c(
-      "target_cohort_id" = "exposureId",
-      "outcome_cohort_id" = "outcomeId",
-      "t_at_risk" = "numPersons",
-      "t_pt" = "timeAtRiskExposed",
-      "t_cases" = "numOutcomesExposed",
-      "c_cases" = "numOutcomesUnexposed",
-      "c_pt" = "timeAtRiskUnexposed",
-      "relative_risk" = "irr",
-      "lb_95" = "irrLb95",
-      "ub_95" = "irrUb95",
-      "log_rr" = "logRr",
-       "se_log_rr" = "seLogRr",
-      "p_value" = "p"
-    ))
 
+  sccSummary <- dplyr::rename(sccSummary, rewardb::SCC_RESULT_COL_NAMES)
+
+  ParallelLogger::logInfo(paste("Generated results for SCC", dataSource$database))
 
   return(sccSummary)
 }
@@ -130,6 +119,7 @@ createResultsTable <- function(connection, config, dataSource) {
 
 # Place results from all data sources in a single table
 #' @export
+
 compileResults <- function(connection, config) {
 
   sql <- SqlRender::readSql(system.file("sql/create", "createMergedResultsTable.sql", package = "rewardb"))
@@ -142,8 +132,7 @@ compileResults <- function(connection, config) {
   )
 
   # compile results from different data sources
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     sql <- SqlRender::readSql(system.file("sql/create", "compileResults.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
@@ -158,8 +147,7 @@ compileResults <- function(connection, config) {
 }
 
 addAtlasResultsToMergedTable <- function(connection, config, atlasIds, dataSources) {
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     sql <- SqlRender::readSql(system.file("sql/create", "compileResults.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
@@ -182,27 +170,27 @@ addCsvAtlasResultsToMergedTable <- function(connection,
 ) {
   # Stops duplicate entries but use with care
   if (removeOutcomeIds) {
-     DatabaseConnector::renderTranslateExecuteSql(
+    DatabaseConnector::renderTranslateExecuteSql(
       connection = connection,
       sql = "DELETE FROM @results_database_schema.@merged_results_table WHERE outcome_cohort_id IN (@outcome_cohort_ids)",
       results_database_schema = config$cdmDatabase$schema,
       merged_results_table = config$cdmDatabase$mergedResultsTable,
       outcome_cohort_ids = unique(results$outcome_cohort_id)
-     )
+    )
   }
 
   if (removeCustomExposureIds) {
-     DatabaseConnector::renderTranslateExecuteSql(
+    DatabaseConnector::renderTranslateExecuteSql(
       connection = connection,
       sql = "DELETE FROM @results_database_schema.@merged_results_table WHERE exposure_cohort_id IN (@exposure_cohort_ids)",
       results_database_schema = config$cdmDatabase$schema,
       merged_results_table = config$cdmDatabase$mergedResultsTable,
       exposure_cohort_ids = unique(results$exposure_cohort_id)
-     )
+    )
   }
   tableName <- paste0(config$cdmDatabase$schema, ".", config$cdmDatabase$mergedResultsTable)
 
   colnames <- c("analysis_id", "source_id", "target_cohort_id", "outcome_cohort_id", "t_at_risk", "t_pt", "t_cases",
-                "c_at_risk", "c_cases" , "c_pt", "relative_risk", "lb_95", "ub_95", "log_rr", "se_log_rr", "p_value")
+                "c_at_risk", "c_cases", "c_pt", "relative_risk", "lb_95", "ub_95", "log_rr", "se_log_rr", "p_value")
   DatabaseConnector::dbAppendTable(connection, tableName, results[colnames])
 }

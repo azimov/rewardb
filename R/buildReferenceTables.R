@@ -13,26 +13,6 @@ createTargetDefinitions <- function(connection, config) {
   )
 }
 
-#' Create atlas cohort references in specified data source
-#' @param connection DatabaseConnector connection to cdm
-#' @param config
-#' @param dataSources dataSource to run cohort on
-#' @param customOutcomeCohortList custom cohorts to create
-createAtlasReference <- function(connection, config, dataSource, customOutcomeCohortList) {
-
-  sql <- SqlRender::readSql(system.file("sql/create", "customAtalsCohorts.sql", package = "rewardb"))
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection,
-    sql = sql,
-    cdm_database_schema = dataSource$cdmDatabaseSchema,
-    cohort_database_schema = config$cdmDatabase$schema,
-    outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
-    cdm_outcome_cohort_schema = dataSource$cdmOutcomeCohortSchema,
-    cdm_outcome_cohort_table = dataSource$cdmOutcomeCohortTable,
-    custom_outcome_cohort_list = customOutcomeCohortList
-  )
-}
-
 #' Create reference tables used to compute things in rewardb
 #' TODO: split up data sources and main reference tables in to different function calls
 #' @param connection DatabaseConnector connection to cdm
@@ -64,11 +44,11 @@ createReferenceTables <- function(connection, config, dataSources) {
 
   sql <- SqlRender::readSql(system.file("sql/create", "outcomeCohortDefinitions.sql", package = "rewardb"))
 
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,
+      dbms = connection@dbms,
       cdm_database_schema = dataSource$cdmDatabaseSchema,
       cohort_database_schema = config$cdmDatabase$schema,
       outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
@@ -76,8 +56,7 @@ createReferenceTables <- function(connection, config, dataSources) {
   }
 
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortTable.sql", package = "rewardb"))
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = sql,

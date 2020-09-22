@@ -20,5 +20,4 @@ create table @results_database_schema.@merged_results_table
   , log_rr float
   , se_log_rr float
   , p_value float
-)
-with (distribution = replicate);
+);

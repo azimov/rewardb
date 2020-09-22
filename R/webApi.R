@@ -63,8 +63,8 @@ insertAtlasCohortRef <- function(connection, config, atlasId) {
           results <- rbind(results, data.frame(
             COHORT_DEFINITION_ID = content$id,
             CONCEPT_ID = item$concept$CONCEPT_ID,
-            IS_EXCLUDED = item$isExcluded,
-            include_descendants = item$includeDescendants
+            IS_EXCLUDED = as.integer(item$isExcluded),
+            include_descendants = as.integer(item$includeDescendants)
           )
           )
         }
@@ -95,8 +95,7 @@ removeAtlasCohort <- function (connection, config, atlasIds, dataSources) {
     atlas_concept_reference = config$cdmDatabase$atlasConceptReferenceTable
   )
 
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = "DELETE FROM @cohort_database_schema.@outcome_cohort_table WHERE cohort_definition_id IN (@cohort_definition_id)",
@@ -172,8 +171,7 @@ removeCustomExposureCohort <- function (connection, config, conceptSetId, dataSo
     cohort_definition_id = conceptSetId,
   )
 
-  for (ds in dataSources) {
-    dataSource <- config$dataSources[[ds]]
+  for (dataSource in dataSources) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = "DELETE FROM @cohort_database_schema.@cohort_table WHERE cohort_definition_id IN (@cohort_definition_id)",

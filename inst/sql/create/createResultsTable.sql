@@ -19,5 +19,4 @@ create table @results_database_schema.@results_table
   , seLogRr float
   , p float
 )
-with (distribution = replicate)
 ;

@@ -1,4 +1,4 @@
-create table #concept_ancestor_grouping with (location = user_db, distribution = replicate) as
+create table #concept_ancestor_grp as
 select
   ca1.ancestor_concept_id
   , ca1.descendant_concept_id
@@ -36,11 +36,11 @@ inner join
 --where ca1.ancestor_concept_id in (4245975, 381270, 4054512)  -- REMOVE FOR FULL RUN
 ;
 
-create clustered columnstore index cci_cag1
-  on #concept_ancestor_grouping;
+-- create clustered columnstore index cci_cag1 on #concept_ancestor_grp;
 
 -- first diagnosis, which eventually leads to hospitalization for same outcome
-create table #cohorts with (location=user_db, distribution=hash(person_id)) as
+--HINT DISTRIBUTE_ON_KEY(person_id)
+create table #cohorts as
 select
   cast(t1.ancestor_concept_id as bigint) * 100 + 1 as cohort_definition_id
   , t1.person_id
@@ -53,7 +53,7 @@ from
     , ca1.ancestor_concept_id
     , min(co1.condition_start_date) as cohort_start_date
   from @cdm_database_schema.condition_occurrence co1
-  inner join #concept_ancestor_grouping ca1
+  inner join #concept_ancestor_grp ca1
     on co1.condition_concept_id = ca1.descendant_concept_id
   group by
     co1.person_id
@@ -70,7 +70,7 @@ inner join
     on co1.person_Id = vo1.person_id
     and co1.visit_occurrence_id = vo1.visit_occurrence_id
     and visit_concept_id = 9201
-  inner join #concept_ancestor_grouping ca1
+  inner join #concept_ancestor_grp ca1
     on co1.condition_concept_id = ca1.descendant_concept_id
   group by
     co1.person_id
@@ -98,7 +98,8 @@ from #cohorts
 
 
 --incident outcomes - requiring two visits, first visit is used as date of outcome
-create table #cohortsb with (location=user_db, distribution=hash(person_id)) as
+--HINT DISTRIBUTE_ON_KEY(person_id)
+create table #cohortsb as
 select
   cast(t1.ancestor_concept_id as bigint) * 100 as cohort_definition_id
   , t1.person_id
@@ -111,7 +112,7 @@ from
     , ca1.ancestor_concept_id
     , min(co1.condition_start_date) as cohort_start_date
   from @cdm_database_schema.condition_occurrence co1
-  inner join #concept_ancestor_grouping ca1
+  inner join #concept_ancestor_grp ca1
     on co1.condition_concept_id = ca1.descendant_concept_id
   group by
     co1.person_id
@@ -128,7 +129,7 @@ inner join
   inner join @cdm_database_schema.visit_occurrence vo1
     on co1.person_Id = vo1.person_id
     and co1.visit_occurrence_id = vo1.visit_occurrence_id
-  inner join #concept_ancestor_grouping ca1
+  inner join #concept_ancestor_grp ca1
     on co1.condition_concept_id = ca1.descendant_concept_id
   group by
     co1.person_id
@@ -154,8 +155,8 @@ select
 from #cohortsb
 ;
 
-truncate table #concept_ancestor_grouping;
-drop table #concept_ancestor_grouping;
+truncate table #concept_ancestor_grp;
+drop table #concept_ancestor_grp;
 
 truncate table #cohorts;
 drop table #cohorts;
