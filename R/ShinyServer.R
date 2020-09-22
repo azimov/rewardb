@@ -237,7 +237,7 @@ serverInstance <- function(input, output, session) {
       }
     )
 
-     output$downloadSubTable <- downloadHandler(
+    output$downloadSubTable <- downloadHandler(
       filename = function() {
         s <- filteredTableSelected()
         treatment <- s$TARGET_COHORT_ID
@@ -272,12 +272,13 @@ serverInstance <- function(input, output, session) {
             calibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=1)
 
             if (nrow(calibratedTable)) {
-                calibratedTable$CALIBRATED = 1
-                uncalibratedTable$CALIBRATED = 0
-                uncalibratedTable$SOURCE_NAME <- paste(uncalibratedTable$SOURCE_NAME, "Uncalibrated")
-                calibratedTable$SOURCE_NAME <- paste(calibratedTable$SOURCE_NAME, "Calibrated")
-                table <- rbind(calibratedTable, uncalibratedTable)
-                return(table[order(table$SOURCE_ID, table$SOURCE_NAME),])
+                calibratedTable$calibrated = "Calibrated"
+                uncalibratedTable$calibrated = "Uncalibrated"
+                uncalibratedTable$SOURCE_NAME <- paste0(uncalibratedTable$SOURCE_NAME, "\n uncalibrated")
+                calibratedTable$SOURCE_NAME <- paste0(calibratedTable$SOURCE_NAME, "\n Calibrated")
+                table <- rbind(uncalibratedTable[order(uncalibratedTable$SOURCE_ID, decreasing = TRUE), ],
+                               calibratedTable[order(calibratedTable$SOURCE_ID, decreasing = TRUE), ])
+                return(table)
             }
             return(uncalibratedTable)
         }
@@ -290,27 +291,57 @@ serverInstance <- function(input, output, session) {
             return(plotly::ggplotly(rewardb::forestPlot(df)))
         }
     })
-    output$calibrationPlot <- plotly::renderPlotly(
-    {
+
+    output$downloadForestPlot <- downloadHandler(
+      filename = function() {
         s <- filteredTableSelected()
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
-        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-        positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+        paste0(appContext$short_name, '-forest-plot-', treatment, "-", outcome, '.png')
+      },
+      content = function(file) {
+        df <- forestPlotTable()
+        ggplot2::ggsave(file, plot = rewardb::forestPlot(df), device = "png")
+      }
+    )
 
-        if (appContext$useExposureControls) {
-            negatives <- rewardb::getExposureControls(appContext, dbConn, outcome)
-        } else {
-            negatives <- rewardb::getOutcomeControls(appContext, dbConn, treatment)
-        }
-        plot <- EmpiricalCalibration::plotCalibrationEffect(
-          logRrNegatives = log(negatives$RR),
-          seLogRrNegatives = negatives$SE_LOG_RR,
-          logRrPositives = log(positives$RR),
-          seLogRrPositives = positives$SE_LOG_RR
-        )
+    getCalibrationPlot <- function() {
+      s <- filteredTableSelected()
+      treatment <- s$TARGET_COHORT_ID
+      outcome <- s$OUTCOME_COHORT_ID
+      sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+      positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+
+      if (appContext$useExposureControls) {
+          negatives <- rewardb::getExposureControls(appContext, dbConn, outcome)
+      } else {
+          negatives <- rewardb::getOutcomeControls(appContext, dbConn, treatment)
+      }
+      plot <- EmpiricalCalibration::plotCalibrationEffect(
+        logRrNegatives = log(negatives$RR),
+        seLogRrNegatives = negatives$SE_LOG_RR,
+        logRrPositives = log(positives$RR),
+        seLogRrPositives = positives$SE_LOG_RR
+      )
+    }
+
+    output$calibrationPlot <- plotly::renderPlotly({
+        plot <- getCalibrationPlot()
         return(plotly::ggplotly(plot))
     })
+
+
+    output$downloadCalibrationPlot <- downloadHandler(
+      filename = function() {
+        s <- filteredTableSelected()
+        treatment <- s$TARGET_COHORT_ID
+        outcome <- s$OUTCOME_COHORT_ID
+        paste0(appContext$short_name, '-calibration-plot-', treatment, "-", outcome, '.png')
+      },
+      content = function(file) {
+        ggplot2::ggsave(file, plot = getCalibrationPlot(), device = "png")
+      }
+    )
 }
 
 #' Launch the REWARD-B Shiny app

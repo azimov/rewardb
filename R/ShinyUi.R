@@ -29,15 +29,20 @@ dashboardUi  <- function (request) {
           ),
           tabPanel(
             "Forest plot",
-            withSpinner(plotly::plotlyOutput("forestPlot", height = 800)),
-            div(strong("Figure 1."), "Forest plot of effect estimates from each database")
+            withSpinner(plotly::plotlyOutput("forestPlot", height = 500)),
+            div(
+              strong("Figure 1."),
+              paste("Forest plot of effect estimates from each database"),
+              downloadButton("downloadForestPlot", "Save")
+            )
           ),
           tabPanel(
             "Calibration plot",
-            withSpinner(plotly::plotlyOutput("calibrationPlot", height = 800)),
+            withSpinner(plotly::plotlyOutput("calibrationPlot", height = 500)),
             div(
               strong("Figure 2."),
-              paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates")
+              paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates"),
+              downloadButton("downloadCalibrationPlot", "Save")
             )
           )
         ),
