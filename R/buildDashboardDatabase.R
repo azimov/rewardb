@@ -218,53 +218,32 @@ createTables <- function (appContext) {
   DatabaseConnector::executeSql(appContext$connection, sql = sql)
 }
 
-#' Using a CEM source finds any evidence related to conditions and exposures
+#'
+#' ing a CEM source finds any evidence related to conditions and exposures
 #' This is used for the automated construction of negative control sets and the indication labels
 #' TODO: test and improve this logic and move to its own R file
 #' @param appContext rewardb app context
 addCemEvidence <- function(appContext) {
-  cdmConnection <- appContext$cdmConnection
-
   outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
                                                            "SELECT DISTINCT condition_concept_id FROM @schema.outcome_concept",
-                                                           schema=appContext$short_name)
+                                                           schema = appContext$short_name)
 
   targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
                                                           "SELECT DISTINCT tc.concept_id AS target_concept_id, t.is_atc_4 FROM @schema.target t
                                                           INNER JOIN @schema.target_concept tc ON tc.target_cohort_id = t.target_cohort_id",
-                                                          schema=appContext$short_name)
+                                                          schema = appContext$short_name)
 
-  DatabaseConnector::insertTable(appContext$cdmConnection, "#outcome_nc_tmp", outcomeIds, tempTable=TRUE)
-  DatabaseConnector::insertTable(appContext$cdmConnection, "#target_nc_tmp", targetIds, tempTable=TRUE)
 
-  sql <- SqlRender::readSql(system.file("sql/queries", "cemSummary.sql", package = "rewardb"))
-  # First, method of mapping evidence at the normal level
-  evidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
-    cdmConnection,
-    sql,
+  evidenceConcepts <- getMappedEvidenceFromCem(
+    connection = appContext$cdmConnection,
+    outcomeIds = outcomeIds,
+    drugIds = targetIds,
     schema = appContext$resultsDatabase$cemSchema,
     vocab_schema = appContext$resultsDatabase$vocabularySchema,
     summary_table = appContext$resultsDatabase$negativeControlTable
   )
-
-  outcomeIds$counts <- lapply(outcomeIds$CONDITION_CONCEPT_ID, function (id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
-
-  # TODO Map counts to cohorts so cohort sum determines if step up is made - not the cohort
-  if (nrow(outcomeIds[outcomeIds$counts == 0, ])) {
-    # Only if we can't map evidence, go up to the level of parent of concept id
-    sql <- SqlRender::readSql(system.file("sql/queries", "cemSummaryParents.sql", package = "rewardb"))
-    parentLevelEvidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
-      cdmConnection,
-      sql,
-      schema = appContext$resultsDatabase$cemSchema,
-      summary_table = appContext$resultsDatabase$negativeControlTable,
-      outcome_concepts_of_interest = outcomeIds[outcomeIds$counts == 0, ]$CONDITION_CONCEPT_ID
-    )
-    evidenceConcepts <- rbind(evidenceConcepts, parentLevelEvidenceConcepts)
-  }
-  print(paste("Found ", nrow(evidenceConcepts), "mappings"))
-
-  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", evidenceConcepts, tempTable=TRUE)
+  ParallelLogger::logInfo(paste("Found", nrow(evidenceConcepts), "mappings"))
+  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", evidenceConcepts, tempTable = TRUE)
 
   sql <- "
     INSERT INTO @schema.negative_control (outcome_cohort_id, target_cohort_id)
@@ -282,7 +261,7 @@ addCemEvidence <- function(appContext) {
       WHERE ncc.evidence = 1;
   "
   # TODO: optimise negative control sets for cohorts
-  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema=appContext$short_name)
+  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema = appContext$short_name)
 }
 
 #' Perform meta-analysis on data sources
