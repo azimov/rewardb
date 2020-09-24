@@ -236,8 +236,8 @@ addCemEvidence <- function(appContext) {
 
   evidenceConcepts <- getMappedEvidenceFromCem(
     connection = appContext$cdmConnection,
-    outcomeIds = outcomeIds,
-    drugIds = targetIds,
+    outcomeIds = outcomeIds$condition_concept_id,
+    drugIds = targetIds$target_concept_id,
     schema = appContext$resultsDatabase$cemSchema,
     vocab_schema = appContext$resultsDatabase$vocabularySchema,
     summary_table = appContext$resultsDatabase$negativeControlTable
