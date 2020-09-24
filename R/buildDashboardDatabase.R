@@ -228,7 +228,7 @@ addCemEvidence <- function(appContext) {
                                                            "SELECT DISTINCT condition_concept_id FROM @schema.outcome_concept",
                                                            schema = appContext$short_name)
 
-  targetIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
+  targets <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
                                                           "SELECT DISTINCT tc.concept_id AS target_concept_id, t.is_atc_4 FROM @schema.target t
                                                           INNER JOIN @schema.target_concept tc ON tc.target_cohort_id = t.target_cohort_id",
                                                           schema = appContext$short_name)
@@ -237,7 +237,7 @@ addCemEvidence <- function(appContext) {
   evidenceConcepts <- getMappedEvidenceFromCem(
     connection = appContext$cdmConnection,
     outcomeIds = outcomeIds$condition_concept_id,
-    drugIds = targetIds$target_concept_id,
+    drugIds = targets,
     schema = appContext$resultsDatabase$cemSchema,
     vocab_schema = appContext$resultsDatabase$vocabularySchema,
     summary_table = appContext$resultsDatabase$negativeControlTable

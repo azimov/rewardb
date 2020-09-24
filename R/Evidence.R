@@ -14,11 +14,10 @@ getMappedEvidenceFromCem <- function(
   summaryTable = "matrix_summary"
 ) {
 
-  drugIdsDf <- data.frame(target_concept_id = drugIds)
   outcomeIdsDf <- data.frame(condition_concept_id = outcomeIds)
   # Uses temp tables as these can, and will, be large lists of concepts
   DatabaseConnector::insertTable(connection, "#outcome_nc_tmp", outcomeIdsDf, tempTable = TRUE)
-  DatabaseConnector::insertTable(connection, "#target_nc_tmp", drugIdsDf, tempTable = TRUE)
+  DatabaseConnector::insertTable(connection, "#target_nc_tmp", drugIds, tempTable = TRUE)
 
   sql <- SqlRender::readSql(system.file("sql/queries", "cemSummary.sql", package = "rewardb"))
   # First, method of mapping evidence at the normal level
