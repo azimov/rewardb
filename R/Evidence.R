@@ -29,10 +29,12 @@ getMappedEvidenceFromCem <- function(
     summary_table = summaryTable
   )
 
-  outcomeIds$counts <- lapply(outcomeIds$CONDITION_CONCEPT_ID, function(id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
-
+  outcomeCounts <- data.frame(
+    outcomeIds = outcomeIds,
+    counts = lapply(outcomeIds, function(id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
+  )
   # TODO Map counts to cohorts so cohort sum determines if step up is made - not the cohort
-  if (nrow(outcomeIds[outcomeIds$counts == 0,])) {
+  if (nrow(outcomeCounts[outcomeCounts$counts == 0,])) {
     # Only if we can't map evidence, go up to the level of parent of concept id
     sql <- SqlRender::readSql(system.file("sql/queries", "cemSummaryParents.sql", package = "rewardb"))
     parentLevelEvidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
@@ -40,7 +42,7 @@ getMappedEvidenceFromCem <- function(
       sql,
       schema = schema,
       summary_table = summaryTable,
-      outcome_concepts_of_interest = outcomeIds[outcomeIds$counts == 0,]$CONDITION_CONCEPT_ID
+      outcome_concepts_of_interest = outcomeCounts[outcomeCounts$counts == 0,]$outcomeIds
     )
     evidenceConcepts <- rbind(evidenceConcepts, parentLevelEvidenceConcepts)
   }
