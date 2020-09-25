@@ -224,43 +224,22 @@ createTables <- function (appContext) {
 #' TODO: test and improve this logic and move to its own R file
 #' @param appContext rewardb app context
 addCemEvidence <- function(appContext) {
-  outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                           "SELECT DISTINCT condition_concept_id FROM @schema.outcome_concept",
-                                                           schema = appContext$short_name)
 
-  targets <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                          "SELECT DISTINCT tc.concept_id AS target_concept_id, t.is_atc_4 FROM @schema.target t
-                                                          INNER JOIN @schema.target_concept tc ON tc.target_cohort_id = t.target_cohort_id",
-                                                          schema = appContext$short_name)
-
-
-  evidenceConcepts <- getMappedEvidenceFromCem(
-    connection = appContext$cdmConnection,
-    outcomeIds = outcomeIds$condition_concept_id,
-    drugIds = targets,
-    schema = appContext$resultsDatabase$cemSchema,
-    vocab_schema = appContext$resultsDatabase$vocabularySchema,
-    summary_table = appContext$resultsDatabase$negativeControlTable
+  evidenceConcepts <- getStudyControls(
+    appContext$cdmConnection,
+    appContext$resultsDatabase$schema,
+    appContext$resultsDatabase$cemSchema,
+    appContext$resultsDatabase$cohortDefinitionTable,
+    appContext$resultsDatabase$outcomeCohortDefinitionTable,
+    appContext$resultsDatabase$atlasCohorts,
+    targetCohortIds = appContext$targetCohortIds,
+    outcomeCohortIds = appContext$outcomeCohortIds,
+    atlasOutcomeIds = appContext$custom_outcome_cohort_ids,
+    atlasTargetIds = appContext$custom_exposure_ids
   )
   ParallelLogger::logInfo(paste("Found", nrow(evidenceConcepts), "mappings"))
-  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", evidenceConcepts, tempTable = TRUE)
-
-  sql <- "
-    INSERT INTO @schema.negative_control (outcome_cohort_id, target_cohort_id)
-      SELECT DISTINCT outcome_cohort_id, target_cohort_id
-      FROM #ncc_ids ncc
-      INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
-      INNER JOIN @schema.target_concept tc ON tc.concept_id = ncc.ingredient_concept_id
-      WHERE ncc.evidence = 0;
-
-    INSERT INTO @schema.positive_indication (outcome_cohort_id, target_cohort_id)
-      SELECT DISTINCT outcome_cohort_id, target_cohort_id
-      FROM #ncc_ids ncc
-      INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
-      INNER JOIN @schema.target_concept tc ON tc.concept_id = ncc.ingredient_concept_id
-      WHERE ncc.evidence = 1;
-  "
-  # TODO: optimise negative control sets for cohorts
+  DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".negative_control"), evidenceConcepts[evidenceConcepts$evidence == 0,])
+  DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".positive_indication"), evidenceConcepts[evidenceConcepts$evidence == 1,])
   DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema = appContext$short_name)
 }
 
