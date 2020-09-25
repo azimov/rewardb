@@ -228,6 +228,21 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+    getNegativeControls <- reactive({
+      sql <- readr::read_file(system.file("sql/export/", "negativeControls.sql", package = "rewardb"))
+      df <- queryDb(sql)
+      return(df)
+    })
+
+    output$downloadControls <- downloadHandler(
+      filename = function()  {
+        paste0(appContext$short_name, '-negative-controls.csv')
+      },
+      content = function(file) {
+        write.csv(getNegativeControls(), file, row.names = FALSE)
+      }
+    )
+
     output$downloadFullTable <- downloadHandler(
       filename = function() {
         paste0(appContext$short_name, '-filtered-', input$cutrange1, '-', input$cutrange2, '.csv')

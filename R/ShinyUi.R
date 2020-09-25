@@ -71,6 +71,17 @@ dashboardUi  <- function (request) {
       includeHTML(system.file("html", "contact.html", package = "rewardb")),
       width = 6,
       title=paste("Contact")
+    ),
+    box(
+      p("Negative controls"),
+      p("Negative controls are used in this study to perform empirical calibration.
+      These are selected automatically using the common evidence model"),
+      downloadButton(
+        "downloadControls",
+        "Download"
+      ),
+      width = 6,
+      title=paste("About this dashboard -", appContext$name)
     )
   )
 
