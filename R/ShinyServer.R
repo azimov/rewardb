@@ -132,7 +132,6 @@ serverInstance <- function(input, output, session) {
           colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
           colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
           colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
-          colnames(df)[colnames(df) == "IS_NC"] <- "Control Cohort"
 
           if (appContext$useExposureControls) {
             colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
@@ -332,6 +331,7 @@ serverInstance <- function(input, output, session) {
       } else {
           negatives <- rewardb::getOutcomeControls(appContext, dbConn, treatment)
       }
+
       plot <- EmpiricalCalibration::plotCalibrationEffect(
         logRrNegatives = log(negatives$RR),
         seLogRrNegatives = negatives$SE_LOG_RR,
@@ -340,11 +340,33 @@ serverInstance <- function(input, output, session) {
       )
     }
 
+    getNullDist <- function () {
+      s <- filteredTableSelected()
+      treatment <- s$TARGET_COHORT_ID
+      outcome <- s$OUTCOME_COHORT_ID
+      if (appContext$useExposureControls) {                                      
+          negatives <- rewardb::getExposureControls(appContext, dbConn, outcome) 
+      } else {                                                                   
+          negatives <- rewardb::getOutcomeControls(appContext, dbConn, treatment)
+      }                                                                          
+      
+      null <- EmpiricalCalibration::fitNull(log(negatives$RR), negatives$SE_LOG_RR)
+    }
+
     output$calibrationPlot <- plotly::renderPlotly({
         plot <- getCalibrationPlot()
         return(plotly::ggplotly(plot))
     })
 
+    output$nullDistribution <- shiny::renderText({
+      null <- getNullDist()
+      return(
+        paste(
+          "Null distribution mean:", round(exp(null["mean"]), 3),
+          "std:", round(exp(null["sd"]), 3)
+        )
+      )
+    })
 
     output$downloadCalibrationPlot <- downloadHandler(
       filename = function() {

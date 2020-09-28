@@ -43,7 +43,8 @@ dashboardUi  <- function (request) {
               strong("Figure 2."),
               paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates"),
               downloadButton("downloadCalibrationPlot", "Save")
-            )
+            ),
+            p(textOutput("nullDistribution"))
           )
         ),
         width = 12
@@ -58,6 +59,11 @@ dashboardUi  <- function (request) {
       title=paste("Real World Assessment and Research of Drug Benefits (REWARD-B)")
     ),
     box(
+      includeHTML(system.file("html", "contact.html", package = "rewardb")),
+      width = 6,
+      title=paste("Contact")
+    ),
+    box(
       p(appContext$description),
       p("Click the dashboard option to see the results. The sidebar options allow filtering of results based on risk and benift IRR thresholds"),
       downloadButton(
@@ -68,12 +74,6 @@ dashboardUi  <- function (request) {
       title=paste("About this dashboard -", appContext$name)
     ),
     box(
-      includeHTML(system.file("html", "contact.html", package = "rewardb")),
-      width = 6,
-      title=paste("Contact")
-    ),
-    box(
-      p("Negative controls"),
       p("Negative controls are used in this study to perform empirical calibration.
       These are selected automatically using the common evidence model"),
       downloadButton(
@@ -81,7 +81,7 @@ dashboardUi  <- function (request) {
         "Download"
       ),
       width = 6,
-      title=paste("About this dashboard -", appContext$name)
+      title=paste("Negative controls")
     )
   )
 

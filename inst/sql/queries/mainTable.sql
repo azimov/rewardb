@@ -35,11 +35,7 @@ SELECT
     END AS benefit_count,
     mr2.I2 as I2,
     ROUND(mr.RR, 2) as meta_RR,
-    {@show_exposure_classes}?{ec.EXPOSURE_CLASS_NAME as ECN,}
-    CASE
-        WHEN nc.outcome_cohort_id IS NULL THEN 0
-        ELSE 1
-    END AS is_nc
+    {@show_exposure_classes}?{ec.EXPOSURE_CLASS_NAME as ECN}
 FROM @schema.result fr
     
     LEFT JOIN benefit_t ON benefit_t.TARGET_COHORT_ID = fr.TARGET_COHORT_ID AND benefit_t.OUTCOME_COHORT_ID = fr.OUTCOME_COHORT_ID
