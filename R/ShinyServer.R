@@ -19,6 +19,7 @@ serverInstance <- function(input, output, session) {
         return (df)
       },
       error = function(e) {
+        ParallelLogger::logError(e)
         DatabaseConnector::disconnect(dbConn)
         dbConn <<- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
       }
