@@ -23,6 +23,14 @@ getPasswordSecurely <- function() {
       }
     }
 
+    if (!is.null(appContext$target_concept_ids)) {
+      appContext$targetCohortIds <- appContext$target_concept_ids * 1000
+    }
+
+    if (!is.null(appContext$outcome_concept_ids)) {
+      appContext$outcomeCohortIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
+    }
+
     return(appContext)
 }
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildDashboardDatabase.R
 \name{addCemEvidence}
 \alias{addCemEvidence}
-\title{Using a CEM source finds any evidence related to conditions and exposures
+\title{ing a CEM source finds any evidence related to conditions and exposures
 This is used for the automated construction of negative control sets and the indication labels
 TODO: test and improve this logic and move to its own R file}
 \usage{
@@ -12,7 +12,7 @@ addCemEvidence(appContext)
 \item{appContext}{rewardb app context}
 }
 \description{
-Using a CEM source finds any evidence related to conditions and exposures
+ing a CEM source finds any evidence related to conditions and exposures
 This is used for the automated construction of negative control sets and the indication labels
 TODO: test and improve this logic and move to its own R file
 }

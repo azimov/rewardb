@@ -1,10 +1,10 @@
 name: 'Concerta'
-short_name: concerta
+short_name: concerta_new
 description: 'Concerta'
 outcome_concept_ids: ~
-custom_outcome_cohort_ids: [ 7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822, 7823, 10357, 11073, 2538, 10593, 10605, 15078, 10607, 11643, 12047, 13719]
+custom_outcome_cohort_ids: ~
 target_concept_ids: [ 705944, 21604753 ]
-custom_exposure_ids: []
+custom_exposure_ids: ~
 connectionDetails:
   dbms: "postgresql"
   server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
@@ -19,7 +19,8 @@ resultsDatabase:
   asurvResultsTable: "may2020_rewardb_results"
   cemSchema: "CEM_V2_0_0_20200226.dbo"
   negativeControlTable: "matrix_summary"
-  atlasCohorts: "rewardb_atlas_concept_reference"
+  atlasCohorts: "rewardb_atlas_cohort_reference"
+  atlasConceptMapping: "rewardb_atlas_concept_reference"
 
   cdmDataSource:
     dbms: pdw

@@ -112,25 +112,23 @@ extractOutcomeCohortNames <- function (appContext) {
       LEFT JOIN @results_database_schema.@atlas_cohort_definition_table acd ON acd.cohort_definition_id = o.cohort_definition_id
       WHERE acd.cohort_definition_id IS NULL
       {@outcome_cohort_ids_length} ? {AND o.cohort_definition_id IN (@outcome_cohort_ids)}
-    UNION
-    -- Only pull specified subset of atlas cohorts
-    SELECT 
-        o.cohort_definition_id AS outcome_cohort_id,
-        o.short_name AS cohort_name, 
-        2 as type_id
-      FROM @results_database_schema.@outcome_cohort_definition_table o
-      WHERE o.cohort_definition_id IN (@custom_outcome_ids)
+      UNION
+      -- Only pull specified subset of atlas cohorts
+      SELECT
+          acd.cohort_definition_id AS outcome_cohort_id,
+          acd.cohort_name AS cohort_name,
+          2 as type_id
+        FROM @results_database_schema.@atlas_cohort_definition_table acd
+      {@outcome_cohort_ids_length} ? {WHERE acd.cohort_definition_id IN (@custom_outcome_ids)}
   ";
-  outcome_ids <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
-  # TODO: Join to atlas cohorts and exclude their ids rather than having to always select all custom outcome cohorts
-
+  outcomeIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
   nameSet <- DatabaseConnector::renderTranslateQuerySql(
       appContext$cdmConnection,
       sql,
-      outcome_cohort_ids = outcome_ids,
+      outcome_cohort_ids = if(length(outcomeIds)) outcomeIds else "NULL",
       atlas_cohort_definition_table=appContext$resultsDatabase$atlasCohorts,
-      custom_outcome_ids = appContext$custom_outcome_cohort_ids,
-      outcome_cohort_ids_length = length(outcome_ids) > 0,
+      custom_outcome_ids = if(length(appContext$custom_outcome_cohort_ids)) appContext$custom_outcome_cohort_ids else "NULL",
+      outcome_cohort_ids_length = length(outcomeIds) > 0 | length(appContext$custom_outcome_cohort_ids),
       outcome_cohort_definition_table=appContext$resultsDatabase$outcomeCohortDefinitionTable,
       results_database_schema=appContext$resultsDatabase$schema
     )
@@ -149,14 +147,17 @@ createOutcomeConceptMapping <- function (appContext) {
   sql <- "
   SELECT acd.cohort_definition_id as outcome_cohort_id, acd.concept_id as condition_concept_id
   FROM @results_database_schema.@atlas_cohort_definition_table acd
-  WHERE acd.cohort_definition_id IN (@atlas_cohort_ids) AND acd.is_excluded = 0
+  WHERE acd.is_excluded = 0
+  {@subset_atlas_cohorts} ? {AND acd.cohort_definition_id IN (@atlas_cohort_ids)}
 
   UNION
 
   SELECT acd.cohort_definition_id as outcome_cohort_id, ca.descendant_concept_id as condition_concept_id
   FROM @results_database_schema.@atlas_cohort_definition_table acd
   INNER JOIN @cdm_vocabulary.concept_ancestor ca ON ca.ancestor_concept_id = acd.concept_id
-  WHERE acd.include_descendants = 1 AND acd.cohort_definition_id IN (@atlas_cohort_ids) AND acd.is_excluded = 0
+  WHERE acd.include_descendants = 1
+  AND acd.is_excluded = 0
+  {@subset_atlas_cohorts} ? {AND acd.cohort_definition_id IN (@atlas_cohort_ids)}
   "
 
   data <- DatabaseConnector::renderTranslateQuerySql(
@@ -164,8 +165,9 @@ createOutcomeConceptMapping <- function (appContext) {
     sql,
     cdm_vocabulary = appContext$resultsDatabase$vocabularySchema,
     results_database_schema=appContext$resultsDatabase$schema,
-    atlas_cohort_definition_table=appContext$resultsDatabase$atlasCohorts,
-    atlas_cohort_ids=appContext$custom_outcome_cohort_ids
+    atlas_cohort_definition_table=appContext$resultsDatabase$atlasConceptMapping,
+    atlas_cohort_ids=appContext$custom_outcome_cohort_ids,
+    subset_atlas_cohorts  = length(appContext$custom_outcome_cohort_ids) > 0
   )
   DatabaseConnector::dbAppendTable(appContext$connection, paste(appContext$short_name, ".outcome_concept"), unique(data))
 }
@@ -224,44 +226,24 @@ createTables <- function (appContext) {
 #' TODO: test and improve this logic and move to its own R file
 #' @param appContext rewardb app context
 addCemEvidence <- function(appContext) {
-  outcomeIds <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                           "SELECT DISTINCT condition_concept_id FROM @schema.outcome_concept",
-                                                           schema = appContext$short_name)
-
-  targets <- DatabaseConnector::renderTranslateQuerySql(appContext$connection,
-                                                          "SELECT DISTINCT tc.concept_id AS target_concept_id, t.is_atc_4 FROM @schema.target t
-                                                          INNER JOIN @schema.target_concept tc ON tc.target_cohort_id = t.target_cohort_id",
-                                                          schema = appContext$short_name)
-
-
-  evidenceConcepts <- getMappedEvidenceFromCem(
-    connection = appContext$cdmConnection,
-    outcomeIds = outcomeIds$condition_concept_id,
-    drugIds = targets,
-    schema = appContext$resultsDatabase$cemSchema,
-    vocab_schema = appContext$resultsDatabase$vocabularySchema,
-    summary_table = appContext$resultsDatabase$negativeControlTable
+  library(dplyr)
+  evidenceConcepts <- getStudyControls(
+    appContext$cdmConnection,
+    appContext$resultsDatabase$schema,
+    appContext$resultsDatabase$cemSchema,
+    appContext$resultsDatabase$cohortDefinitionTable,
+    appContext$resultsDatabase$outcomeCohortDefinitionTable,
+    appContext$resultsDatabase$atlasConceptMapping,
+    targetCohortIds = appContext$targetCohortIds,
+    outcomeCohortIds = appContext$outcomeCohortIds,
+    atlasOutcomeIds = appContext$custom_outcome_cohort_ids,
+    atlasTargetIds = appContext$custom_exposure_ids
   )
+
   ParallelLogger::logInfo(paste("Found", nrow(evidenceConcepts), "mappings"))
-  DatabaseConnector::insertTable(appContext$connection, "#ncc_ids", evidenceConcepts, tempTable = TRUE)
 
-  sql <- "
-    INSERT INTO @schema.negative_control (outcome_cohort_id, target_cohort_id)
-      SELECT DISTINCT outcome_cohort_id, target_cohort_id
-      FROM #ncc_ids ncc
-      INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
-      INNER JOIN @schema.target_concept tc ON tc.concept_id = ncc.ingredient_concept_id
-      WHERE ncc.evidence = 0;
-
-    INSERT INTO @schema.positive_indication (outcome_cohort_id, target_cohort_id)
-      SELECT DISTINCT outcome_cohort_id, target_cohort_id
-      FROM #ncc_ids ncc
-      INNER JOIN @schema.outcome_concept oc ON oc.condition_concept_id = ncc.condition_concept_id
-      INNER JOIN @schema.target_concept tc ON tc.concept_id = ncc.ingredient_concept_id
-      WHERE ncc.evidence = 1;
-  "
-  # TODO: optimise negative control sets for cohorts
-  DatabaseConnector::renderTranslateExecuteSql(appContext$connection, sql, schema = appContext$short_name)
+  DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".negative_control"), evidenceConcepts[evidenceConcepts$EVIDENCE == 0,])
+  DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".positive_indication"), evidenceConcepts[evidenceConcepts$EVIDENCE == 1,])
 }
 
 #' Perform meta-analysis on data sources
@@ -332,34 +314,34 @@ performMetaAnalysis <- function(appContext) {
 #' @export
 buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTargets = FALSE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
-  print("Creating schema")
+  message("Creating schema")
   DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
   DatabaseConnector::executeSql(appContext$connection, paste("CREATE SCHEMA ", appContext$short_name))
   createTables(appContext)
 
-  print("Extracting results from CDM data source")
+  message("Extracting results from CDM data source")
   extractResultsSubset(appContext)
-  print("Extracting cohort names")
+  message("Extracting cohort names")
   extractTargetCohortNames(appContext)
-  print("Extracting otcome cohort names")
+  message("Extracting outcome cohort names")
   extractOutcomeCohortNames(appContext)
-  print("Extracting outcome cohort mapping")
+  message("Extracting outcome cohort mapping")
   createOutcomeConceptMapping(appContext)
-  print("Adding negative controls from CEM")
+  message("Adding negative controls from CEM")
   addCemEvidence(appContext)
-  print("Running meta analysis")
+  message("Running meta analysis")
   performMetaAnalysis(appContext)
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
 
   if (calibrateTargets) {
-    print("Calibrating targets")
-    rewardb::calibrateTargets(appContext, append(appContext$target_concept_ids * 1000, appContext$custom_exposure_ids))
-    rewardb::calibrateCustomCohorts(appContext, append(appContext$target_concept_ids * 1000, appContext$custom_exposure_ids))
+    message("Calibrating targets")
+    .removeCalibratedResults(appContext)
+    rewardb::calibrateTargets(appContext)
   }
 
   if (calibrateOutcomes) {
-   print("Calibrating outcomes")
+   message("Calibrating outcomes")
    rewardb::calibrateOutcomes(appContext)
    rewardb::calibrateOutcomesCustomCohorts(appContext)
   }

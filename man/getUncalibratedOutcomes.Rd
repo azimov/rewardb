@@ -5,7 +5,7 @@
 \title{get outcomes that are not calibrated
 param appContext rewardb app context}
 \usage{
-getUncalibratedOutcomes(appContext, targetCohortIds)
+getUncalibratedOutcomes(appContext)
 }
 \value{
 data.frame of uncalibrated results from databases
