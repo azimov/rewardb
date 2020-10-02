@@ -2,7 +2,7 @@ name: 'anti-TNF exposures'
 short_name: tnf
 description: 'Dashboard for all outcomes for anti-TNF exposures'
 outcome_concept_ids: ~
-custom_outcome_cohort_ids: [7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822, 7823, 10357,11073, 2538, 10593, 10605, 15078, 10607, 11643]
+custom_outcome_cohort_ids: ~
 target_concept_ids: [937368, 19041065, 1151789, 912263, 1119119, 21603907]
 connectionDetails:
   dbms: "postgresql"
@@ -18,7 +18,8 @@ resultsDatabase:
   asurvResultsTable: "homer_AllbyAll_results_May2020"
   cemSchema: "CEM_V2_0_0_20200226.dbo"
   negativeControlTable: "matrix_summary"
-  atlasCohorts: "rewardb_atlas_concept_reference"
+  atlasCohorts: "rewardb_atlas_cohort_reference"
+  atlasConceptMapping: "rewardb_atlas_concept_reference"
 
   cdmDataSource:
     dbms: pdw

@@ -5,7 +5,7 @@
 \title{Compute the calibrated results for custom cohort outcomes
 Requires negative control cohorts to be set}
 \usage{
-calibrateCustomCohorts(appContext, targetCohortIds)
+calibrateCustomCohorts(appContext)
 }
 \arguments{
 \item{appContext}{takes a rewardb application context}

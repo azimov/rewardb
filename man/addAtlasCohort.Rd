@@ -10,7 +10,9 @@ addAtlasCohort(
   configFilePath = "config/global-cfg.yml",
   removeExisting = FALSE,
   dataSources = NULL,
-  logFileName = "rbAtlasCohort.log"
+  logFileName = "rbAtlasCohort.log",
+  dataDir = "data",
+  addResult = TRUE
 )
 }
 \arguments{

@@ -4,7 +4,7 @@
 #' @param outcomeCohortIds cohorts to get negative controls for
 #' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
 #' @return data.frame of negative control exposures for specified outcomes
-getOutcomeControls <- function(appContext, connection, targetCohortIds, minCohortSize=10) {
+getOutcomeControls <- function(appContext, connection, minCohortSize=10) {
 
   sql <- "
     SELECT r.*, o.type_id as outcome_type
@@ -13,14 +13,12 @@ getOutcomeControls <- function(appContext, connection, targetCohortIds, minCohor
       r.target_cohort_id = nc.target_cohort_id AND nc.outcome_cohort_id = r.outcome_cohort_id
     )
     INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
-    WHERE r.TARGET_COHORT_ID IN (@target_cohort_ids)
     AND r.calibrated = 0
     AND T_CASES >= @min_cohort_size
   "
   negatives <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
-    target_cohort_ids = targetCohortIds,
     schema=appContext$short_name,
     min_cohort_size=minCohortSize
   )
@@ -60,17 +58,15 @@ getExposureControls <- function(appContext, connection, outcomeCohortIds, minCoh
 #' get outcomes that are not calibrated
 #' param appContext rewardb app context
 #' @return data.frame of uncalibrated results from databases
-getUncalibratedOutcomes <- function(appContext, targetCohortIds) {
+getUncalibratedOutcomes <- function(appContext) {
   sql <- "
       SELECT r.*, o.type_id as outcome_type FROM @schema.result r
       INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
-      WHERE r.TARGET_COHORT_ID IN (@target_cohort_ids)
       AND r.calibrated = 0
       AND o.type_id != 2 -- ATLAS cohorts excluded
   "
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, target_cohort_ids = targetCohortIds,
-                                                          schema=appContext$short_name)
+  positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, schema=appContext$short_name)
   DatabaseConnector::disconnect(dbConn)
   return(positives)
 }
@@ -143,32 +139,74 @@ computeCalibratedRows <- function (interest, negatives, idCol, calibrationType =
   return(result)
 }
 
+.removeCalibratedResults <- function(appContext) {
+  connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    "DELETE FROM @schema.result r WHERE r.calibrated = 1",
+     schema = appContext$short_name
+  )
+  DatabaseConnector::disconnect(connection)
+}
+
 #' Compute the calibrated results for cohort targets
 #' Requires negative control cohorts to be set
 #' @param appContext takes a rewardb application context
 #' @param targetCohortIds - these are the cohort ids in the db and (currently) must be specified manually. TODO: remove
 #' @export
-calibrateTargets <- function(appContext, targetCohortIds) {
+calibrateTargets <- function(appContext) {
   # get negative control data rows
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  controlOutcomes <- getOutcomeControls(appContext, dbConn, targetCohortIds)
+
+  controlOutcomes <- getOutcomeControls(appContext, dbConn)
   # get positives
-  positives <- getUncalibratedOutcomes(appContext, targetCohortIds)
-  print(paste("calibrating", nrow(positives) ,"outcomes"))
+  positives <- getUncalibratedOutcomes(appContext)
+  message(paste("calibrating", nrow(positives) ,"outcomes"))
   library(dplyr)
 
   # Get all outcomes for a given target, source and outcome type
   resultSet <- positives %>%
     group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID)  %>%
-    group_modify(~ computeCalibratedRows(.x, controlOutcomes[
+    group_modify(~computeCalibratedRows(.x, controlOutcomes[
       controlOutcomes$OUTCOME_TYPE == .x$OUTCOME_TYPE[1] &
       controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
       controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
     ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
+
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
+  #DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), rbind(resultSet, resultSetAtlas))
+
+  # Apply to atlas cohorts
+  atlasPositives <- getUncalibratedAtlasCohorts(appContext)
+  message(paste("Calibrating", nrow(atlasPositives), "atlas outcomes"))
+  resultSetAtlas <- atlasPositives %>%
+    group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID)  %>%
+    group_modify(~ computeCalibratedRows(.x, controlOutcomes[
+      controlOutcomes$OUTCOME_TYPE == 0 &
+      controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
+      controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
+    ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
+
+  resultSetAtlas <- data.frame(resultSetAtlas[,!(names(resultSetAtlas) %in% c("OUTCOME_TYPE")) ])
+
+  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSetAtlas)
   DatabaseConnector::disconnect(dbConn)
 }
+
+#' Compute the calibrated results for custom cohort outcomes
+#' Requires negative control cohorts to be set
+#' @param appContext takes a rewardb application context
+#' @param targetCohortIds - these are the cohort ids in the db and (currently) must be specified manually. TODO: remove
+#' @export
+calibrateCustomCohorts <- function(appContext) {
+  # get negative control data rows
+  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  controlOutcomes <- getOutcomeControls(appContext, dbConn)
+
+  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
+  DatabaseConnector::disconnect(dbConn)
+}
+
 
 #' Compute the calibrated results for cohort outcomes
 #' Requires negative control cohorts to be set
@@ -194,35 +232,6 @@ calibrateOutcomes <- function(appContext) {
     ], idCol = "TARGET_COHORT_ID"), .keep=TRUE)
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
 
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), data.frame(resultSet))
-  DatabaseConnector::disconnect(dbConn)
-}
-
-#' Compute the calibrated results for custom cohort outcomes
-#' Requires negative control cohorts to be set
-#' @param appContext takes a rewardb application context
-#' @param targetCohortIds - these are the cohort ids in the db and (currently) must be specified manually. TODO: remove
-#' @export
-calibrateCustomCohorts <- function(appContext, targetCohortIds) {
-  # get negative control data rows
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  controlOutcomes <- getOutcomeControls(appContext, dbConn, targetCohortIds)
-  positives <- getUncalibratedAtlasCohorts(appContext)
-
-  print(paste("calibrating", nrow(positives) ,"outcomes"))
-  library(dplyr)
-
-  # Get all outcomes for a given target, source for outcome type 0
-  # Compute calibrated results
-  resultSet <- positives %>%
-    group_by(SOURCE_ID, TARGET_COHORT_ID)  %>%
-    group_modify(~ computeCalibratedRows(.x, controlOutcomes[
-      controlOutcomes$OUTCOME_TYPE == 0 &
-      controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
-      controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
-    ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
-
-  resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
   DatabaseConnector::disconnect(dbConn)
 }
@@ -251,26 +260,5 @@ calibrateOutcomesCustomCohorts <- function(appContext) {
 
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
-  DatabaseConnector::disconnect(dbConn)
-}
-
-#' Input should specify a csv file with the columns target_concept_id and outcome_concept_id
-#' This function will then work out which cohorts they should apply to as it is done on the concept level
-#' This is not needed if automated manual controls are specified from the cem
-#' @param appContext takes a rewardb application context
-#'@export
-addManualNegativeOutcomeControls <- function (appContext) {
-
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  dataFrame <- read.csv(appContext$negative_control_outcome_list)
-
-  sql <- "INSERT INTO @schema.negative_control (outcome_cohort_id, target_cohort_id)
-      SELECT outcome_cohort_id, target_cohort_id FROM @schema.outcome_concept, @schema.target
-        WHERE condition_concept_id IN (@control_outcomes_ids)"
-
-  DatabaseConnector::renderTranslateExecuteSql(dbConn, sql,
-                                               schema=appContext$short_name,
-                                               control_outcomes_ids=dataFrame$concept_id)
-
   DatabaseConnector::disconnect(dbConn)
 }

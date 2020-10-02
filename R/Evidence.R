@@ -1,62 +1,11 @@
 #'
 #' @param connection DatabaseConnector connection
-#' @outcomeIds condition concept ids
-#' @targetIds drug concept ids
-#' @schema CEM schema
-#' @vocabularySchema schema for vocabulary used
-#' @summaryTable schma for summary of CEM results - probably matrix summary
-getMappedEvidenceFromCem <- function(
-  connection,
-  outcomeIds,
-  drugIds,
-  schema,
-  vocabularySchema,
-  summaryTable = "matrix_summary"
-) {
-
-  outcomeIdsDf <- data.frame(condition_concept_id = outcomeIds)
-  # Uses temp tables as these can, and will, be large lists of concepts
-  DatabaseConnector::insertTable(connection, "#outcome_nc_tmp", outcomeIdsDf, tempTable = TRUE)
-  DatabaseConnector::insertTable(connection, "#target_nc_tmp", drugIds, tempTable = TRUE)
-
-  sql <- SqlRender::readSql(system.file("sql/queries", "cemSummary.sql", package = "rewardb"))
-  # First, method of mapping evidence at the normal level
-  evidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
-    connection,
-    sql,
-    schema = schema,
-    vocab_schema = vocabularySchema,
-    summary_table = summaryTable
-  )
-
-  outcomeCounts <- data.frame(
-    outcomeIds = outcomeIds,
-    counts = lapply(outcomeIds, function(id) { sum(evidenceConcepts$CONDITION_CONCEPT_ID == id) })
-  )
-  # TODO Map counts to cohorts so cohort sum determines if step up is made - not the cohort
-  if (nrow(outcomeCounts[outcomeCounts$counts == 0,])) {
-    # Only if we can't map evidence, go up to the level of parent of concept id
-    sql <- SqlRender::readSql(system.file("sql/queries", "cemSummaryParents.sql", package = "rewardb"))
-    parentLevelEvidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
-      connection,
-      sql,
-      schema = schema,
-      summary_table = summaryTable,
-      outcome_concepts_of_interest = outcomeCounts[outcomeCounts$counts == 0,]$outcomeIds
-    )
-    evidenceConcepts <- rbind(evidenceConcepts, parentLevelEvidenceConcepts)
-  }
-
-  return(evidenceConcepts)
-}
-
-#'
-#' @param connection DatabaseConnector connection
 #' @targetCohortTable condition concept ids
 #' @outcomeCohortTable drug concept ids
 #' @schema CEM schema
 #' @summaryTable schma for summary of CEM results - probably matrix summary
 #'
+
 getMappedControls <- function(
   connection,
   targetCohortTable,
@@ -77,11 +26,11 @@ getMappedControls <- function(
 
 getTargetConcepts <- function(connection, schema, cohortDefinitionTable, targetCohortIds, atlasTargetIds) {
   sql <- "
-SELECT cohort_definition_id as target_cohort_id, drug_conceptset_id as target_concept_id
+SELECT cohort_definition_id as target_cohort_id, drug_conceptset_id as target_concept_id, ATC_flg as is_atc_4
 FROM @schema.@target_cohort_table
 {@use_subset_targets} ? {WHERE cohort_definition_id IN (@target_cohort_ids)}
 UNION
-SELECT CUSTOM_EXPOSURE_ID as target_cohort_id, concept_id as target_concept_id
+SELECT CUSTOM_EXPOSURE_ID as target_cohort_id, concept_id as target_concept_id, 0 as is_atc_4
 FROM @schema.custom_exposure_concept
 {@use_subset_atlas_targets} ? {WHERE CUSTOM_EXPOSURE_ID IN (@atlas_target_cohort_ids)}
   "
@@ -89,11 +38,11 @@ FROM @schema.custom_exposure_concept
   if (is.null(targetCohortIds)) {
     targetCohortIds <- "NULL"
   }
-  
+
   if (is.null(atlasTargetIds)) {
     atlasTargetIds <- "NULL"
   }
-    
+
   res <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
@@ -109,7 +58,7 @@ FROM @schema.custom_exposure_concept
 
 
 getOutcomeConcepts <- function(connection, schema, outcomeCohortDefinitionTable, atlasConceptReferenceTable, outcomeCohortIds, atlasOutcomeIds) {
-    sql <- "
+  sql <- "
   SELECT cohort_definition_id as outcome_cohort_id, conceptset_id as outcome_concept_id
   FROM @schema.@outcome_cohort_table
   WHERE conceptset_id != 99999999
@@ -128,15 +77,15 @@ getOutcomeConcepts <- function(connection, schema, outcomeCohortDefinitionTable,
   FROM @schema.@atlas_outcome_concept_table
   {@use_subset_atlas_outcomes} ? {WHERE cohort_definition_id IN (@atlas_outcome_cohort_ids)}
     "
-  useOutcomeIds <- !is.null(outcomeCohortIds) | !is.null(atlasOutcomeIds)
+  useOutcomeIds <- (!is.null(outcomeCohortIds) | !is.null(atlasOutcomeIds))
   if (is.null(outcomeCohortIds)) {
     outcomeCohortIds <- "NULL"
   }
-  
+
   if (is.null(atlasOutcomeIds)) {
     atlasOutcomeIds <- "NULL"
   }
-    
+
   res <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
@@ -152,7 +101,8 @@ getOutcomeConcepts <- function(connection, schema, outcomeCohortDefinitionTable,
 }
 
 #' From  outcome and target cohort ids, construct tables that contain their concept ids
-getStudyControls <- function (
+
+getStudyControls <- function(
   connection,
   schema,
   cemSchema,
@@ -164,13 +114,11 @@ getStudyControls <- function (
   atlasOutcomeIds = NULL,
   atlasTargetIds = NULL
 ) {
-  resTargets <- getTargetConcepts(connection, schema, cohortDefinitionTable, targetCohortIds, atlasTargetIds)
-  print(nrow(resTargets))
-  DatabaseConnector::insertTable(connection, "#target_cohort_table", resTargets, tempTable = TRUE)
+  targetConceptMapping <- getTargetConcepts(connection, schema, cohortDefinitionTable, targetCohortIds, atlasTargetIds)
+  DatabaseConnector::insertTable(connection, "#target_cohort_table", targetConceptMapping, tempTable = TRUE)
 
-  res <- getOutcomeConcepts(connection, schema, outcomeCohortDefinitionTable, atlasConceptReferenceTable, outcomeCohortIds, atlasOutcomeIds)
-  print(nrow(res))
-  DatabaseConnector::insertTable(connection, "#outcome_cohort_table", res, tempTable = TRUE)
+  outcomeConceptMapping <- getOutcomeConcepts(connection, schema, outcomeCohortDefinitionTable, atlasConceptReferenceTable, outcomeCohortIds, atlasOutcomeIds)
+  DatabaseConnector::insertTable(connection, "#outcome_cohort_table", outcomeConceptMapping, tempTable = TRUE)
 
   mappedControls <- getMappedControls(
     connection,
@@ -178,6 +126,33 @@ getStudyControls <- function (
     "#outcome_cohort_table",
     cemSchema
   )
+
+  if (is.null(targetCohortIds) & is.null(atlasTargetIds)) {
+    outcomeIds <- append(atlasOutcomeIds, outcomeCohortIds)
+    mappedCounts <- data.frame(
+      outcome_cohort_id = outcomeIds,
+      count = sapply(outcomeIds, function(id) { sum(mappedControls$OUTCOME_COHORT_ID == id) })
+    )
+
+    zeroIds <- mappedCounts[mappedCounts$count == 0,]$outcome_cohort_id
+    zeroCounts <- outcomeConceptMapping[outcomeConceptMapping$OUTCOME_COHORT_ID %in% zeroIds,]
+
+    if (nrow(zeroCounts)) {
+      DatabaseConnector::insertTable(connection, "#outcome_cohort_table", zeroCounts, tempTable = TRUE)
+
+      sql <- SqlRender::readSql(system.file("sql/queries", "cemSummaryParents.sql", package = "rewardb"))
+      parentLevelEvidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
+        connection,
+        sql,
+        schema = cemSchema,
+        summary_table = summaryTable,
+        outcome_cohort_table = "#outcome_cohort_table",
+        target_cohort_table = "#target_cohort_table"
+      )
+
+      mappedControls <- rbind(mappedControls, parentLevelEvidenceConcepts)
+    }
+  }
 
   return(mappedControls)
 }
