@@ -5,7 +5,7 @@ outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~
 target_concept_ids: [ 705944, 21604753 ]
 custom_exposure_ids: ~
-useExposureControls: True
+useExposureControls: False
 
 connectionDetails:
   dbms: "postgresql"

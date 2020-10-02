@@ -328,9 +328,11 @@ serverInstance <- function(input, output, session) {
       positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
 
       if (appContext$useExposureControls) {
-          negatives <- rewardb::getExposureControls(appContext, dbConn, outcome)
+          message("getting target control results")
+          negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds=outcome)
       } else {
-          negatives <- rewardb::getOutcomeControls(appContext, dbConn, treatment)
+          message(paste("getting outcome controls results", treatment))
+          negatives <- rewardb::getOutcomeControls(appContext, dbConn, targetIds=treatment)
       }
 
       plot <- EmpiricalCalibration::plotCalibrationEffect(
@@ -346,9 +348,9 @@ serverInstance <- function(input, output, session) {
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
       if (appContext$useExposureControls) {                                      
-          negatives <- rewardb::getExposureControls(appContext, dbConn, outcome) 
+          negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds=outcome)
       } else {                                                                   
-          negatives <- rewardb::getOutcomeControls(appContext, dbConn, treatment)
+          negatives <- rewardb::getOutcomeControls(appContext, dbConn, targetIds=treatment)
       }                                                                          
       
       null <- EmpiricalCalibration::fitNull(log(negatives$RR), negatives$SE_LOG_RR)
