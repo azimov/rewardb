@@ -5,6 +5,8 @@ outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~
 target_concept_ids: [45892883, 1592513, 35603563]
 custom_exposure_ids: [11721]
+useExposureControls: True
+
 connectionDetails:
   dbms: "postgresql"
   server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
