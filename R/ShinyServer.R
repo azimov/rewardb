@@ -320,40 +320,56 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+    getOutcomeType <- function(outcome) {
+      res <- queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome=outcome)
+      return(res$TYPE_ID[[1]])
+    }
+
+    getNegativeControlSubset <- function(treatment, outcome) {
+
+      if (appContext$useExposureControls) {
+        negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds = outcome)
+      } else {
+        otype <- if(getOutcomeType(outcome) == 1) 1 else 0;
+        negatives <- rewardb::getOutcomeControls(appContext, dbConn, targetIds = treatment)
+        # Subset for outcome types
+        negatives <- negatives[negatives$OUTCOME_TYPE == otype, ]
+      }
+      return(negatives)
+    }
+
     getCalibrationPlot <- function() {
       s <- filteredTableSelected()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
-      sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-      positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
 
-      if (appContext$useExposureControls) {
-          message("getting target control results")
-          negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds=outcome)
-      } else {
-          message(paste("getting outcome controls results", treatment))
-          negatives <- rewardb::getOutcomeControls(appContext, dbConn, targetIds=treatment)
+      plot <- ggplot2::ggplot()
+      if(!is.na(treatment)) {
+
+        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+        positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+        negatives <- getNegativeControlSubset(treatment, outcome)
+
+        plot <- EmpiricalCalibration::plotCalibrationEffect(
+          logRrNegatives = log(negatives$RR),
+          seLogRrNegatives = negatives$SE_LOG_RR,
+          logRrPositives = log(positives$RR),
+          seLogRrPositives = positives$SE_LOG_RR
+        )
       }
-
-      plot <- EmpiricalCalibration::plotCalibrationEffect(
-        logRrNegatives = log(negatives$RR),
-        seLogRrNegatives = negatives$SE_LOG_RR,
-        logRrPositives = log(positives$RR),
-        seLogRrPositives = positives$SE_LOG_RR
-      )
+      return(plot)
     }
 
     getNullDist <- function () {
       s <- filteredTableSelected()
+      null <- c("mean" = 99, "sd" = 100)
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
-      if (appContext$useExposureControls) {                                      
-          negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds=outcome)
-      } else {                                                                   
-          negatives <- rewardb::getOutcomeControls(appContext, dbConn, targetIds=treatment)
-      }                                                                          
-      
-      null <- EmpiricalCalibration::fitNull(log(negatives$RR), negatives$SE_LOG_RR)
+      if(!is.na(treatment)) {
+        negatives <- getNegativeControlSubset(treatment, outcome)
+        null <- EmpiricalCalibration::fitNull(log(negatives$RR), negatives$SE_LOG_RR)
+      }
+      return(null)
     }
 
     output$calibrationPlot <- plotly::renderPlotly({
