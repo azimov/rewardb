@@ -15,3 +15,11 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml") {
     DatabaseConnector::disconnect(connection)
   })
 }
+
+buildCemSummary <- function() {
+
+}
+
+createVocabulary <- function () {
+
+}

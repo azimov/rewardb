@@ -5,7 +5,6 @@ CREATE TABLE @schema.scc_result (
   source_id INT NOT NULL,
   outcome_cohort_id BIGINT NOT NULL,
   target_cohort_id BIGINT NOT NULL,
-  calibrated INT NOT NULL DEFAULT 0, -- is the result calibrated with empirical calibration?
   rr NUMERIC,
   se_log_rr NUMERIC,
   c_pt NUMERIC,
@@ -19,3 +18,16 @@ CREATE TABLE @schema.scc_result (
   p_value NUMERIC,
   I2 NUMERIC
 );
+
+
+CREATE TABLE @schema.data_source (
+    source_id INT PRIMARY KEY,
+    source_name varchar,
+    source_key varchar
+);
+
+-- Outcome cohort definitions/Names/Types
+
+-- Exposure cohort definitions/Names
+
+-- Concept mappings

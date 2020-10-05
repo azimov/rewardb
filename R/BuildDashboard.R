@@ -309,10 +309,9 @@ performMetaAnalysis <- function(appContext) {
 #' Requires the rewardb results to be generated already.
 #' This exports the data to a db backend and allows the config file to be used to run the shiny dashboard
 #' @param filePath - path to a yaml configuration file used
-#' @param calibrateOutcomes - where subset of outcomes is specified
-#' @param calibrateTargets - where a subset of target exposures is specified
+#' @param performCalibration - use empirical calibration package to compute adjusted p values, effect estimates and confidence intervals
 #' @export
-buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTargets = FALSE) {
+buildFromConfig <- function(filePath, performCalibration = TRUE) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   message("Creating schema")
   DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
@@ -334,15 +333,14 @@ buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTarget
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
 
-  if (calibrateTargets) {
-    message("Calibrating targets")
+  if (performCalibration) {
     .removeCalibratedResults(appContext)
-    rewardb::calibrateTargets(appContext)
-  }
-
-  if (calibrateOutcomes) {
-   message("Calibrating outcomes")
-   rewardb::calibrateOutcomes(appContext)
-   rewardb::calibrateOutcomesCustomCohorts(appContext)
+    if (appContext$useExposureControls) {
+      message("Calibrating outcomes")
+      rewardb::calibrateOutcomes(appContext)
+    } else {
+      message("Calibrating targets")
+      rewardb::calibrateTargets(appContext)
+    }
   }
 }

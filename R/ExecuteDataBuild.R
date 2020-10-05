@@ -1,4 +1,4 @@
-getLogger <- function(logFileName, .clearLoggers = TRUE) {
+.getLogger <- function(logFileName, .clearLoggers = TRUE) {
   if (.clearLoggers) {
     ParallelLogger::clearLoggers()
   }
@@ -14,7 +14,7 @@ getLogger <- function(logFileName, .clearLoggers = TRUE) {
   return(logger)
 }
 
-checkDataSources <- function(dataSources, config) {
+.checkDataSources <- function(dataSources, config) {
   if (is.null(dataSources)) {
     dataSources <- names(config$dataSources)
   }
@@ -59,11 +59,11 @@ fullExecution <- function(
   dataSources = NULL,
   logFileName = "rbDataBuild.log"
 ) {
-  logger <- getLogger(logFileName)
+  logger <- .getLogger(logFileName)
   # load config
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
-  dataSources <- checkDataSources(dataSources, config)
+  dataSources <- .checkDataSources(dataSources, config)
 
   tryCatch(
     {
@@ -156,11 +156,11 @@ addAtlasCohort <- function(
   dataDir = "data",
   addResult = TRUE
 ) {
-  logger <- getLogger(logFileName)
+  logger <- .getLogger(logFileName)
   # load config
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
-  dataSources <- checkDataSources(dataSources, config)
+  dataSources <- .checkDataSources(dataSources, config)
   tryCatch(
     {
 
@@ -242,11 +242,11 @@ addCustomExposureConcept <- function(
   outputPath = "data",
   addResult = TRUE
 ) {
-    logger <- getLogger(logFileName)
+    logger <- .getLogger(logFileName)
   # load config
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$cdmDataSource)
-  dataSources <- checkDataSources(dataSources, config)
+  dataSources <- .checkDataSources(dataSources, config)
 
   tryCatch(
     {

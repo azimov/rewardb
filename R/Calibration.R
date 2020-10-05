@@ -111,15 +111,15 @@ getUncalibratedAtlasCohorts <- function(appContext) {
 }
 
 #' Actual calibration is performed here in a dplyr friendly way
-#' @param interest this is the cohort set that should be calibrated
+#' @param positives this is the cohort set that should be calibrated
 #' @param negatives these are the negative control cohort results
 #' @param idCol - either target_cohort_id or outcome_cohort_id, this function is used in p
 #' @return data.frame
-computeCalibratedRows <- function (interest, negatives, idCol, calibrationType = 1) {
+computeCalibratedRows <- function (positives, negatives, idCol, calibrationType = 1) {
   nullDist <- EmpiricalCalibration::fitNull(logRr = log(negatives$RR), seLogRr = negatives$SE_LOG_RR)
-  calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(interest$RR), interest$SE_LOG_RR)
+  calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(positives$RR), positives$SE_LOG_RR)
   errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
-  ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(interest$RR), interest$SE_LOG_RR, errorModel)
+  ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(positives$RR), positives$SE_LOG_RR, errorModel)
 
   # Row matches fields in the database excluding the ids, used in dplyr, group_by with keep_true
   result <- data.frame(
@@ -129,16 +129,16 @@ computeCalibratedRows <- function (interest, negatives, idCol, calibrationType =
       LB_95 = exp(ci$logLb95Rr),
       RR = exp(ci$logRr),
       SE_LOG_RR = ci$seLogRr,
-      C_CASES = interest$C_CASES,
-      C_PT = interest$C_PT,
-      C_AT_RISK = interest$C_AT_RISK,
-      T_CASES = interest$T_CASES,
-      T_PT = interest$T_PT,
-      T_AT_RISK = interest$T_AT_RISK,
-      STUDY_DESIGN = interest$STUDY_DESIGN
+      C_CASES = positives$C_CASES,
+      C_PT = positives$C_PT,
+      C_AT_RISK = positives$C_AT_RISK,
+      T_CASES = positives$T_CASES,
+      T_PT = positives$T_PT,
+      T_AT_RISK = positives$T_AT_RISK,
+      STUDY_DESIGN = positives$STUDY_DESIGN
   )
 
-  result[,idCol] <- interest[,idCol]
+  result[,idCol] <- positives[, idCol]
   return(result)
 }
 
@@ -236,32 +236,22 @@ calibrateOutcomes <- function(appContext) {
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
 
   DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
-  DatabaseConnector::disconnect(dbConn)
-}
 
-#' Compute the calibrated results for custom cohort outcomes
-#' Requires negative control cohorts to be set
-#' @param appContext takes a rewardb application context
-#' @export
-calibrateOutcomesCustomCohorts <- function(appContext) {
   # get negative control data rows -- type 0 outcomes only
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   controlExposures <- getExposureControls(appContext, dbConn, appContext$custom_outcome_cohort_ids)
   positives <- getUncalibratedAtlasCohorts(appContext)
 
   print(paste("calibrating", nrow(positives) ,"exposures"))
-  library(dplyr)
-
   # Get all outcomes for a given target, source for outcome type 0
   # Compute calibrated results
-  resultSet <- positives %>%
+  atlasResultSet <- positives %>%
     group_by(SOURCE_ID, OUTCOME_COHORT_ID)  %>%
     group_modify(~ computeCalibratedRows(.x, controlExposures[
       controlExposures$OUTCOME_COHORT_ID == .x$OUTCOME_COHORT_ID[1] &
       controlExposures$SOURCE_ID == .x$SOURCE_ID[1],
     ], idCol = "TARGET_COHORT_ID"), .keep=TRUE)
 
-  resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
+  resultSet <- data.frame(atlasResultSet[,!(names(atlasResultSet) %in% c("OUTCOME_TYPE")) ])
+  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), atlasResultSet)
   DatabaseConnector::disconnect(dbConn)
 }
