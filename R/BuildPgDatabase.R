@@ -2,14 +2,14 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml") {
   config <- yaml::read_yaml(configFilePath)
   connection <- DatabaseConnector::connect(config$rewardbDatabase)
   tryCatch({
+    message("creating rewardb results schema")
     sql <- SqlRender::readSql(system.file("sql/create", "pgSchema.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql,
+      vocabulary_schema = "vocabulary",
       schema = config$rewardbResultsSchema
     )
-
-    createReferenceTables(connection, config, dataSources)
   })
   DatabaseConnector::disconnect(connection)
 }
