@@ -17,7 +17,7 @@ rewardbResultsSchema: "test"
 cdmDatabase:
   schema: "eunomia"
   vocabularySchema: "eunomia"
-  cemSchema: "CEM_V2_0_0_20200226"
+  cemSchema: "cem"
   # Generated tables
   cohortDefinitionTable: "test_rewardb_cohort_definition_dev"
   outcomeCohortDefinitionTable: "test_rewardb_outcome_cohort_definition_dev"
@@ -28,7 +28,7 @@ cdmDatabase:
 
 cdmDataSource:
   dbms: "postgresql"
-  server: "localhost/eunomia"
+  server: "localhost/rewardb"
   port: 54321
   user: "postgres"
   password: "postgres"

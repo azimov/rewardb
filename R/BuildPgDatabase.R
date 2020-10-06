@@ -1,25 +1,29 @@
 buildPgDatabase <- function(configFilePath = "config/global-cfg.yml") {
   config <- yaml::read_yaml(configFilePath)
-
+  connection <- DatabaseConnector::connect(config$rewardbDatabase)
   tryCatch({
-    connection <- DatabaseConnector::connect(config$rewardbDatabase)
-
     sql <- SqlRender::readSql(system.file("sql/create", "pgSchema.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
-        connection,
-        sql,
-        schema = config$rewardbResultsSchema
+      connection,
+      sql,
+      schema = config$rewardbResultsSchema
     )
-  },
-  finally = function () {
-    DatabaseConnector::disconnect(connection)
+
+    createReferenceTables(connection, config, dataSources)
   })
+  DatabaseConnector::disconnect(connection)
 }
 
-buildCemSummary <- function() {
+importCemSummary <- function(summaryFilePath, configFilePath = "config/global-cfg.yml") {
+  checkmate::assert_file_exists(summaryFilePath)
 
-}
-
-createVocabulary <- function () {
-
+  config <- yaml::read_yaml(configFilePath)
+  connection <- DatabaseConnector::connect(config$rewardbDatabase)
+  tryCatch({
+    # Load data frame
+    evidence <- read.csv(summaryFilePath)
+    # Insert in to db
+    DatabaseConnector::dbAppendTable(connection, "cem.matrix_summary", evidence)
+  })
+  DatabaseConnector::disconnect(connection)
 }

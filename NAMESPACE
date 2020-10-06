@@ -3,7 +3,6 @@
 export(buildFromConfig)
 export(calibrateCustomCohorts)
 export(calibrateOutcomes)
-export(calibrateOutcomesCustomCohorts)
 export(calibrateTargets)
 export(compileResults)
 export(forestPlot)

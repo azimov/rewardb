@@ -4,10 +4,10 @@
 \alias{computeCalibratedRows}
 \title{Actual calibration is performed here in a dplyr friendly way}
 \usage{
-computeCalibratedRows(interest, negatives, idCol, calibrationType = 1)
+computeCalibratedRows(positives, negatives, idCol, calibrationType = 1)
 }
 \arguments{
-\item{interest}{this is the cohort set that should be calibrated}
+\item{positives}{this is the cohort set that should be calibrated}
 
 \item{negatives}{these are the negative control cohort results}
 

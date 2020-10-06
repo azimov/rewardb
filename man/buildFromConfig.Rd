@@ -6,14 +6,12 @@
 Requires the rewardb results to be generated already.
 This exports the data to a db backend and allows the config file to be used to run the shiny dashboard}
 \usage{
-buildFromConfig(filePath, calibrateOutcomes = FALSE, calibrateTargets = FALSE)
+buildFromConfig(filePath, performCalibration = TRUE)
 }
 \arguments{
 \item{filePath}{- path to a yaml configuration file used}
 
-\item{calibrateOutcomes}{- where subset of outcomes is specified}
-
-\item{calibrateTargets}{- where a subset of target exposures is specified}
+\item{performCalibration}{- use empirical calibration package to compute adjusted p values, effect estimates and confidence intervals}
 }
 \description{
 Builds a rewardb dashboard for all exposures for subset outcomes or all outcomes for subset exposures
