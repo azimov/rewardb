@@ -16,13 +16,14 @@ test_that("create reference tables", {
 })
 
 test_that("data import", {
+  rewardb::buildPgDatabase(configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb"))
+
   rewardb::fullExecution(
     configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb")
   )
   ParallelLogger::logInfo("Performing full execution")
   expect_true(checkmate::checkFileExists("rewardb-export.zip"))
 
-  rewardb::buildPgDatabase(configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb"))
   rewardb::importResultsZip(
     resultsZipPath = "rewardb-export.zip",
     configFilePath = system.file("tests", "test.cfg.yml", package = "rewardb")

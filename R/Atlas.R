@@ -1,76 +1,93 @@
-#' Hit a web api REST endpoint
-#' TODO: replace with ROhdsiWebApi calls
-#' @param webApiUrl base webApi url
-#' @param resource url to hit
-#' @param id url id (e.g. atlas cohort id)
-#'@export
-getWebObject <- function(webApiUrl, resource, id) {
-  definitionUrl <- URLencode(paste0(webApiUrl, "/", resource, "/", id))
-  resp <- httr::GET(definitionUrl)
-  content <- httr::content(resp, as = "text", encoding = "UTF-8")
-  responseData <- RJSONIO::fromJSON(content)
-  return(responseData)
-}
-
 #' Adds atlas cohort to db reference, from web api
 #' Inserts name/id in to custom cohort table
 #' Maps condition concepts of interest, any desecdants or if they're excluded from the cohort
 #' @param connection DatabaseConnector::connection to cdm
 #' @param config rewardb global config
 #' @param atlasId id to atlas cohort to pull down
-insertAtlasCohortRef <- function(connection, config, atlasId) {
+insertAtlasCohortRef <- function(
+  connection,
+  config,
+  atlasId,
+  webApiUrl = NULL,
+  .cohortDefinition = NULL,
+  .sqlDefinition = NULL
+) {
+
+  if (is.null(webApiUrl)) {
+    webApiUrl <- config$webApiUrl
+  }
 
   ParallelLogger::logInfo(paste("Checking if cohort already exists", atlasId))
   count <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT COUNT(*) FROM @cohort_database_schema.@atlas_reference_table WHERE cohort_definition_id = @cohort_definition_id",
-    cohort_database_schema = config$cdmDatabase$schema,
-    atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
-    cohort_definition_id = atlasId
+    "SELECT COUNT(*) FROM @schema.atlas_reference_table
+        WHERE atlas_id = @atlas_id
+        AND atlas_url = '@atlas_url'
+        ",
+    schema = config$rewardbResultsSchema,
+    atlas_id = atlasId,
+    atlas_url = webApiUrl
   )
 
   if (count == 0) {
     ParallelLogger::logInfo(paste("pulling", atlasId))
-    content <- rewardb::getWebObject(config$webApiUrl, "cohortdefinition", atlasId)
-    cohortDef <- RJSONIO::fromJSON(content$expression)
+
+    # Null is mainly used for test purposes only
+    if(is.null(.cohortDefinition)) {
+      cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, webApiUrl)
+    } else {
+      cohortDefinition <- .cohortDefinition
+    }
+
+    if(is.null(.sqlDefinition)) {
+       sqlDefinition <- ROhdsiWebApi::getCohortSql(cohortDefinition, webApiUrl, generateStats = FALSE)
+    } else {
+      sqlDefinition <- .sqlDefinition
+    }
 
     ParallelLogger::logInfo(paste("inserting", atlasId))
-    DatabaseConnector::renderTranslateExecuteSql(
+    # Create reference and Get last insert as referent ID from sequence
+    newEntry <- DatabaseConnector::renderTranslateQuerySql(
       connection,
-      sql = "INSERT INTO @cohort_database_schema.@atlas_reference_table (cohort_definition_id, cohort_name)
-                                     values (@cohort_definition_id, '@cohort_name')",
-      cohort_database_schema = config$cdmDatabase$schema,
-      atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
-      cohort_definition_id = content$id,
-      cohort_name = gsub("'","''", content$name)
+      sql = "INSERT INTO @schema.outcome_cohort_definition
+                            (cohort_definition_name, short_name, CONCEPTSET_ID, outcome_type)
+                                     values ('@name', '@name', 99999999, 2) RETURNING cohort_definition_id",
+      schema = config$rewardbResultsSchema,
+      name = gsub("'","''", cohortDefinition$name)
     )
 
-    ParallelLogger::logInfo(paste("Getting concept sets", atlasId))
-    sql <- SqlRender::readSql(system.file("sql/create", "customAtlasCohortsConcepts.sql", package = "rewardb"))
+    cohortDefinitionId <- newEntry$COHORT_DEFINITION_ID[[1]]
+
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
-      sql=sql,
-      cohort_definition_id = content$id,
-      custom_outcome_name = gsub("'","''", content$name),
-      cohort_database_schema = config$cdmDatabase$schema,
-      outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
+      sql = "INSERT INTO @schema.atlas_reference_table
+                            (cohort_definition_id, ATLAS_ID, atlas_url, definition, sql_definition)
+                                     values (@cohort_definition_id, @atlas_id, '@atlas_url', '@definition', '@sql_definition')",
+      schema = config$rewardbResultsSchema,
+      cohort_definition_id = cohortDefinitionId,
+      atlas_id = atlasId,
+      atlas_url = webApiUrl,
+      definition = RJSONIO::toJSON(cohortDefinition),
+      sql_definition = gsub("'","''", sqlDefinition),
     )
 
+    ParallelLogger::logInfo(paste("inserting concept reference", atlasId))
     results <- data.frame()
-    for (conceptSet in cohortDef$ConceptSets) {
+    for (conceptSet in cohortDefinition$expression$ConceptSets) {
       for (item in conceptSet$expression$items) {
         if (item$concept$DOMAIN_ID == "Condition") {
           results <- rbind(results, data.frame(
-            COHORT_DEFINITION_ID = content$id,
+            COHORT_DEFINITION_ID = cohortDefinitionId,
             CONCEPT_ID = item$concept$CONCEPT_ID,
             IS_EXCLUDED = as.integer(item$isExcluded),
+            INCLUDE_MAPPED = as.integer(item$includeMapped),
             include_descendants = as.integer(item$includeDescendants)
           )
           )
         }
       }
     }
-    tableName <- paste0(config$cdmDatabase$schema, ".", config$cdmDatabase$atlasConceptReferenceTable)
+    tableName <- paste0(config$rewardbResultsSchema, ".atlas_concept_reference")
     DatabaseConnector::dbAppendTable(connection, tableName, results)
   } else {
     print(paste("COHORT", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))

@@ -22,7 +22,36 @@ test_that("build db", {
     expect_true(n %in% names(qdf))
   }
 
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT count(*) as cohort_count FROM @schema.cohort_definition",
+    schema = config$rewardbResultsSchema
+  )
+  # Cohorts should be created
+  expect_true(qdf$COHORT_COUNT[[1]] > 0)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT count(*) as cohort_count FROM @schema.outcome_cohort_definition",
+    schema = config$rewardbResultsSchema
+  )
+  # Cohorts should be created
+  expect_true(qdf$COHORT_COUNT[[1]] > 0)
+
   rewardb::importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb") , configFilePath = configFilePath)
+})
+
+
+test_that("Add atlas cohorts", {
+  rewardb::insertAtlasCohortRef(connection, config, 12047)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT  * FROM @schema.atlas_reference_table",
+    schema = config$rewardbResultsSchema
+  )
+
+  expect_true(nrow(qdf) > 0)
 })
 
 # Check that the vocabulary schema is there
