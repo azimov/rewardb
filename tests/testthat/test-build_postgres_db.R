@@ -8,7 +8,7 @@ configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
 config <- yaml::read_yaml(configFilePath)
 connection <- DatabaseConnector::connect(config$rewardbDatabase)
 
-test_that("build db", {
+test_that("build rewardb postgres db", {
   rewardb::buildPgDatabase(configFilePath = configFilePath)
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
@@ -42,20 +42,78 @@ test_that("build db", {
 })
 
 
-test_that("Add atlas cohorts", {
-  rewardb::insertAtlasCohortRef(connection, config, 12047)
+test_that("Add and remove atlas cohort references", {
+
+  cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
+  sqlDefinition <- readr::read_lines(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
+  rewardb::insertAtlasCohortRef(connection, config, 12047, .cohortDefinition=cohortDefinition, .sqlDefinition=sqlDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT  * FROM @schema.atlas_reference_table",
     schema = config$rewardbResultsSchema
   )
+  expect_true(12047 %in% qdf$ATLAS_ID)
+
+  rewardb::removeAtlasCohort(connection, config, 12047)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT  * FROM @schema.atlas_reference_table",
+    schema = config$rewardbResultsSchema
+  )
+  expect_false(12047 %in% qdf$ATLAS_ID)
+})
+
+test_that("Add and remove custom exposure references", {
+
+  conceptSetId <- 11933
+  rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = NULL)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT  * FROM @schema.custom_exposure",
+    schema = config$rewardbResultsSchema
+  )
+  expect_true(conceptSetId %in% qdf$CONCEPT_SET_ID)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT * FROM @schema.cohort_definition WHERE cohort_definition_id
+            IN ( SELECT cohort_definition_id FROM @schema.custom_exposure
+              WHERE concept_set_id = @concept_set_id AND atlas_url = '@atlas_url');",
+    schema = config$rewardbResultsSchema,
+    concept_set_id = conceptSetId,
+    atlas_url = config$webApiUrl
+  )
 
   expect_true(nrow(qdf) > 0)
+
+  rewardb::removeCustomExposureCohort(connection, config, conceptSetId)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT * FROM @schema.cohort_definition WHERE cohort_definition_id
+            IN ( SELECT cohort_definition_id FROM @schema.custom_exposure
+              WHERE concept_set_id = @concept_set_id AND atlas_url = '@atlas_url');",
+    schema = config$rewardbResultsSchema,
+    concept_set_id = conceptSetId,
+    atlas_url = config$webApiUrl
+  )
+
+  expect_true(nrow(qdf) == 0)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT  * FROM @schema.custom_exposure",
+    schema = config$rewardbResultsSchema
+  )
+  expect_false(conceptSetId %in% qdf$CONCEPT_SET_ID)
+
 })
+
 
 # Check that the vocabulary schema is there
 
 # Check that creation of a CEM sumamry table works
-
 DatabaseConnector::disconnect(connection)

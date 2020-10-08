@@ -99,28 +99,20 @@ insertAtlasCohortRef <- function(
 #' @param config rewardb global config
 #' @param atlasIds ids to remove from db
 #' @param dataSources specified data sources to remove entry from
-removeAtlasCohort <- function (connection, config, atlasIds, dataSources) {
+removeAtlasCohort <- function (connection, config, atlasId, webApiUrl = NULL) {
+  if (is.null(webApiUrl)) {
+    webApiUrl <- config$webApiUrl
+  }
+
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
-    sql = "DELETE FROM @cohort_database_schema.@outcome_cohort_definition_table WHERE cohort_definition_id IN (@cohort_definition_id);
-    DELETE FROM @cohort_database_schema.@atlas_concept_reference WHERE cohort_definition_id IN (@cohort_definition_id);
-    DELETE FROM @cohort_database_schema.@atlas_reference_table WHERE cohort_definition_id IN (@cohort_definition_id);",
-    cohort_database_schema = config$cdmDatabase$schema,
-    outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable,
-    cohort_definition_id = atlasIds,
-    atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
-    atlas_concept_reference = config$cdmDatabase$atlasConceptReferenceTable
+    "DELETE FROM @schema.outcome_cohort_definition WHERE cohort_definition_id
+            IN ( SELECT cohort_definition_id FROM @schema.atlas_reference_table
+            WHERE atlas_id = @atlas_id AND atlas_url = '@atlas_url');",
+    schema = config$rewardbResultsSchema,
+    atlas_id = atlasId,
+    atlas_url = webApiUrl
   )
-
-  for (dataSource in dataSources) {
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql = "DELETE FROM @cohort_database_schema.@outcome_cohort_table WHERE cohort_definition_id IN (@cohort_definition_id)",
-      cohort_definition_id = atlasIds,
-      cohort_database_schema = config$cdmDatabase$schema,
-      outcome_cohort_table = dataSource$outcomeCohortTable
-    )
-  }
 }
 
 #' Adds atlas concept set to db reference, from web api
@@ -130,44 +122,76 @@ removeAtlasCohort <- function (connection, config, atlasIds, dataSources) {
 #' @param config rewardb global config
 #' @param conceptSetId id to atlas cohort to pull down
 #' @param conceptSetDefinition webApi response object
-insertCustomExposureRef <- function(connection, config, conceptSetId, conceptSetDefinition, cohortName, .warnNonIngredients = TRUE) {
+insertCustomExposureRef <- function(
+  connection,
+  config,
+  conceptSetId,
+  cohortName,
+  conceptSetDefinition = NULL,
+  .warnNonIngredients = TRUE,
+  webApiUrl = NULL
+) {
+
+  if (is.null(webApiUrl)) {
+    webApiUrl <- config$webApiUrl
+  }
+
+  if (is.null(conceptSetDefinition)) {
+    conceptSetDefinition <- ROhdsiWebApi::getConceptSetDefinition(conceptSetId, webApiUrl)
+  }
 
   ParallelLogger::logInfo(paste("Checking if cohort already exists", conceptSetId))
   count <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT COUNT(*) FROM @cohort_database_schema.custom_exposure WHERE CUSTOM_EXPOSURE_ID = @conceptSetId",
-    cohort_database_schema = config$cdmDatabase$schema,
+    "SELECT COUNT(*) FROM @schema.custom_exposure WHERE CONCEPT_SET_ID = @conceptSetId AND atlas_url = '@atlas_url'",
+    schema = config$rewardbResultsSchema,
+    atlas_url = webApiUrl,
     conceptSetId = conceptSetId
   )
 
   if (count == 0) {
     ParallelLogger::logInfo(paste("inserting", conceptSetId))
+
+    newEntry <- DatabaseConnector::renderTranslateQuerySql(
+      connection,
+      sql = "INSERT INTO @schema.cohort_definition
+                            (cohort_definition_name, short_name, atc_flg)
+                                     values ('@name', '@name', 2) RETURNING cohort_definition_id",
+      schema = config$rewardbResultsSchema,
+      name = gsub("'","''", cohortName),
+    )
+
+    cohortDefinitionId <- newEntry$COHORT_DEFINITION_ID[[1]]
+
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
-      "INSERT INTO @cohort_database_schema.custom_exposure
-                (CUSTOM_EXPOSURE_ID, COHORT_NAME, ATLAS_SOURCE) VALUES (@conceptSetId, '@cohortName', '@atlasSource')",
-      cohort_database_schema = config$cdmDatabase$schema,
-      cohortName = gsub("'","''", cohortName),
-      conceptSetId = conceptSetId,
-      atlasSource = gsub("'","''", config$webApiUrl)
+      "INSERT INTO @schema.custom_exposure
+                (COHORT_DEFINITION_ID, CONCEPT_SET_ID, ATLAS_URL) VALUES (@cohort_definition_id, @concept_set_id, '@atlas_url')",
+      schema = config$rewardbResultsSchema,
+      cohort_definition_id = cohortDefinitionId,
+      concept_set_id = conceptSetId,
+      atlas_url = webApiUrl
     )
+
     results <- data.frame()
     for (item in conceptSetDefinition$expression$items) {
       if (item$concept$CONCEPT_CLASS_ID != "Ingredient" & .warnNonIngredients) {
         ParallelLogger::logWarn(paste("Inserting a non-ingredient concept", item$concept$conceptId, "for cohort", cohortName))
       }
+
       results <- rbind(
         results,
         data.frame(
-          CUSTOM_EXPOSURE_ID = conceptSetId,
+          COHORT_DEFINITION_ID = cohortDefinitionId,
           CONCEPT_ID = item$concept$CONCEPT_ID,
-          IS_EXCLUDED = item$isExcluded,
-          include_descendants = item$includeDescendants
+          IS_EXCLUDED = as.integer(item$isExcluded),
+          include_descendants = as.integer(item$includeDescendants),
+          include_mapped = as.integer(item$includeMapped)
         )
       )
     }
 
-    tableName <- paste0(config$cdmDatabase$schema, ".custom_exposure_concept")
+    tableName <- paste0(config$rewardbResultsSchema, ".custom_exposure_concept")
     DatabaseConnector::dbAppendTable(connection, tableName, results)
   } else {
     print(paste("Concept set", conceptSetId, "Already in database, use removeAtlasCohort to clear entry references"))
@@ -179,22 +203,18 @@ insertCustomExposureRef <- function(connection, config, conceptSetId, conceptSet
 #' @param config rewardb global config
 #' @param conceptSetId ids to remove from db
 #' @param dataSources specified data sources to remove entry from
-removeCustomExposureCohort <- function (connection, config, conceptSetId, dataSources) {
+removeCustomExposureCohort <- function (connection, config, conceptSetId, webApiUrl = NULL) {
+  if (is.null(webApiUrl)) {
+    webApiUrl <- config$webApiUrl
+  }
+
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
-    sql = "DELETE FROM @cohort_database_schema.custom_exposure WHERE CUSTOM_EXPOSURE_ID IN (@cohort_definition_id);
-    DELETE FROM @cohort_database_schema.custom_exposure_concept WHERE CUSTOM_EXPOSURE_ID IN (@cohort_definition_id);",
-    cohort_database_schema = config$cdmDatabase$schema,
-    cohort_definition_id = conceptSetId,
+    "DELETE FROM @schema.cohort_definition WHERE cohort_definition_id
+            IN ( SELECT cohort_definition_id FROM @schema.custom_exposure
+              WHERE concept_set_id = @concept_set_id AND atlas_url = '@atlas_url');",
+    schema = config$rewardbResultsSchema,
+    concept_set_id = conceptSetId,
+    atlas_url = webApiUrl
   )
-
-  for (dataSource in dataSources) {
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql = "DELETE FROM @cohort_database_schema.@cohort_table WHERE cohort_definition_id IN (@cohort_definition_id)",
-      cohort_definition_id = conceptSetId,
-      cohort_database_schema = config$cdmDatabase$schema,
-      cohort_table = dataSource$cohortTable
-    )
-  }
 }

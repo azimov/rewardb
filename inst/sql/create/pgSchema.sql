@@ -62,7 +62,7 @@ create table @schema.cohort_definition
 	,	indication_CONCEPTSET_ID bigint
 	,	target_cohort int   	/*1 - target cohort, 0- not target (could be used as comparator, -1 - other)*/
 	, subgroup_cohort int   /*tells if cohort is a subgroup of interest: 0-none, 1-pediatrics, 2-elderly, 3-pregnant women, 4-renal impairment,5-hepatic impairment*/
-	, ATC_flg int           /* 1- exposure is ATC 4th level, 0-exposure is ingredient */
+	, ATC_flg int           /* 1- exposure is ATC 4th level, 0-exposure is ingredient 2 - custom exposure class */
 )
 ;
 
@@ -87,6 +87,7 @@ CREATE TABLE @schema.atlas_reference_table (
     CONSTRAINT cohort_def
       FOREIGN KEY(COHORT_DEFINITION_ID)
 	    REFERENCES @schema.outcome_cohort_definition(COHORT_DEFINITION_ID)
+	        ON DELETE CASCADE
 
 );
 
@@ -99,8 +100,31 @@ CREATE TABLE @schema.atlas_concept_reference (
     CONSTRAINT cohort_def
       FOREIGN KEY(COHORT_DEFINITION_ID)
 	    REFERENCES @schema.outcome_cohort_definition(COHORT_DEFINITION_ID)
+	        ON DELETE CASCADE
 );
 
+
+CREATE TABLE @schema.custom_exposure (
+    COHORT_DEFINITION_ID BIGINT,
+    CONCEPT_SET_ID INT,
+    ATLAS_URL varchar(1000),
+    CONSTRAINT cohort_def
+      FOREIGN KEY(COHORT_DEFINITION_ID)
+	    REFERENCES @schema.cohort_definition(COHORT_DEFINITION_ID)
+	        ON DELETE CASCADE
+);
+
+CREATE TABLE @schema.custom_exposure_concept (
+    COHORT_DEFINITION_ID BIGINT,
+    CONCEPT_ID BIGINT,
+    INCLUDE_DESCENDANTS INT,
+    IS_EXCLUDED INT,
+    INCLUDE_MAPPED INT,
+    CONSTRAINT cohort_def
+      FOREIGN KEY(COHORT_DEFINITION_ID)
+	    REFERENCES @schema.cohort_definition(COHORT_DEFINITION_ID)
+	        ON DELETE CASCADE
+);
 
 -- Create ingredient cohorts from vocabulary
 
