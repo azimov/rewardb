@@ -7,15 +7,12 @@ CONST_REFERENCE_TABLES <- c(
   "custom_exposure",
   "custom_exposure_concept",
   "concept_set_definition",
-  "outcome_cohort_definition",
-  "data_source"
+  "outcome_cohort_definition"
 )
 
 #' Export Reference tables
 #' @description
 #' Takes created reference tables (cohort definitions) from central rewardb and exports them to a zipped csv file
-#'
-#'
 exportReferenceTables <- function(
   config,
   exportPath = tempdir(),
@@ -36,8 +33,8 @@ exportReferenceTables <- function(
       schema = config$rewardbResultsSchema,
       table = table
     )
-    file <- file.path(exportPath, paste0(table,".csv"))
-    readr::write_excel_csv(data, file, na="")
+    file <- file.path(exportPath, paste0(table, ".csv"))
+    readr::write_excel_csv(data, file, na = "")
     meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
   }
 
@@ -50,4 +47,27 @@ exportReferenceTables <- function(
   zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)
 
   ParallelLogger::logInfo(paste("Created export zipfile", exportZipFile))
+}
+
+#'
+#' @description
+#' Note that this always overwrites the existing reference tables stored in the database
+importReferenceTables <- function(cdmConfig, zipFilePath, refFolder) {
+  unzipAndVerify(zipFilePath, refFolder, TRUE)
+  connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
+
+  fileList <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
+  for (file in fileList) {
+    data <- read.csv(file)
+    tableName <- strsplit(basename(file), ".csv")[[1]]
+    DatabaseConnector::insertTable(
+      connection,
+      tableName = paste0(cdmConfig$referenceSchema, ".", tableName),
+      data = data,
+      progressBar = TRUE,
+      dropTableIfExists = TRUE,
+      createTable = TRUE
+    )
+  }
+  DatabaseConnector::disconnect(connection)
 }

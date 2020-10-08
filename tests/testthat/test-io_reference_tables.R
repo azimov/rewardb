@@ -12,23 +12,40 @@ connection <- DatabaseConnector::connect(config$rewardbDatabase)
 rewardb::buildPgDatabase(configFilePath = configFilePath)
 cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
 sqlDefinition <- readr::read_lines(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
-rewardb::insertAtlasCohortRef(connection, config, 12047, .cohortDefinition=cohortDefinition, .sqlDefinition=sqlDefinition)
+rewardb::insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 conceptSetId <- 11933
 conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet11933.json", package = "rewardb"))
 rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
 
-test_that("Export reference zip file", {
-  unlink("rewardb-references.zip")
-  unlink("reference_test_folder")
-  rewardb::exportReferenceTables(config)
-  expect_true(checkmate::checkFileExists("rewardb-references.zip"))
-  rewardb::unzipAndVerify("rewardb-references.zip", "reference_test_folder", TRUE)
+cdmConfig <- yaml::read_yaml(system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb"))
 
-  files <- file.path("reference_test_folder", paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
-  for(file in files) {
+zipFilePath <- "rewardb-references.zip"
+refFolder <- "reference_test_folder"
+unlink(zipFilePath)
+unlink(refFolder)
+
+test_that("Export/Import reference zip file", {
+
+  rewardb::exportReferenceTables(config)
+  expect_true(checkmate::checkFileExists(zipFilePath))
+  rewardb::unzipAndVerify(zipFilePath, refFolder, TRUE)
+
+  files <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
+  for (file in files) {
     expect_true(checkmate::checkFileExists(file))
   }
+
+  importReferenceTables(cdmConfig, zipFilePath, refFolder)
+
+  # Verify the tables existinces
+  for (table in rewardb::CONST_REFERENCE_TABLES) {
+    testSql <- "SELECT count(*) as tbl_count FROM @schema.@table"
+    resp <- DatabaseConnector::renderTranslateQuerySql(connection, testSql, schema=cdmConfig$referenceSchema, table=table)
+    expect_true(nrow(resp) > 0)
+    expect_true(resp$TBL_COUNT[[1]] > 0)
+  }
+
 })
 
 # Check that the vocabulary schema is there

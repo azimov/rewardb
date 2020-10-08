@@ -9,8 +9,8 @@ insertAtlasCohortRef <- function(
   config,
   atlasId,
   webApiUrl = NULL,
-  .cohortDefinition = NULL,
-  .sqlDefinition = NULL
+  cohortDefinition = NULL,
+  sqlDefinition = NULL
 ) {
 
   if (is.null(webApiUrl)) {
@@ -31,18 +31,13 @@ insertAtlasCohortRef <- function(
 
   if (count == 0) {
     ParallelLogger::logInfo(paste("pulling", atlasId))
-
     # Null is mainly used for test purposes only
-    if(is.null(.cohortDefinition)) {
+    if(is.null(cohortDefinition)) {
       cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, webApiUrl)
-    } else {
-      cohortDefinition <- .cohortDefinition
     }
 
-    if(is.null(.sqlDefinition)) {
+    if(is.null(sqlDefinition)) {
        sqlDefinition <- ROhdsiWebApi::getCohortSql(cohortDefinition, webApiUrl, generateStats = FALSE)
-    } else {
-      sqlDefinition <- .sqlDefinition
     }
 
     ParallelLogger::logInfo(paste("inserting", atlasId))
@@ -136,11 +131,12 @@ insertCustomExposureRef <- function(
     webApiUrl <- config$webApiUrl
   }
 
+  ParallelLogger::logInfo(paste("Checking if cohort already exists", conceptSetId))
+
   if (is.null(conceptSetDefinition)) {
     conceptSetDefinition <- ROhdsiWebApi::getConceptSetDefinition(conceptSetId, webApiUrl)
   }
 
-  ParallelLogger::logInfo(paste("Checking if cohort already exists", conceptSetId))
   count <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT COUNT(*) FROM @schema.custom_exposure WHERE CONCEPT_SET_ID = @conceptSetId AND atlas_url = '@atlas_url'",

@@ -6,7 +6,14 @@
 Inserts name/id in to custom cohort table
 Maps condition concepts of interest, any desecdants or if they're excluded from the cohort}
 \usage{
-insertAtlasCohortRef(connection, config, atlasId)
+insertAtlasCohortRef(
+  connection,
+  config,
+  atlasId,
+  webApiUrl = NULL,
+  .cohortDefinition = NULL,
+  .sqlDefinition = NULL
+)
 }
 \arguments{
 \item{connection}{DatabaseConnector::connection to cdm}

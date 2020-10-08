@@ -1,0 +1,17 @@
+sourceId: 0
+connectionDetails:
+  dbms: "postgresql"
+  server: "localhost/rewardb"
+  port: 54321
+  user: "postgres"
+  password: "postgres"
+
+securePassword: True
+
+referenceSchema: "rewardb_reference"
+cdmSchema: "eunomia"
+
+tables:
+  outcomeCohort: "rb_outcome_cohort"
+  cohort: "rb_cohort"
+  sccResult: "rb_scc_result"

@@ -16,7 +16,11 @@ Imports:
     scales,
     DT,
     EmpiricalCalibration,
-    yaml
+    yaml,
+    checkmate,
+    RJSONIO,
+    readr,
+    ParallelLogger
 Suggests:
     doParallel,
     foreach,

@@ -38,7 +38,7 @@ test_that("build rewardb postgres db", {
   # Cohorts should be created
   expect_true(qdf$COHORT_COUNT[[1]] > 0)
 
-  rewardb::importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb") , configFilePath = configFilePath)
+  rewardb::importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
 })
 
 
@@ -46,7 +46,7 @@ test_that("Add and remove atlas cohort references", {
 
   cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
   sqlDefinition <- readr::read_lines(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
-  rewardb::insertAtlasCohortRef(connection, config, 12047, .cohortDefinition=cohortDefinition, .sqlDefinition=sqlDefinition)
+  rewardb::insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,

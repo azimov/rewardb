@@ -4,7 +4,7 @@
 \alias{removeAtlasCohort}
 \title{Removes atlas entries from the cdm store}
 \usage{
-removeAtlasCohort(connection, config, atlasIds, dataSources)
+removeAtlasCohort(connection, config, atlasId, webApiUrl = NULL)
 }
 \arguments{
 \item{connection}{DatabaseConnector::connection to cdm}
