@@ -20,7 +20,7 @@ insertAtlasCohortRef <- function(
   ParallelLogger::logInfo(paste("Checking if cohort already exists", atlasId))
   count <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT COUNT(*) FROM @schema.atlas_reference_table
+    "SELECT COUNT(*) FROM @schema.atlas_outcome_reference
         WHERE atlas_id = @atlas_id
         AND atlas_url = '@atlas_url'
         ",
@@ -60,7 +60,7 @@ insertAtlasCohortRef <- function(
 
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
-      sql = "INSERT INTO @schema.atlas_reference_table
+      sql = "INSERT INTO @schema.atlas_outcome_reference
                             (cohort_definition_id, ATLAS_ID, atlas_url, definition, sql_definition)
                                      values (@cohort_definition_id, @atlas_id, '@atlas_url', '@definition', '@sql_definition')",
       schema = config$rewardbResultsSchema,
@@ -107,7 +107,7 @@ removeAtlasCohort <- function (connection, config, atlasId, webApiUrl = NULL) {
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     "DELETE FROM @schema.outcome_cohort_definition WHERE cohort_definition_id
-            IN ( SELECT cohort_definition_id FROM @schema.atlas_reference_table
+            IN ( SELECT cohort_definition_id FROM @schema.atlas_outcome_reference
             WHERE atlas_id = @atlas_id AND atlas_url = '@atlas_url');",
     schema = config$rewardbResultsSchema,
     atlas_id = atlasId,

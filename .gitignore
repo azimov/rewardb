@@ -9,3 +9,8 @@ errorReportSql.txt
 /.idea/
 /.Rbuildignore
 shiny_bookmarks/*
+/tests/testthat/rewardb-references.zip
+rbDataBuild.log
+/tests/testthat/reference_test_folder/
+/tests/testthat/export/
+/tests/testthat/rb-import/

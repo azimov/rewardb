@@ -1,3 +1,8 @@
+# Title     : Test results import export
+# Objective : To test zip file creation and import of data in to postgres using pgcopy funcitonality
+# Created by: James Gilbert
+# Created on: 2020-10-05
+
 defaultDf <- function() {
   data.frame(
     col_a = c(1, 2, 3, 4)

@@ -1,7 +1,7 @@
-IF OBJECT_ID('@cohort_database_schema.@atlas_reference_table', 'U') IS NOT NULL
-	DROP TABLE @cohort_database_schema.@atlas_reference_table;
+IF OBJECT_ID('@cohort_database_schema.@atlas_outcome_reference', 'U') IS NOT NULL
+	DROP TABLE @cohort_database_schema.@atlas_outcome_reference;
 
-CREATE TABLE @cohort_database_schema.@atlas_reference_table (
+CREATE TABLE @cohort_database_schema.@atlas_outcome_reference (
     COHORT_DEFINITION_ID BIGINT,
     COHORT_NAME VARCHAR(1000)
 );

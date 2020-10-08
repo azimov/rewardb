@@ -50,7 +50,7 @@ test_that("Add and remove atlas cohort references", {
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT  * FROM @schema.atlas_reference_table",
+    "SELECT  * FROM @schema.atlas_outcome_reference",
     schema = config$rewardbResultsSchema
   )
   expect_true(12047 %in% qdf$ATLAS_ID)
@@ -59,7 +59,7 @@ test_that("Add and remove atlas cohort references", {
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT  * FROM @schema.atlas_reference_table",
+    "SELECT  * FROM @schema.atlas_outcome_reference",
     schema = config$rewardbResultsSchema
   )
   expect_false(12047 %in% qdf$ATLAS_ID)
@@ -68,7 +68,8 @@ test_that("Add and remove atlas cohort references", {
 test_that("Add and remove custom exposure references", {
 
   conceptSetId <- 11933
-  rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = NULL)
+  conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet11933.json", package = "rewardb"))
+  rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
@@ -111,7 +112,6 @@ test_that("Add and remove custom exposure references", {
   expect_false(conceptSetId %in% qdf$CONCEPT_SET_ID)
 
 })
-
 
 # Check that the vocabulary schema is there
 

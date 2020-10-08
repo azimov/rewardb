@@ -78,7 +78,7 @@ create table @schema.outcome_cohort_definition
 ;
 
 
-CREATE TABLE @schema.atlas_reference_table (
+CREATE TABLE @schema.atlas_outcome_reference (
     COHORT_DEFINITION_ID BIGINT,
     ATLAS_ID INT,
     sql_definition text,

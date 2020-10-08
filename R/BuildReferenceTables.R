@@ -35,7 +35,7 @@ createReferenceTables <- function(connection, config, dataSources) {
     connection,
     sql = sql,
     cohort_database_schema = config$cdmDatabase$schema,
-    atlas_reference_table = config$cdmDatabase$atlasCohortReferenceTable,
+    atlas_outcome_reference = config$cdmDatabase$atlasCohortReferenceTable,
     atlas_concept_reference = config$cdmDatabase$atlasConceptReferenceTable
   )
 
