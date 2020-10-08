@@ -3,19 +3,19 @@
 "modifiedBy": "",
 "createdDate": 1.602094e+12,
 "modifiedDate": 1.602095e+12,
-"id": 11933,
-"name": "[02_3093] Rivaroxaban",
+"id": 1,
+"name": "epinephrine",
 "expression": {
  "items": [
  {
  "concept": {
- "CONCEPT_ID": 40241331,
-"CONCEPT_NAME": "rivaroxaban",
+ "CONCEPT_ID": 1343916,
+"CONCEPT_NAME": "epinephrine",
 "STANDARD_CONCEPT": "S",
 "STANDARD_CONCEPT_CAPTION": "Standard",
 "INVALID_REASON": "V",
 "INVALID_REASON_CAPTION": "Valid",
-"CONCEPT_CODE": "1114195",
+"CONCEPT_CODE": "3992",
 "DOMAIN_ID": "Drug",
 "VOCABULARY_ID": "RxNorm",
 "CONCEPT_CLASS_ID": "Ingredient" 

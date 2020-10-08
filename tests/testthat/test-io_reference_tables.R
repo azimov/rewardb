@@ -14,7 +14,7 @@ cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json
 sqlDefinition <- readr::read_lines(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
 rewardb::insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 conceptSetId <- 11933
-conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet11933.json", package = "rewardb"))
+conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
 rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
 

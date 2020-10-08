@@ -68,7 +68,7 @@ test_that("Add and remove atlas cohort references", {
 test_that("Add and remove custom exposure references", {
 
   conceptSetId <- 11933
-  conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet11933.json", package = "rewardb"))
+  conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
   rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
