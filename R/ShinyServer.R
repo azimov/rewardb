@@ -19,6 +19,7 @@ serverInstance <- function(input, output, session) {
         return (df)
       },
       error = function(e) {
+        ParallelLogger::logError(e)
         DatabaseConnector::disconnect(dbConn)
         dbConn <<- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
       }
@@ -132,7 +133,6 @@ serverInstance <- function(input, output, session) {
           colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
           colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
           colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
-          colnames(df)[colnames(df) == "IS_NC"] <- "Control Cohort"
 
           if (appContext$useExposureControls) {
             colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
@@ -228,6 +228,36 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+    getNegativeControls <- reactive({
+      sql <- readr::read_file(system.file("sql/export/", "negativeControls.sql", package = "rewardb"))
+      df <- queryDb(sql)
+      return(df)
+    })
+
+    output$downloadControls <- downloadHandler(
+      filename = function()  {
+        paste0(appContext$short_name, '-negative-controls.csv')
+      },
+      content = function(file) {
+        write.csv(getNegativeControls(), file, row.names = FALSE)
+      }
+    )
+
+    getIndications <- reactive({
+      sql <- readr::read_file(system.file("sql/export/", "mappedIndications.sql", package = "rewardb"))
+      df <- queryDb(sql)
+      return(df)
+    })
+
+    output$downloadIndications <- downloadHandler(
+      filename = function()  {
+        paste0(appContext$short_name, '-indications.csv')
+      },
+      content = function(file) {
+        write.csv(getIndications(), file, row.names = FALSE)
+      }
+    )
+
     output$downloadFullTable <- downloadHandler(
       filename = function() {
         paste0(appContext$short_name, '-filtered-', input$cutrange1, '-', input$cutrange2, '.csv')
@@ -305,24 +335,56 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+    getOutcomeType <- function(outcome) {
+      res <- queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome=outcome)
+      return(res$TYPE_ID[[1]])
+    }
+
+    getNegativeControlSubset <- function(treatment, outcome) {
+
+      if (appContext$useExposureControls) {
+        negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds = outcome)
+      } else {
+        otype <- if(getOutcomeType(outcome) == 1) 1 else 0;
+        negatives <- rewardb::getOutcomeControls(appContext, dbConn, targetIds = treatment)
+        # Subset for outcome types
+        negatives <- negatives[negatives$OUTCOME_TYPE == otype, ]
+      }
+      return(negatives)
+    }
+
     getCalibrationPlot <- function() {
       s <- filteredTableSelected()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
-      sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-      positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
 
-      if (appContext$useExposureControls) {
-          negatives <- rewardb::getExposureControls(appContext, dbConn, outcome)
-      } else {
-          negatives <- rewardb::getOutcomeControls(appContext, dbConn, treatment)
+      plot <- ggplot2::ggplot()
+      if(!is.na(treatment)) {
+
+        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+        positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+        negatives <- getNegativeControlSubset(treatment, outcome)
+
+        plot <- EmpiricalCalibration::plotCalibrationEffect(
+          logRrNegatives = log(negatives$RR),
+          seLogRrNegatives = negatives$SE_LOG_RR,
+          logRrPositives = log(positives$RR),
+          seLogRrPositives = positives$SE_LOG_RR
+        )
       }
-      plot <- EmpiricalCalibration::plotCalibrationEffect(
-        logRrNegatives = log(negatives$RR),
-        seLogRrNegatives = negatives$SE_LOG_RR,
-        logRrPositives = log(positives$RR),
-        seLogRrPositives = positives$SE_LOG_RR
-      )
+      return(plot)
+    }
+
+    getNullDist <- function () {
+      s <- filteredTableSelected()
+      null <- c("mean" = 99, "sd" = 100)
+      treatment <- s$TARGET_COHORT_ID
+      outcome <- s$OUTCOME_COHORT_ID
+      if(!is.na(treatment)) {
+        negatives <- getNegativeControlSubset(treatment, outcome)
+        null <- EmpiricalCalibration::fitNull(log(negatives$RR), negatives$SE_LOG_RR)
+      }
+      return(null)
     }
 
     output$calibrationPlot <- plotly::renderPlotly({
@@ -330,6 +392,15 @@ serverInstance <- function(input, output, session) {
         return(plotly::ggplotly(plot))
     })
 
+    output$nullDistribution <- shiny::renderText({
+      null <- getNullDist()
+      return(
+        paste(
+          "Null distribution mean:", round(exp(null["mean"]), 3),
+          "std:", round(exp(null["sd"]), 3)
+        )
+      )
+    })
 
     output$downloadCalibrationPlot <- downloadHandler(
       filename = function() {

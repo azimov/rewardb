@@ -4,6 +4,7 @@ description: 'Development dashboard - schema is not safe'
 outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~
 target_concept_ids: [937368, 19041065, 1151789, 912263, 1119119, 21603907]
+
 connectionDetails:
   dbms: "postgresql"
   server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
