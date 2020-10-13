@@ -1,8 +1,8 @@
 name: Dementia
-short_name: dementia
+short_name: dementia_develop
 description: 'dementia'
-outcome_concept_ids: [4182210]
-custom_outcome_cohort_ids: [7547]
+outcome_concept_ids: [4182210, 3784190]
+custom_outcome_cohort_ids: [7547, 7548, 7823]
 target_concept_ids: ~
 useExposureControls: True
 
