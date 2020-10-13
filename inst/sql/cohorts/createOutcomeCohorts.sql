@@ -33,7 +33,6 @@ inner join
   and c1.domain_id = 'Condition'
 ) t1
   on ca1.ancestor_concept_id = t1.concept_id
---where ca1.ancestor_concept_id in (4245975, 381270, 4054512)  -- REMOVE FOR FULL RUN
 ;
 
 -- create clustered columnstore index cci_cag1 on #concept_ancestor_grp;
@@ -42,7 +41,7 @@ inner join
 --HINT DISTRIBUTE_ON_KEY(person_id)
 create table #cohorts as
 select
-  cast(t1.ancestor_concept_id as bigint) * 100 + 1 as cohort_definition_id
+  ocr.cohort_definition_id
   , t1.person_id
   , t1.cohort_start_date
   , t1.cohort_start_date as cohort_end_date
@@ -59,6 +58,9 @@ from
     co1.person_id
     , ca1.ancestor_concept_id
 ) t1
+inner join @reference_schema.outcome_cohort_reference ocr ON (
+    t1.concept_ancestor_id = ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 1
+)
 inner join
 (
   select
@@ -101,7 +103,7 @@ from #cohorts
 --HINT DISTRIBUTE_ON_KEY(person_id)
 create table #cohortsb as
 select
-  cast(t1.ancestor_concept_id as bigint) * 100 as cohort_definition_id
+  ocr.cohort_definition_id
   , t1.person_id
   , t1.cohort_start_date
   , t1.cohort_start_date as cohort_end_date
@@ -118,6 +120,9 @@ from
     co1.person_id
     , ca1.ancestor_concept_id
 ) t1
+inner join @reference_schema.outcome_cohort_reference ocr ON (
+    t1.concept_ancestor_id = ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 0
+)
 inner join
 (
   select

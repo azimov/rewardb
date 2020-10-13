@@ -2,7 +2,7 @@
 --HINT DISTRIBUTE_ON_KEY(person_id)
 create table #ingredient_eras as
 select
-  de1.cohort_definition_id
+  cr.cohort_definition_id
   , de1.concept_name
   , de1.person_id
   , de1.cohort_start_date
@@ -11,7 +11,7 @@ from
   (
     select
         de0.person_id
-        , cast(ings.concept_id AS bigint) *1000 as cohort_definition_id
+        , de0.drug_concept_id
         , ings.concept_name
         , de0.drug_era_start_date as cohort_start_date
         , de0.drug_era_end_date as cohort_end_date
@@ -27,6 +27,7 @@ from
       on de0.drug_concept_id = ings.concept_id
       -- where de0.drug_concept_id in (42904205, 40226579, 1337068) -- REMOVE FOR FULL RUN
   ) de1
+inner join @reference_schema.cohort_definition cr ON (cr.drug_conceptset_id = de1.drug_concept_id  AND cr.atc_flg = 0)
 inner join @cdm_database_schema.observation_period op1
   on de1.person_id = op1.person_id
   and de1.cohort_start_date >= dateadd(dd,365,op1.observation_period_start_date)
@@ -54,7 +55,7 @@ from #ingredient_eras
 --HINT DISTRIBUTE_ON_KEY(person_id)
 create table #ATC_eras as
 select
-  cast(de1.cohort_definition_id as bigint) * 1000 as cohort_definition_id
+  cr.cohort_definition_id
   , de1.concept_name
   , de1.person_id
   , de1.cohort_start_date
@@ -63,7 +64,7 @@ from
   (
     select
         de0.person_id
-        , atc_rxnorm.atc_concept_id  as cohort_definition_id
+        , atc_rxnorm.atc_concept_id  as drug_concept_id
         , atc_rxnorm.atc_concept_name as concept_name
         , de0.drug_era_start_date as cohort_start_date
         , de0.drug_era_end_date as cohort_end_date
@@ -80,6 +81,7 @@ from
       on de0.drug_concept_id = atc_rxnorm.descendant_concept_id
     --  where de0.drug_concept_id in (42904205, 40226579, 1337068) -- REMOVE FOR FULL RUN
   ) de1
+inner join @reference_schema.cohort_definition cr ON (cr.drug_conceptset_id = de1.drug_concept_id  AND cr.atc_flg = 1)
 inner join @cdm_database_schema.observation_period op1
   on de1.person_id = op1.person_id
   and de1.cohort_start_date >= dateadd(dd,365,op1.observation_period_start_date)

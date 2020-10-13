@@ -1,4 +1,4 @@
-sourceId: 0
+
 connectionDetails:
   dbms: "postgresql"
   server: "localhost/rewardb"
@@ -8,9 +8,13 @@ connectionDetails:
 
 securePassword: True
 
+resultSchema: "rewardb_reference"
 referenceSchema: "rewardb_reference"
 cdmSchema: "eunomia"
+vocabularySchema: "eunomia"
+# drugEraSchema: "reward"
 
+sourceId: 0
 tables:
   outcomeCohort: "rb_outcome_cohort"
   cohort: "rb_cohort"

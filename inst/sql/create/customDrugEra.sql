@@ -1,12 +1,12 @@
 ﻿USE @cdm_database;
 
-if object_id('@cdm_database.reward.drug_era_info', 'U') is not null
-    drop table reward.drug_era_info;
+if object_id('@cdm_database.@drug_era_schema.drug_era_info', 'U') is not null
+    drop table @drug_era_schema.drug_era_info;
 
-if object_id('@cdm_database.reward.drug_era', 'U') is not null
-    drop table reward.drug_era;
+if object_id('@cdm_database.@drug_era_schema.drug_era', 'U') is not null
+    drop table @drug_era_schema.drug_era;
 
-create table reward.drug_era_info (
+create table @drug_era_schema.drug_era_info (
   ingredient_concept_id int NOT NULL,
 	ingredient_name varchar(50) NOT NULL,
 	maintenance_days int NOT NULL)
@@ -28,20 +28,20 @@ ingredient_concept_id	ingredient_name	maintenance_days
 1511348								risankizmab 		84
 */
 
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (937368, 'infliximab', 56); -- infliximab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (19041065, 'golimumab', 30); -- golimumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1151789, 'etanercept', 7); -- brodalumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (912263, 'certolizumab pegol', 28); -- brodalumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1119119, 'adalimumab', 14); -- brodalumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1593700, 'guselkumab', 56); -- brodalumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (40161532, 'ustekinumab', 84); -- brodalumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (45892883, 'secukinumab', 28); -- brodalumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (35603563, 'ixekizumab', 28); -- brodalumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1592513, 'brodalumab', 14); -- brodalumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (35200139, 'tildrakizumab', 84); -- tildrakizumab
-insert into reward.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1511348, 'risankizumab', 84); -- risankizumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (937368, 'infliximab', 56); -- infliximab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (19041065, 'golimumab', 30); -- golimumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1151789, 'etanercept', 7); -- brodalumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (912263, 'certolizumab pegol', 28); -- brodalumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1119119, 'adalimumab', 14); -- brodalumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1593700, 'guselkumab', 56); -- brodalumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (40161532, 'ustekinumab', 84); -- brodalumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (45892883, 'secukinumab', 28); -- brodalumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (35603563, 'ixekizumab', 28); -- brodalumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1592513, 'brodalumab', 14); -- brodalumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (35200139, 'tildrakizumab', 84); -- tildrakizumab
+insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_name, maintenance_days) VALUES (1511348, 'risankizumab', 84); -- risankizumab
 
--- select * from reward.drug_era_info
+-- select * from @drug_era_schema.drug_era_info
 
 --- Notes: we use the maintenance_days to define the drug exposure duration, but we allow a 30d gap window between exposures to considder them together.
 --- if a 0 day grace period is required, change the DATEADD(day,-30,EVENT_DATE) and DATEADD(day,30,EVENT_DATE) to add/subtract 0 days.
@@ -58,7 +58,7 @@ with cteDrugTarget (DRUG_EXPOSURE_ID, PERSON_ID, DRUG_CONCEPT_ID, DRUG_TYPE_CONC
 	FROM dbo.DRUG_EXPOSURE d
 		join dbo.CONCEPT_ANCESTOR ca on ca.DESCENDANT_CONCEPT_ID = d.DRUG_CONCEPT_ID
 		join dbo.CONCEPT c on ca.ANCESTOR_CONCEPT_ID = c.CONCEPT_ID
-		join reward.drug_era_info doi on doi.INGREDIENT_CONCEPT_ID = c.concept_id
+		join @drug_era_schema.drug_era_info doi on doi.INGREDIENT_CONCEPT_ID = c.concept_id
 		where c.CONCEPT_CLASS_ID = 'Ingredient'
 ),
 cteEndDates (PERSON_ID, INGREDIENT_CONCEPT_ID, END_DATE) as -- the magic
@@ -107,7 +107,7 @@ GROUP BY person_id, drug_concept_id, drug_type_concept_id, DRUG_ERA_END_DATE
 
 --select distinct drug_concept_id from #reward_drug_era;
 
-create table reward.drug_era
+create table @drug_era_schema.drug_era
 with (distribution=hash(person_id))
 as
 select (select max(drug_era_id) from dbo.drug_era) + row_number() over (order by (select 1)) as drug_era_id, person_id, drug_concept_id, drug_era_start_date, drug_era_end_date, drug_exposure_count
@@ -115,9 +115,9 @@ FROM #reward_drug_era
 UNION ALL
 select drug_era_id, person_id, drug_concept_id, drug_era_start_date, drug_era_end_date, drug_exposure_count
 from dbo.drug_era
-where drug_concept_id not in (select ingredient_concept_id from reward.drug_era_info);
+where drug_concept_id not in (select ingredient_concept_id from @drug_era_schema.drug_era_info);
 
--- select count(distinct drug_concept_id) from reward.drug_era
+-- select count(distinct drug_concept_id) from @drug_era_schema.drug_era
 
 drop table #reward_drug_era;
 
