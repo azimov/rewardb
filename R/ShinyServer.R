@@ -243,6 +243,21 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+    getIndications <- reactive({
+      sql <- readr::read_file(system.file("sql/export/", "mappedIndications.sql", package = "rewardb"))
+      df <- queryDb(sql)
+      return(df)
+    })
+
+    output$downloadIndications <- downloadHandler(
+      filename = function()  {
+        paste0(appContext$short_name, '-indications.csv')
+      },
+      content = function(file) {
+        write.csv(getIndications(), file, row.names = FALSE)
+      }
+    )
+
     output$downloadFullTable <- downloadHandler(
       filename = function() {
         paste0(appContext$short_name, '-filtered-', input$cutrange1, '-', input$cutrange2, '.csv')

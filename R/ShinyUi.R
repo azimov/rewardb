@@ -75,13 +75,18 @@ dashboardUi  <- function (request) {
     ),
     box(
       p("Negative controls are used in this study to perform empirical calibration.
-      These are selected automatically using the common evidence model"),
+      These are selected automatically using the common evidence model. Indication mapping is used to filter results.
+      Inidcations are based on ingredient labels, spontaneous adverse events reports and pubmed literature searches"),
       downloadButton(
         "downloadControls",
-        "Download"
+        "Download Controls"
+      ),
+      downloadButton(
+        "downloadIndications",
+        "Download Indications"
       ),
       width = 6,
-      title=paste("Negative controls")
+      title=paste("Negative controls and indications")
     )
   )
 
