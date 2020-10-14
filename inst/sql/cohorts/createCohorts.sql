@@ -1,3 +1,7 @@
+CREATE TABLE #computed_cohorts AS
+SELECT DISTINCT cohort_definition_id
+FROM @cohort_database_schema.@cohort_table;
+
 -- First, create ingredient level cohorts
 --HINT DISTRIBUTE_ON_KEY(person_id)
 create table #ingredient_eras as
@@ -28,11 +32,14 @@ from
       -- where de0.drug_concept_id in (42904205, 40226579, 1337068) -- REMOVE FOR FULL RUN
   ) de1
 inner join @reference_schema.cohort_definition cr ON (cr.drug_conceptset_id = de1.drug_concept_id  AND cr.atc_flg = 0)
+left join #computed_cohorts cc ON cc.cohort_definition_id = cr.cohort_definition_id
 inner join @cdm_database_schema.observation_period op1
   on de1.person_id = op1.person_id
   and de1.cohort_start_date >= dateadd(dd,365,op1.observation_period_start_date)
   and de1.cohort_start_date <= op1.observation_period_end_date
   and de1.row_num = 1
+
+WHERE cc.cohort_definition_id IS NULL
 ;
 
 insert into @cohort_database_schema.@cohort_table
@@ -82,11 +89,13 @@ from
     --  where de0.drug_concept_id in (42904205, 40226579, 1337068) -- REMOVE FOR FULL RUN
   ) de1
 inner join @reference_schema.cohort_definition cr ON (cr.drug_conceptset_id = de1.drug_concept_id  AND cr.atc_flg = 1)
+left join #computed_cohorts cc ON cc.cohort_definition_id = cr.cohort_definition_id
 inner join @cdm_database_schema.observation_period op1
   on de1.person_id = op1.person_id
   and de1.cohort_start_date >= dateadd(dd,365,op1.observation_period_start_date)
   and de1.cohort_start_date <= op1.observation_period_end_date
   and de1.row_num = 1
+WHERE cc.cohort_definition_id IS NULL
 ;
 
 insert into @cohort_database_schema.@cohort_table
@@ -109,3 +118,6 @@ drop table #ingredient_eras;
 
 truncate table #atc_eras;
 drop table #atc_eras;
+
+truncate table #computed_cohorts;
+drop table #computed_cohorts;

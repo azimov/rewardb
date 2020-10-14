@@ -1,3 +1,7 @@
+create table #computed_o_cohorts AS
+SELECT DISTINCT cohort_definition_id
+FROM @cohort_database_schema.@outcome_cohort_table;
+
 create table #concept_ancestor_grp as
 select
   ca1.ancestor_concept_id
@@ -61,6 +65,7 @@ from
 inner join @reference_schema.outcome_cohort_definition ocr ON (
     ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 1
 )
+left join computed_o_cohorts coc ON ocr.cohort_definition_id = coc.cohort_definition_id
 inner join
 (
   select
@@ -80,6 +85,8 @@ inner join
 ) t2
   on t1.person_id = t2.person_id
   and t1.ancestor_concept_id = t2.ancestor_concept_id
+
+WHERE coc.cohort_definition_id IS NULL
 ;
 
 insert into @cohort_database_schema.@outcome_cohort_table
@@ -123,6 +130,7 @@ from
 inner join @reference_schema.outcome_cohort_definition ocr ON (
     ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 0
 )
+left join computed_o_cohorts coc ON ocr.cohort_definition_id = coc.cohort_definition_id
 inner join
 (
   select
@@ -143,6 +151,7 @@ inner join
   on t1.person_id = t2.person_id
   and t1.ancestor_concept_id = t2.ancestor_concept_id
   where t2.cohort_start_date < t2.confirmed_date -- here's the piece that finds two unique visit dates
+  AND coc.cohort_definition_id IS NULL -- Stop recomputing cohorts
 ;
 
 insert into @cohort_database_schema.@outcome_cohort_table
@@ -168,3 +177,6 @@ drop table #cohorts;
 
 truncate table #cohortsb;
 drop table #cohortsb;
+
+truncate table #computed_o_cohorts;
+drop table #computed_o_cohorts;

@@ -1,3 +1,9 @@
+CREATE TABLE #computed_cohorts AS
+
+SELECT DISTINCT ct.cohort_definition_id
+FROM @cohort_database_schema.@cohort_table ct
+INNER JOIN @cohort_database_schema.custom_exposure ce ON ct.cohort_definition_id = ce.cohort_definition_id;
+
 --HINT DISTRIBUTE_ON_KEY(person_id)
 create table #custom_eras as
 select
@@ -25,7 +31,9 @@ from
         from @cohort_database_schema.custom_exposure ce
         INNER JOIN @reference_schema.cohort_definition cd ON cd.cohort_definition_id = ce.cohort_definition_id
         INNER JOIN @reference_schema.custom_exposure_concept cec ON cec.cohort_definition_id = ce.cohort_definition_id
+        left join computed_cohorts cc ON cc.cohort_definition_id = ce.cohort_definition_id
         WHERE cec.include_descendants = 0
+        AND  cc.cohort_definition_id IS NULL -- only compute cohorts with no results
         {@only_add_subset} ? {AND ce.cohort_definition_id IN (@custom_exposure_subset) }
         UNION
 
@@ -37,7 +45,9 @@ from
         INNER JOIN @reference_schema.cohort_definition cd ON cd.cohort_definition_id = ce.cohort_definition_id
         INNER JOIN @reference_schema.custom_exposure_concept cec ON cec.cohort_definition_id = ce.cohort_definition_id
         INNER JOIN @vocab_schema.concept_ancestor ca1 on cec.concept_id = ca1.ancestor_concept_id
+        left join computed_cohorts cc ON cc.cohort_definition_id = ce.cohort_definition_id
         WHERE cec.include_descendants = 1
+        AND  cc.cohort_definition_id IS NULL -- only compute cohorts with no results
         {@only_add_subset} ? {AND ce.cohort_definition_id IN (@custom_exposure_subset) }
 
       ) custom_exposure_cohort
@@ -67,3 +77,5 @@ from #custom_eras
 
 truncate table #custom_eras;
 drop table #custom_eras;
+truncate table #computed_cohorts;
+drop table #computed_cohorts;
