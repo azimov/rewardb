@@ -46,7 +46,7 @@ importResultsFiles <- function(
   passwordCommand <- paste0("PGPASSWORD=", connectionDetails$password)
   if (.Platform$OS.type == "windows") {
     passwordCommand <- paste0("$env:", passwordCommand, ";")
-    command <- file.path(winPsqlPath, "psql.exe")
+    command <- paste0('"', file.path(winPsqlPath, "psql.exe"), '"')
 
     if (!file.exists(command)) {
       stop("Error, could not find psql")

@@ -58,8 +58,8 @@ from
     co1.person_id
     , ca1.ancestor_concept_id
 ) t1
-inner join @reference_schema.outcome_cohort_reference ocr ON (
-    t1.concept_ancestor_id = ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 1
+inner join @reference_schema.outcome_cohort_definition ocr ON (
+    ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 1
 )
 inner join
 (
@@ -120,8 +120,8 @@ from
     co1.person_id
     , ca1.ancestor_concept_id
 ) t1
-inner join @reference_schema.outcome_cohort_reference ocr ON (
-    t1.concept_ancestor_id = ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 0
+inner join @reference_schema.outcome_cohort_definition ocr ON (
+    ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 0
 )
 inner join
 (

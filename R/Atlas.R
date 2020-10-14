@@ -61,8 +61,8 @@ insertAtlasCohortRef <- function(
       schema = config$rewardbResultsSchema,
       cohort_definition_id = cohortDefinitionId,
       atlas_id = atlasId,
-      atlas_url = webApiUrl,
-      definition = RJSONIO::toJSON(cohortDefinition),
+      atlas_url = gsub("'","''", webApiUrl),
+      definition = gsub("'","''", RJSONIO::toJSON(cohortDefinition)),
       sql_definition = gsub("'","''", sqlDefinition),
     )
 

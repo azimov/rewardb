@@ -1,3 +1,4 @@
+CREATE SCHEMA rewardb_reference;
 CREATE SCHEMA vocabulary;
 
 CREATE TABLE vocabulary.concept (

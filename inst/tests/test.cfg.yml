@@ -14,33 +14,9 @@ rewardbDatabase:
 
 rewardbResultsSchema: "test"
 
-cdmDatabase:
-  schema: "eunomia"
-  vocabularySchema: "eunomia"
-  cemSchema: "cem"
-  # Generated tables
-  cohortDefinitionTable: "test_rewardb_cohort_definition_dev"
-  outcomeCohortDefinitionTable: "test_rewardb_outcome_cohort_definition_dev"
-  conceptSetDefinitionTable: "test_rewardb_conceptset_definition_dev"
-  mergedResultsTable: "test_rewardb_results_dev"
-  atlasCohortReferenceTable: "test_rewardb_atlas_cohort_reference"
-  atlasConceptReferenceTable: "test_rewardb_atlas_concept_reference"
-
 cdmDataSource:
   dbms: "postgresql"
   server: "localhost/rewardb"
   port: 54321
   user: "postgres"
   password: "postgres"
-
-dataSources:
-  eunomia:
-    sourceId: 0
-    database: "eunomia"
-    #this is where we'll pull drug and condition history for patients
-    cdmDatabaseSchema: "eunomia"
-    # drugEraSchema: "reward"
-    # will be created
-    cohortTable: "rewardb_exposure_cohort"
-    outcomeCohortTable: "rewardb_outcome_cohort"
-    outcomeSummaryTable: "rewardb_outcome_summary"

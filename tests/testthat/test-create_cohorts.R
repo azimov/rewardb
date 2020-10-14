@@ -22,23 +22,29 @@ exportReferenceTables(config)
 importReferenceTables(cdmConfig, zipFilePath, refFolder)
 
 
-unlink("export")
-unlink("rb-import")
+test_that("Full data generation on CDM", {
+  createCohorts(connection, cdmConfig)
 
-test_that("Full data generation and export", {
-  generateSccResults(cdmConfigPath)
-  importResultsFiles(config$rewardbDatabase, "test", "rewardb-export.zip")
-
-  # Assert that the tables contain data
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT count(*) as results_count FROM @results_schema.scc_result",
-    results_schema = config$rewardbResultsSchema,
+    "SELECT count(*) as cohort_count FROM @schema.@cohort_table",
+    schema = cdmConfig$resultSchema,
+    cohort_table = cdmConfig$tables$cohort
+  )
+  # Target cohorts should be created
+  expect_true(qdf$COHORT_COUNT[[1]] > 0)
+
+  createOutcomeCohorts(connection, cdmConfig)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT count(*) as cohort_count FROM @schema.@cohort_table",
+    schema = cdmConfig$resultSchema,
     cohort_table = cdmConfig$tables$outcomeCohort
   )
   # Outcome cohorts should be created
-  expect_true(qdf$RESULTS_COUNT[[1]] > 0)
+  expect_true(qdf$COHORT_COUNT[[1]] > 0)
 })
 
-unlink("export")
-unlink("rb-import")
+unlink(zipFilePath)
+unlink(refFolder)

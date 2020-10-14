@@ -1,21 +1,19 @@
 getAllExposureIds <- function(connection, config) {
-  sql <- "SELECT cohort_definition_id FROM @cohort_database_schema.@cohort_definition_table"
+  sql <- "SELECT cohort_definition_id FROM @reference_schema.cohort_definition"
   queryRes <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
-    cohort_database_schema = config$cdmDatabase$schema,
-    cohort_definition_table = config$cdmDatabase$cohortDefinitionTable
+    reference_schema = config$referenceSchema
   )
   return(queryRes$COHORT_DEFINITION_ID)
 }
 
 getAllOutcomeIds <- function(connection, config) {
-  sql <- "SELECT cohort_definition_id FROM @cohort_database_schema.@outcome_cohort_definition_table"
+  sql <- "SELECT cohort_definition_id FROM @reference_schema.outcome_cohort_definition"
   queryRes <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
-    cohort_database_schema = config$cdmDatabase$schema,
-    outcome_cohort_definition_table = config$cdmDatabase$outcomeCohortDefinitionTable
+    reference_schema = config$referenceSchema
   )
   return(queryRes$COHORT_DEFINITION_ID)
 }
@@ -44,12 +42,11 @@ SCC_RESULT_COL_NAMES <- c(
 runScc <- function(
   connection,
   config,
-  dataSource,
   exposureIds = NULL,
   outcomeIds = NULL,
   cores = parallel::detectCores() - 1
 ) {
-  ParallelLogger::logInfo(paste("Starting SCC analysis on", dataSource$database))
+  ParallelLogger::logInfo(paste("Starting SCC analysis on", config$database))
 
   if (is.null(exposureIds)) {
     exposureIds <- getAllExposureIds(connection, config)
@@ -59,15 +56,15 @@ runScc <- function(
   }
 
   sccResult <- SelfControlledCohort::runSelfControlledCohort(
-    connectionDetails = config$cdmDataSource,
-    cdmDatabaseSchema = dataSource$cdmDatabaseSchema,
+    connectionDetails = config$connectionDetails,
+    cdmDatabaseSchema = config$cdmSchema,
     cdmVersion = 5,
     exposureIds = exposureIds,
     outcomeIds = outcomeIds,
-    exposureDatabaseSchema = config$cdmDatabase$schema,
-    exposureTable = dataSource$cohortTable,
-    outcomeDatabaseSchema = config$cdmDatabase$schema,
-    outcomeTable = dataSource$outcomeCohortTable,
+    exposureDatabaseSchema = config$resultSchema,
+    exposureTable = config$tables$cohort,
+    outcomeDatabaseSchema = config$resultSchema,
+    outcomeTable = config$tables$outcomeCohort,
     # Settings made in original activesurvelance_dev package
     firstExposureOnly = TRUE,
     firstOutcomeOnly = TRUE,
@@ -86,19 +83,19 @@ runScc <- function(
     followupPeriod = 0,
     computeThreads = cores
   )
-  ParallelLogger::logInfo(paste("Completed SCC for", dataSource$database))
+  ParallelLogger::logInfo(paste("Completed SCC for", config$database))
   sccSummary <- base::summary(sccResult)
   sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
   sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
   sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
 
-  sccSummary$source_id <- dataSource$sourceId
+  sccSummary$source_id <- config$sourceId
   sccSummary$analysis_id <- 1
   sccSummary$c_at_risk <- sccSummary$numPersons
 
   sccSummary <- dplyr::rename(sccSummary, rewardb::SCC_RESULT_COL_NAMES)
 
-  ParallelLogger::logInfo(paste("Generated results for SCC", dataSource$database))
+  ParallelLogger::logInfo(paste("Generated results for SCC", config$database))
 
   return(sccSummary)
 }

@@ -45,7 +45,7 @@ test_that("build rewardb postgres db", {
 test_that("Add and remove atlas cohort references", {
 
   cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
-  sqlDefinition <- readr::read_lines(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
+  sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
   rewardb::insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(

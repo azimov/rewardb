@@ -31,20 +31,18 @@
 #' @param .runSCC perform self controlled cohort analysis and add results to the merged output db
 #' @param dataSources vector of strings or null - keys to cdm stores to use. By default all cdms are added for a given config file
 #' @export
-fullExecution <- function(
+generateSccResults <- function(
   configFilePath,
   .createExposureCohorts = TRUE,
   .createOutcomeCohorts = TRUE,
   .generateSummaryTables = TRUE,
   .runSCC = TRUE,
-  dataSources = NULL,
   logFileName = "rbDataBuild.log"
 ) {
   logger <- .getLogger(logFileName)
   # load config
   config <- yaml::read_yaml(configFilePath)
-  connection <- DatabaseConnector::connect(config$cdmDataSource)
-  dataSources <- .checkDataSources(dataSources, config)
+  connection <- DatabaseConnector::connect(config$connectionDetails)
 
   tryCatch(
     {
@@ -62,11 +60,11 @@ fullExecution <- function(
     # generate summary tables
     if (.generateSummaryTables) {
       ParallelLogger::logInfo("Generating cohort summary tables")
-      createSummaryTables(connection, config, dataSources)
+      #createSummaryTables(connection, config, dataSources)
     }
 
     getDataFileName <- function(dataSource) {
-        paste0(config$exportPath, "/scc-results-full-", dataSource$database, ".csv")
+        file.path(config$exportPath, paste0("scc-results-full-", config$database, ".csv"))
     }
 
     if (.runSCC) {
@@ -77,14 +75,13 @@ fullExecution <- function(
       }
 
       tableNames <- list()
-      for (dataSource in dataSources) {
-        createResultsTable(connection, config, dataSource)
-        sccSummary <- runScc(connection, config, dataSource)
-        dataFileName <- getDataFileName(dataSource)
-        ParallelLogger::logInfo(paste("Writing file", dataFileName))
-        write.csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, row.names = FALSE, na="")
-        tableNames[[basename(dataFileName)]] <- "scc_result"
-      }
+
+      #createResultsTable(connection, config, dataSource)
+      sccSummary <- runScc(connection, config)
+      dataFileName <- getDataFileName(config)
+      ParallelLogger::logInfo(paste("Writing file", dataFileName))
+      readr::write_excel_csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na="")
+      tableNames[[basename(dataFileName)]] <- "scc_result"
 
       ParallelLogger::logInfo("Exporting results zip")
       exportResults(config, tableNames = tableNames, csvPattern = "scc-results-full-*.csv")

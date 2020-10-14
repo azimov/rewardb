@@ -22,11 +22,26 @@ createCohorts <- function(connection, config) {
     vocab_schema = config$vocabularySchema,
     cohort_table = config$tables$cohort
   )
+
+  customExposureOptions <- list(
+    connection = connection,
+    sql = SqlRender::readSql(system.file("sql/cohorts", "addCustomExposureCohorts.sql", package = "rewardb")),
+    cdm_database_schema = config$cdmSchema,
+    reference_schema = config$referenceSchema,
+    drug_era_schema = config$cdmSchema, # Use cdm drug eras
+    cohort_database_schema = config$resultSchema,
+    vocab_schema = config$vocabularySchema,
+    cohort_table = config$tables$cohort,
+    only_add_subset = 0
+  )
   do.call(DatabaseConnector::renderTranslateExecuteSql, options)
+  do.call(DatabaseConnector::renderTranslateExecuteSql, customExposureOptions)
   # Custom drug eras
   if (!is.null(config$drugEraSchema)) {
     options$drug_era_schema <- config$drugEraSchema # Custom drug era tables live here
+    customExposureOptions$drug_era_schema <- config$drugEraSchema
     do.call(DatabaseConnector::renderTranslateExecuteSql, options)
+    do.call(DatabaseConnector::renderTranslateExecuteSql, customExposureOptions)
   }
 
 }
@@ -36,13 +51,14 @@ createCohorts <- function(connection, config) {
 #' @param config
 #' @param conceptSetId concept set in WebAPI
 #' @param dataSources dataSources to run cohort on
-addCustomExposureCohort <- function (connection, config, conceptSetIds, dataSource) {
+addCustomExposureCohorts <- function (connection, config, conceptSetIds) {
   # Add conceptSetId/name to custom_exposure_cohort table
   # Get all items, add them to the custom_exposure_concept table
    options <- list(
      connection = connection,
      sql = SqlRender::readSql(system.file("sql/cohorts", "addCustomExposureCohorts.sql", package = "rewardb")),
      cdm_database_schema = config$cdmSchema,
+     reference_schema = config$referenceSchema,
      drug_era_schema = config$cdmSchema, # Use cdm drug eras
      cohort_database_schema = config$resultSchema,
      vocab_schema = config$vocabularySchema,
@@ -51,9 +67,11 @@ addCustomExposureCohort <- function (connection, config, conceptSetIds, dataSour
      custom_exposure_subset = conceptSetIds
    )
    do.call(DatabaseConnector::renderTranslateExecuteSql, options)
-   # Custom drug eras
-   options$drug_era_schema <- config$drugEraSchema # Custom drug era tables live here
-   do.call(DatabaseConnector::renderTranslateExecuteSql, options)
+
+   if (!is.null(config$drugEraSchema)) {
+    options$drug_era_schema <- config$drugEraSchema # Custom drug era tables live here
+    do.call(DatabaseConnector::renderTranslateExecuteSql, options)
+  }
 }
 
 #' Create outcome cohorts in the CDM - this function can take a very very long time
@@ -61,6 +79,15 @@ addCustomExposureCohort <- function (connection, config, conceptSetIds, dataSour
 #' @param config
 #' @param dataSources dataSources to run cohort on
 createOutcomeCohorts <- function(connection, config) {
+
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortTable.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql = sql,
+    cohort_database_schema = config$resultSchema,
+    outcome_cohort_table = config$tables$outcomeCohort
+  )
+
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
       connection,
@@ -70,6 +97,22 @@ createOutcomeCohorts <- function(connection, config) {
       cohort_database_schema = config$resultSchema,
       outcome_cohort_table = config$tables$outcomeCohort
   )
+
+  atlaSql <- "SELECT * FROM @reference_schema.atlas_outcome_reference"
+
+  atlasCohorts <- DatabaseConnector::renderTranslateQuerySql(connection, atlaSql, reference_schema = config$referenceSchema)
+  apply(atlasCohorts, 1, function (cohortReference) {
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection,
+        sql = cohortReference["SQL_DEFINITION"],
+        cdm_database_schema = config$cdmSchema,
+        vocabulary_database_schema = config$vocabularySchema,
+        target_database_schema = config$resultSchema,
+        target_cohort_table = config$tables$outcomeCohort,
+        target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
+      )
+  })
+
 }
 
 #' create the custom drug eras, these are for drugs with nonstandard eras (e.g. where doeses aren't picked up by
