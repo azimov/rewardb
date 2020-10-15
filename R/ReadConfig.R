@@ -1,9 +1,9 @@
 #' Gets password from user. Ignored if REWARD_B_PASSWORD system env variable is set (e.g. in .Rprofile)
-getPasswordSecurely <- function() {
-    pass <- Sys.getenv("REWARD_B_PASSWORD")
+getPasswordSecurely <- function(.envVar = "REWARD_B_PASSWORD") {
+    pass <- Sys.getenv(".envVar")
     if(pass == "") {
         pass <- askpass::askpass("Please enter the reward b database password")
-        Sys.setenv("REWARD_B_PASSWORD" = pass)
+        Sys.setenv(.envVar = pass)
     }
     return(pass)
 }
@@ -23,18 +23,52 @@ getPasswordSecurely <- function() {
       }
     }
 
-    if (!is.null(appContext$target_concept_ids)) {
-      appContext$targetCohortIds <- appContext$target_concept_ids * 1000
-    }
-
-    if (!is.null(appContext$outcome_concept_ids)) {
-      appContext$outcomeCohortIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
-    }
-
     return(appContext)
 }
 
+getOutcomeCohortIds <- function (appContext, connection) {
+    if (!length(appContext$outcome_concept_ids) & !length(appContext$custom_outcome_cohort_ids)) {
+        return(NULL)
+    }
+
+    sql <- "
+    SELECT cohort_definition_id AS ID FROM @reference_schema.outcome_cohort_definition WHERE conceptset_id IN (@concept_ids)
+    UNION
+    SELECT cohort_definition_id AS ID FROM @reference_schema.atlas_outcome_reference WHERE atlas_id IN (@atlas_ids)
+    "
+    result <- DatabaseConnector::renderTranslateQuerySql(
+      connection,
+      sql,
+      reference_schema = appContext$globalConfig$rewardbResultsSchema,
+      concept_ids = if (length(appContext$outcome_concept_ids)) appContext$outcome_concept_ids else "NULL",
+      atlas_ids = if (length(appContext$custom_outcome_cohort_ids)) appContext$custom_outcome_cohort_ids else "NULL",
+    )
+    return(result$ID)
+}
+
+getTargetCohortIds <- function (appContext, connection) {
+    if (!length(appContext$target_concept_ids) & !length(appContext$custom_exposure_ids)) {
+        return(NULL)
+    }
+
+    sql <- "
+    SELECT cohort_definition_id AS ID FROM @reference_schema.cohort_definition WHERE drug_conceptset_id IN (@concept_ids)
+    UNION
+    SELECT cohort_definition_id AS ID FROM @reference_schema.custom_exposure WHERE concept_set_id IN (@custom_exposure_ids)
+    "
+    result <- DatabaseConnector::renderTranslateQuerySql(
+      connection,
+      sql,
+      reference_schema = appContext$globalConfig$rewardbResultsSchema,
+      concept_ids = if (length(appContext$outcome_concept_ids)) appContext$outcome_concept_ids else "NULL",
+      custom_exposure_ids = if (length(appContext$custom_exposure_ids)) appContext$custom_exposure_ids else "NULL",
+    )
+    return(result$ID)
+}
+
+
 #' Loads the application configuration and creates an application object
+#' @description
 #' By default, loads the database connections in to this object
 #' loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
 #' The idea is to allow shared configuration settings between the web app and any data processing tools
@@ -43,17 +77,15 @@ getPasswordSecurely <- function() {
 #' @keywords appContext
 #' @export
 #' @examples
-#' loadAppContext('config/config.dev.yml')
-loadAppContext <- function(configPath, createConnection = FALSE, useCdm = FALSE, .env=.GlobalEnv) {
+#' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
+loadAppContext <- function(configPath, globalConfigPath, .env=.GlobalEnv) {
+    config <- yaml::read_yaml(globalConfigPath)
     appContext <- .setDefaultOptions(yaml::read_yaml(configPath))
-    appContext$connectionDetails$password <- getPasswordSecurely()
-    if (createConnection) {
-      appContext$connection <- DatabaseConnector::connect(appContext$connectionDetails)
-    }
 
-    if (useCdm) {
-      appContext$cdmConnection <- DatabaseConnector::connect(appContext$resultsDatabase$cdmDataSource)
-    }
+    appContext$globalConfig <- config
+
+    appContext$connectionDetails <- config$connectionDetails
+    appContext$connectionDetails$password <- getPasswordSecurely()
 
     class(appContext) <- append(class(appContext), "rewardb::appContext")
     .env$appContext <- appContext

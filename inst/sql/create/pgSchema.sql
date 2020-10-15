@@ -46,9 +46,9 @@ create table @schema.concept_set_definition
 	CONCEPTSET_ID bigint,
 	conceptset_name varchar(1000),
 	concept_id bigint,
-	isExcluded INT,
-	includeDescendants INT,
-	includeMapped INT
+	is_excluded INT,
+	include_Descendants INT,
+	include_Mapped INT
 )
 ;
 
@@ -133,9 +133,9 @@ INSERT INTO @schema.concept_set_definition (
     CONCEPT_ID,
     CONCEPTSET_NAME,
     CONCEPTSET_ID,
-    ISEXCLUDED,
-    INCLUDEDESCENDANTS,
-    INCLUDEMAPPED
+    IS_EXCLUDED,
+    INCLUDE_DESCENDANTS,
+    INCLUDE_MAPPED
 )
 SELECT DISTINCT concept_id , concept_name, concept_id, 0, 1, 0
     from @vocabulary_schema.concept

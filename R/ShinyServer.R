@@ -401,12 +401,12 @@ serverInstance <- function(input, output, session) {
 }
 
 #' Launch the REWARD-B Shiny app
-#' @param configPath path to configuration file. This is loaded in to the local environment with the appContext variable
+#' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
 #' @details
 #' Launches a Shiny app for a given configuration file
 #' @export
-launchDashboard <- function (configPath) {
+launchDashboard <- function (appConfigPath, globalConfigPath) {
   e <- environment()
-  e$appContext <- rewardb::loadAppContext(configPath)
+  e$appContext <- loadAppContext(appConfigPath, globalConfigPath)
   shiny::shinyApp(server=serverInstance, dashboardUi, enableBookmarking = "server")
 }

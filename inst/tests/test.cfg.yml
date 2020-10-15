@@ -1,6 +1,4 @@
 webApiUrl: "https://epi.jnj.com:8443/WebAPI"
-# These will be automatically included on any database rebuild. Other cohorts can still be added manually later
-maintinedAtlasCohortList: [ 12047 ]
 testMode: true
 resultsTablePrefix: reward_results_dev
 exportPath: "export"
@@ -13,10 +11,5 @@ rewardbDatabase:
   password: "postgres"
 
 rewardbResultsSchema: "test"
-
-cdmDataSource:
-  dbms: "postgresql"
-  server: "localhost/rewardb"
-  port: 54321
-  user: "postgres"
-  password: "postgres"
+vocabularySchema: "vocabulary"
+cemSchema: "cem"
