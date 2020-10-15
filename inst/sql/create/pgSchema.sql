@@ -44,7 +44,7 @@ CREATE TABLE cem.matrix_summary (
 create table @schema.concept_set_definition
 (
 	CONCEPTSET_ID bigint,
-	conceptset_name varchar(1000),
+	concept_name varchar(1000),
 	concept_id bigint,
 	is_excluded INT,
 	include_Descendants INT,
@@ -59,7 +59,6 @@ create table @schema.cohort_definition
 	, cohort_definition_name varchar(1000)
 	,	short_name varchar(1000)
 	,	drug_CONCEPTSET_ID bigint
-	,	indication_CONCEPTSET_ID bigint
 	,	target_cohort int   	/*1 - target cohort, 0- not target (could be used as comparator, -1 - other)*/
 	, subgroup_cohort int   /*tells if cohort is a subgroup of interest: 0-none, 1-pediatrics, 2-elderly, 3-pregnant women, 4-renal impairment,5-hepatic impairment*/
 	, ATC_flg int           /* 1- exposure is ATC 4th level, 0-exposure is ingredient 2 - custom exposure class */
@@ -92,7 +91,7 @@ CREATE TABLE @schema.atlas_outcome_reference (
 );
 
 CREATE TABLE @schema.atlas_concept_reference (
-    COHORT_DEFINITION_ID BIGINT,
+    COHORT_DEFINITION_ID INT,
     CONCEPT_ID BIGINT,
     INCLUDE_DESCENDANTS INT,
     IS_EXCLUDED INT,
@@ -131,7 +130,7 @@ CREATE TABLE @schema.custom_exposure_concept (
 DELETE FROM @schema.concept_set_definition;
 INSERT INTO @schema.concept_set_definition (
     CONCEPT_ID,
-    CONCEPTSET_NAME,
+    CONCEPT_NAME,
     CONCEPTSET_ID,
     IS_EXCLUDED,
     INCLUDE_DESCENDANTS,
@@ -146,7 +145,6 @@ INSERT INTO @schema.cohort_definition (
     COHORT_DEFINITION_NAME,
     SHORT_NAME,
     DRUG_CONCEPTSET_ID,
-    INDICATION_CONCEPTSET_ID,
     TARGET_COHORT,
     SUBGROUP_COHORT,
     ATC_FLG
@@ -155,7 +153,6 @@ SELECT DISTINCT
     CONCEPT_NAME,
     CONCAT(VOCABULARY_ID, ' - ', CONCEPT_NAME),
     CONCEPT_ID,
-    0,
     0,
     0,
     CASE WHEN vocabulary_id = 'ATC' THEN 1 else 0 END AS ATC_FLAG
