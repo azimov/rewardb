@@ -44,7 +44,7 @@ dashboardUi  <- function (request) {
               paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates"),
               downloadButton("downloadCalibrationPlot", "Save")
             ),
-            p(textOutput("nullDistribution"))
+            DT::dataTableOutput(("nullDistribution"))
           )
         ),
         width = 12

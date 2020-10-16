@@ -9,6 +9,7 @@ serverInstance <- function(input, output, session) {
     library(scales, warn.conflicts=FALSE)
     library(DT, warn.conflicts=FALSE)
     library(foreach, warn.conflicts=FALSE)
+    library(dplyr, warn.conflicts=FALSE)
 
     # Simple wrapper for always ensuring that database connection is opened and closed
     # Postgres + DatabaseConnector has problems with connections hanging around
@@ -29,6 +30,8 @@ serverInstance <- function(input, output, session) {
         writeLines("Closing connection")
         DatabaseConnector::disconnect(dbConn)
     })
+
+    dataSources <- queryDb("SELECT source_id, source_name FROM @schema.data_source;")
 
     niceColumnName <- list(
       SOURCE_NAME = "Database",
@@ -377,14 +380,24 @@ serverInstance <- function(input, output, session) {
 
     getNullDist <- function () {
       s <- filteredTableSelected()
-      null <- c("mean" = 99, "sd" = 100)
+      null <- data.frame()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
       if(!is.na(treatment)) {
         negatives <- getNegativeControlSubset(treatment, outcome)
-        null <- EmpiricalCalibration::fitNull(log(negatives$RR), negatives$SE_LOG_RR)
+        nulls <- data.frame()
+        for (source in unique(negatives$SOURCE_ID)) {
+          subset <- negatives[negatives$SOURCE_ID == source,]
+          null <- EmpiricalCalibration::fitNull(log(subset$RR), subset$SE_LOG_RR)
+          df <- data.frame(
+            "SOURCE_ID" = source,
+            "mean" = round(exp(null[["mean"]]), 3),
+            "sd" = round(exp(null[["sd"]]), 3)
+          )
+          nulls <- rbind(nulls, df)
+        }
       }
-      return(null)
+      return(nulls)
     }
 
     output$calibrationPlot <- plotly::renderPlotly({
@@ -392,14 +405,15 @@ serverInstance <- function(input, output, session) {
         return(plotly::ggplotly(plot))
     })
 
-    output$nullDistribution <- shiny::renderText({
+    output$nullDistribution <- DT::renderDataTable({
       null <- getNullDist()
-      return(
-        paste(
-          "Null distribution mean:", round(exp(null["mean"]), 3),
-          "std:", round(exp(null["sd"]), 3)
-        )
+      output <- DT::datatable(
+        inner_join(dataSources, null, by="SOURCE_ID"),
+        options = list(dom = 't'),
+        rownames = FALSE,
+        caption = "Table: null distribution standaard deviation and mean by data source"
       )
+      return(output)
     })
 
     output$downloadCalibrationPlot <- downloadHandler(
