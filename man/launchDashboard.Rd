@@ -4,10 +4,10 @@
 \alias{launchDashboard}
 \title{Launch the REWARD-B Shiny app}
 \usage{
-launchDashboard(configPath)
+launchDashboard(appConfigPath, globalConfigPath)
 }
 \arguments{
-\item{configPath}{path to configuration file. This is loaded in to the local environment with the appContext variable}
+\item{appConfigPath}{path to configuration file. This is loaded in to the local environment with the appContext variable}
 }
 \description{
 Launch the REWARD-B Shiny app

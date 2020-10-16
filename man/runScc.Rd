@@ -7,9 +7,9 @@
 runScc(
   connection,
   config,
-  dataSource,
   exposureIds = NULL,
   outcomeIds = NULL,
+  removeNullValues = FALSE,
   cores = parallel::detectCores() - 1
 )
 }

@@ -7,6 +7,11 @@ buildPgDatabase(configFilePath = configFilePath)
 cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 1, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
+
+cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
+sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
+insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
+
 conceptSetId <- 11933
 conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
 insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
@@ -28,5 +33,16 @@ test_that("Dashboard creation works", {
   appContext <- loadAppContext(system.file("tests", "test.dashboard.yml", package = "rewardb"), configFilePath)
   expect_is(appContext, "rewardb::appContext")
   createDashSchema(appContext = appContext, connection = connection)
+
+  addCemEvidence(appContext, connection)
+
+  computeMetaAnalysis(appContext, connection)
+
+  .removeCalibratedResults(appContext, connection)
+  if (appContext$useExposureControls) {
+    calibrateOutcomes(appContext, connection)
+  } else {
+    calibrateTargets(appContext, connection)
+  }
 
 })

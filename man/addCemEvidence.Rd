@@ -3,10 +3,9 @@
 \name{addCemEvidence}
 \alias{addCemEvidence}
 \title{ing a CEM source finds any evidence related to conditions and exposures
-This is used for the automated construction of negative control sets and the indication labels
-TODO: test and improve this logic and move to its own R file}
+This is used for the automated construction of negative control sets and the indication labels}
 \usage{
-addCemEvidence(appContext)
+addCemEvidence(appContext, connection)
 }
 \arguments{
 \item{appContext}{rewardb app context}
@@ -14,5 +13,4 @@ addCemEvidence(appContext)
 \description{
 ing a CEM source finds any evidence related to conditions and exposures
 This is used for the automated construction of negative control sets and the indication labels
-TODO: test and improve this logic and move to its own R file
 }

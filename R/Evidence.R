@@ -11,6 +11,7 @@ getMappedControls <- function(
   targetCohortTable,
   outcomeCohortTable,
   schema,
+  vocabularySchema,
   summaryTable = "matrix_summary"
 ) {
   sql <- SqlRender::readSql(system.file("sql/queries", "negativeControlsCem.sql", package = "rewardb"))
@@ -18,85 +19,63 @@ getMappedControls <- function(
     connection,
     sql,
     schema = schema,
+    vocab_schema = vocabularySchema,
     target_cohort_table = targetCohortTable,
     outcome_cohort_table = outcomeCohortTable,
     summary_table = summaryTable
   )
 }
 
-getTargetConcepts <- function(connection, schema, cohortDefinitionTable, targetCohortIds, atlasTargetIds) {
+getTargetConcepts <- function(connection, schema, targetCohortIds) {
   sql <- "
 SELECT cohort_definition_id as target_cohort_id, drug_conceptset_id as target_concept_id, ATC_flg as is_atc_4
-FROM @schema.@target_cohort_table
-{@use_subset_targets} ? {WHERE cohort_definition_id IN (@target_cohort_ids)}
+FROM @schema.cohort_definition
+WHERE ATC_flg IN (0, 1)
+{@use_subset_targets} ? {AND cohort_definition_id IN (@target_cohort_ids)}
 UNION
-SELECT CUSTOM_EXPOSURE_ID as target_cohort_id, concept_id as target_concept_id, 0 as is_atc_4
+SELECT cohort_definition_id as target_cohort_id, concept_id as target_concept_id, 0 as is_atc_4
 FROM @schema.custom_exposure_concept
-{@use_subset_atlas_targets} ? {WHERE CUSTOM_EXPOSURE_ID IN (@atlas_target_cohort_ids)}
+{@use_subset_targets} ? {WHERE cohort_definition_id IN (@target_cohort_ids)}
   "
-  useTargets <- !is.null(targetCohortIds) | !is.null(atlasTargetIds)
-  if (is.null(targetCohortIds)) {
-    targetCohortIds <- "NULL"
-  }
-
-  if (is.null(atlasTargetIds)) {
-    atlasTargetIds <- "NULL"
-  }
-
+  useTargets <- !is.null(targetCohortIds)
   res <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
     schema = schema,
-    target_cohort_table = cohortDefinitionTable,
-    # select from "WHERE IN (NULL)" is a valid case we want
     target_cohort_ids = targetCohortIds,
-    atlas_target_cohort_ids = atlasTargetIds,
-    use_subset_targets = useTargets,
-    use_subset_atlas_targets = useTargets
+    use_subset_targets = useTargets
   )
 }
 
 
-getOutcomeConcepts <- function(connection, schema, outcomeCohortDefinitionTable, atlasConceptReferenceTable, outcomeCohortIds, atlasOutcomeIds) {
+getOutcomeConcepts <- function(connection, schema, outcomeCohortIds) {
   sql <- "
-  SELECT cohort_definition_id as outcome_cohort_id, conceptset_id as outcome_concept_id
-  FROM @schema.@outcome_cohort_table
-  WHERE conceptset_id != 99999999
-  {@use_subset_outcomes} ? {AND cohort_definition_id IN (@outcome_cohort_ids)}
-  
-  UNION 
-  
-  SELECT cohort_definition_id as outcome_cohort_id, conceptset_id as outcome_concept_id
-  FROM @schema.@outcome_cohort_table
-  WHERE conceptset_id != 99999999
-  {@use_subset_outcomes} ? {AND cohort_definition_id IN (@outcome_cohort_ids)}
-  
-  UNION
-  
-  SELECT COHORT_DEFINITION_ID as outcome_cohort_id, CONCEPT_ID as outcome_concept_id
-  FROM @schema.@atlas_outcome_concept_table
-  {@use_subset_atlas_outcomes} ? {WHERE cohort_definition_id IN (@atlas_outcome_cohort_ids)}
+SELECT cohort_definition_id as outcome_cohort_id, conceptset_id as outcome_concept_id
+FROM @schema.outcome_cohort_definition
+WHERE OUTCOME_TYPE IN (0,1)
+{@use_subset_outcomes} ? {AND cohort_definition_id IN (@outcome_cohort_ids)}
+
+UNION
+
+SELECT cohort_definition_id as outcome_cohort_id, conceptset_id as outcome_concept_id
+FROM @schema.outcome_cohort_definition
+WHERE OUTCOME_TYPE IN (0,1)
+{@use_subset_outcomes} ? {AND cohort_definition_id IN (@outcome_cohort_ids)}
+
+UNION
+
+SELECT COHORT_DEFINITION_ID as outcome_cohort_id, CONCEPT_ID as outcome_concept_id
+FROM @schema.atlas_concept_reference
+{@use_subset_outcomes} ? {WHERE cohort_definition_id IN (@outcome_cohort_ids)}
     "
-  useOutcomeIds <- (!is.null(outcomeCohortIds) | !is.null(atlasOutcomeIds))
-  if (is.null(outcomeCohortIds)) {
-    outcomeCohortIds <- "NULL"
-  }
-
-  if (is.null(atlasOutcomeIds)) {
-    atlasOutcomeIds <- "NULL"
-  }
-
+  useOutcomeIds <- !is.null(outcomeCohortIds)
   res <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
     schema = schema,
-    outcome_cohort_table = outcomeCohortDefinitionTable,
-    atlas_outcome_concept_table = atlasConceptReferenceTable,
     # select from "WHERE IN (NULL)" is a valid case we want
     outcome_cohort_ids = outcomeCohortIds,
-    atlas_outcome_cohort_ids = atlasOutcomeIds,
-    use_subset_outcomes = useOutcomeIds,
-    use_subset_atlas_outcomes = useOutcomeIds
+    use_subset_outcomes = useOutcomeIds
   )
 }
 
@@ -106,31 +85,27 @@ getStudyControls <- function(
   connection,
   schema,
   cemSchema,
-  cohortDefinitionTable,
-  outcomeCohortDefinitionTable,
-  atlasConceptReferenceTable,
+  vocabularySchema,
   targetCohortIds = NULL,
-  outcomeCohortIds = NULL,
-  atlasOutcomeIds = NULL,
-  atlasTargetIds = NULL
+  outcomeCohortIds = NULL
 ) {
-  targetConceptMapping <- getTargetConcepts(connection, schema, cohortDefinitionTable, targetCohortIds, atlasTargetIds)
+  targetConceptMapping <- getTargetConcepts(connection, schema, targetCohortIds)
   DatabaseConnector::insertTable(connection, "#target_cohort_table", targetConceptMapping, tempTable = TRUE)
 
-  outcomeConceptMapping <- getOutcomeConcepts(connection, schema, outcomeCohortDefinitionTable, atlasConceptReferenceTable, outcomeCohortIds, atlasOutcomeIds)
+  outcomeConceptMapping <- getOutcomeConcepts(connection, schema, outcomeCohortIds)
   DatabaseConnector::insertTable(connection, "#outcome_cohort_table", outcomeConceptMapping, tempTable = TRUE)
 
   mappedControls <- getMappedControls(
     connection,
     "#target_cohort_table",
     "#outcome_cohort_table",
-    cemSchema
+    cemSchema,
+    vocabularySchema
   )
 
-  if (is.null(targetCohortIds) & is.null(atlasTargetIds)) {
-    outcomeIds <- append(atlasOutcomeIds, outcomeCohortIds)
+  if (is.null(targetCohortIds)) {
     mappedCounts <- data.frame(
-      outcome_cohort_id = outcomeIds,
+      outcome_cohort_id = outcomeCohortIds,
       count = sapply(outcomeIds, function(id) { sum(mappedControls$OUTCOME_COHORT_ID == id) })
     )
 
@@ -145,6 +120,7 @@ getStudyControls <- function(
         connection,
         sql,
         schema = cemSchema,
+        vocab_schema = vocabularySchema,
         summary_table = summaryTable,
         outcome_cohort_table = "#outcome_cohort_table",
         target_cohort_table = "#target_cohort_table"

@@ -38,19 +38,20 @@ addCemEvidence <- function(appContext, connection) {
     connection,
     schema = appContext$globalConfig$rewardbResultsSchema,
     cemSchema = appContext$globalConfig$cemSchema,
-    cohortDefinitionTable = appContext$resultsDatabase$cohortDefinitionTable,
-    outcomeCohortDefinitionTable = appContext$resultsDatabase$outcomeCohortDefinitionTable,
-    atlasConceptReferenceTable = appContext$resultsDatabase$atlasConceptMapping,
+    vocabularySchema = appContext$globalConfig$vocabularySchema,
     targetCohortIds = getOutcomeCohortIds(appContext, connection),
-    outcomeCohortIds = getTargetCohortIds(appContext, connection),
-    atlasOutcomeIds = appContext$custom_outcome_cohort_ids,
-    atlasTargetIds = appContext$custom_exposure_ids
+    outcomeCohortIds = getTargetCohortIds(appContext, connection)
   )
 
   ParallelLogger::logInfo(paste("Found", nrow(evidenceConcepts), "mappings"))
-
-  DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".negative_control"), evidenceConcepts[evidenceConcepts$EVIDENCE == 0,])
-  DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".positive_indication"), evidenceConcepts[evidenceConcepts$EVIDENCE == 1,])
+  negatives <- evidenceConcepts[evidenceConcepts$EVIDENCE == 0,]
+  positives <- evidenceConcepts[evidenceConcepts$EVIDENCE == 0,]
+  if (nrow(negatives) == 0 | nrow(positives) == 0) {
+    ParallelLogger::logWarn("Zero control/indication references found. Likely due to a cohort mapping problem")
+  } else {
+    DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".negative_control"), negatives)
+    DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".positive_indication"), positives)
+  }
 }
 
 #' Perform meta-analysis on data sources
@@ -89,7 +90,7 @@ metaAnalysis <- function(table) {
 
 #' Runs and saves metanalayis on data
 #' @param appContext
-performMetaAnalysis <- function(appContext, connection) {
+computeMetaAnalysis <- function(appContext, connection) {
   library(dplyr, warn.conflicts = FALSE)
   fullResults <- DatabaseConnector::renderTranslateQuerySql(
     connection,
@@ -108,8 +109,8 @@ performMetaAnalysis <- function(appContext, connection) {
   results$STUDY_DESIGN <- "scc"
   results$CALIBRATED <- 0
 
-  resultsTable <- paste(appContext$short_name, ".result")
-  DatabaseConnector::dbAppendTable(appContext$connection, resultsTable, data.frame(results))
+  resultsTable <- paste0(appContext$short_name, ".result")
+  DatabaseConnector::dbAppendTable(connection, resultsTable, results)
 }
 
 
@@ -128,18 +129,17 @@ buildFromConfig <- function(filePath, globalConfigPath, performCalibration = TRU
   message("Adding negative controls from CEM")
   addCemEvidence(appContext, connection)
   message("Running meta analysis")
-  performMetaAnalysis(appContext, connection)
-
-  DatabaseConnector::disconnect(connection)
+  computeMetaAnalysis(appContext, connection)
 
   if (performCalibration) {
-    .removeCalibratedResults(appContext)
+    .removeCalibratedResults(appContext, connection)
     if (appContext$useExposureControls) {
       message("Calibrating outcomes")
-      calibrateOutcomes(appContext)
+      calibrateOutcomes(appContext, connection)
     } else {
       message("Calibrating targets")
-      calibrateTargets(appContext)
+      calibrateTargets(appContext, connection)
     }
   }
+  DatabaseConnector::disconnect(connection)
 }

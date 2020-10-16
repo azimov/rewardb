@@ -4,7 +4,7 @@
 \alias{getPasswordSecurely}
 \title{Gets password from user. Ignored if REWARD_B_PASSWORD system env variable is set (e.g. in .Rprofile)}
 \usage{
-getPasswordSecurely()
+getPasswordSecurely(.envVar = "REWARD_B_PASSWORD")
 }
 \description{
 Gets password from user. Ignored if REWARD_B_PASSWORD system env variable is set (e.g. in .Rprofile)

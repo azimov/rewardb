@@ -44,6 +44,7 @@ runScc <- function(
   config,
   exposureIds = NULL,
   outcomeIds = NULL,
+  removeNullValues = FALSE,
   cores = parallel::detectCores() - 1
 ) {
   ParallelLogger::logInfo(paste("Starting SCC analysis on", config$database))
@@ -87,7 +88,10 @@ runScc <- function(
   sccSummary <- base::summary(sccResult)
   sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
   sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
-  sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
+
+  if (removeNullValues) {
+    sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
+  }
 
   sccSummary$source_id <- config$sourceId
   sccSummary$analysis_id <- 1

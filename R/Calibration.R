@@ -142,14 +142,12 @@ computeCalibratedRows <- function (positives, negatives, idCol, calibrationType 
   return(result)
 }
 
-.removeCalibratedResults <- function(appContext) {
-  connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+.removeCalibratedResults <- function(appContext, connection) {
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     "DELETE FROM @schema.result r WHERE r.calibrated = 1",
      schema = appContext$short_name
   )
-  DatabaseConnector::disconnect(connection)
 }
 
 #' Compute the calibrated results for cohort targets
@@ -157,11 +155,9 @@ computeCalibratedRows <- function (positives, negatives, idCol, calibrationType 
 #' @param appContext takes a rewardb application context
 #' @param targetCohortIds - these are the cohort ids in the db and (currently) must be specified manually. TODO: remove
 #' @export
-calibrateTargets <- function(appContext) {
+calibrateTargets <- function(appContext, connection) {
   # get negative control data rows
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-
-  controlOutcomes <- getOutcomeControls(appContext, dbConn)
+  controlOutcomes <- getOutcomeControls(appContext, connection)
   # get positives
   positives <- getUncalibratedOutcomes(appContext)
   message(paste("calibrating", nrow(positives) ,"outcomes"))
@@ -192,34 +188,17 @@ calibrateTargets <- function(appContext) {
 
   resultSetAtlas <- data.frame(resultSetAtlas[,!(names(resultSetAtlas) %in% c("OUTCOME_TYPE")) ])
 
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSetAtlas)
-  DatabaseConnector::disconnect(dbConn)
+  DatabaseConnector::dbAppendTable(connection, paste0(appContext$short_name, ".result"), resultSetAtlas)
 }
-
-#' Compute the calibrated results for custom cohort outcomes
-#' Requires negative control cohorts to be set
-#' @param appContext takes a rewardb application context
-#' @param targetCohortIds - these are the cohort ids in the db and (currently) must be specified manually. TODO: remove
-#' @export
-calibrateCustomCohorts <- function(appContext) {
-  # get negative control data rows
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  controlOutcomes <- getOutcomeControls(appContext, dbConn)
-
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
-  DatabaseConnector::disconnect(dbConn)
-}
-
 
 #' Compute the calibrated results for cohort outcomes
 #' Requires negative control cohorts to be set
 #' @param appContext takes a rewardb application context
 #' @export
-calibrateOutcomes <- function(appContext) {
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+calibrateOutcomes <- function(appContext, connection) {
   outcomeIds <- append(appContext$outcome_concept_ids * 100, appContext$outcome_concept_ids * 100 + 1)
   # get negative control data rows
-  controlExposures <- getExposureControls(appContext, dbConn, outcomeIds)
+  controlExposures <- getExposureControls(appContext, connection, outcomeIds)
   # get positives
   positives <- getUncalibratedExposures(appContext, outcomeIds)
   print(paste("calibrating", nrow(positives) ,"exposures"))
@@ -235,10 +214,10 @@ calibrateOutcomes <- function(appContext) {
     ], idCol = "TARGET_COHORT_ID"), .keep=TRUE)
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
 
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), resultSet)
+  DatabaseConnector::dbAppendTable(connection, paste0(appContext$short_name, ".result"), resultSet)
 
   # get negative control data rows -- type 0 outcomes only
-  controlExposures <- getExposureControls(appContext, dbConn, appContext$custom_outcome_cohort_ids)
+  controlExposures <- getExposureControls(appContext, connection, appContext$custom_outcome_cohort_ids)
   positives <- getUncalibratedAtlasCohorts(appContext)
 
   print(paste("calibrating", nrow(positives) ,"exposures"))
@@ -252,6 +231,6 @@ calibrateOutcomes <- function(appContext) {
     ], idCol = "TARGET_COHORT_ID"), .keep=TRUE)
 
   resultSet <- data.frame(atlasResultSet[,!(names(atlasResultSet) %in% c("OUTCOME_TYPE")) ])
-  DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), atlasResultSet)
-  DatabaseConnector::disconnect(dbConn)
+  DatabaseConnector::dbAppendTable(connection, paste0(appContext$short_name, ".result"), atlasResultSet)
+
 }

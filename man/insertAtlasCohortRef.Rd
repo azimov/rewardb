@@ -11,8 +11,8 @@ insertAtlasCohortRef(
   config,
   atlasId,
   webApiUrl = NULL,
-  .cohortDefinition = NULL,
-  .sqlDefinition = NULL
+  cohortDefinition = NULL,
+  sqlDefinition = NULL
 )
 }
 \arguments{

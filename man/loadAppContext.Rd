@@ -2,17 +2,9 @@
 % Please edit documentation in R/ReadConfig.R
 \name{loadAppContext}
 \alias{loadAppContext}
-\title{Loads the application configuration and creates an application object
-By default, loads the database connections in to this object
-loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
-The idea is to allow shared configuration settings between the web app and any data processing tools}
+\title{Loads the application configuration and creates an application object}
 \usage{
-loadAppContext(
-  configPath,
-  createConnection = FALSE,
-  useCdm = FALSE,
-  .env = .GlobalEnv
-)
+loadAppContext(configPath, globalConfigPath, .env = .GlobalEnv)
 }
 \arguments{
 \item{configPath}{is a yaml file for the application configuration}
@@ -20,12 +12,11 @@ loadAppContext(
 \item{create}{the database connections for this app - defaults to true}
 }
 \description{
-Loads the application configuration and creates an application object
 By default, loads the database connections in to this object
 loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
 The idea is to allow shared configuration settings between the web app and any data processing tools
 }
 \examples{
-loadAppContext('config/config.dev.yml')
+loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
 }
 \keyword{appContext}

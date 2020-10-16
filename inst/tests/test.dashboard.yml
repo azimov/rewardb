@@ -2,6 +2,6 @@ name: eunomia test
 short_name: test_dashboard
 description: 'Just a test'
 outcome_concept_ids: [192671] # These are disease concepts
-custom_outcome_cohort_ids: [12047] # These are Atlas identifiers
+custom_outcome_cohort_ids: [12047, 1] # These are Atlas identifiers
 target_concept_ids: ~
 useExposureControls: True

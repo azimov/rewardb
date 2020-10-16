@@ -4,7 +4,7 @@
 \alias{createOutcomeCohorts}
 \title{Create outcome cohorts in the CDM - this function can take a very very long time}
 \usage{
-createOutcomeCohorts(connection, config, dataSources)
+createOutcomeCohorts(connection, config)
 }
 \arguments{
 \item{connection}{DatabaseConnector connection to cdm}

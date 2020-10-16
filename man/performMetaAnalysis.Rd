@@ -4,7 +4,7 @@
 \alias{performMetaAnalysis}
 \title{Runs and saves metanalayis on data}
 \usage{
-performMetaAnalysis(appContext)
+performMetaAnalysis(appContext, connection)
 }
 \description{
 Runs and saves metanalayis on data

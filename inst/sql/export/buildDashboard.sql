@@ -105,7 +105,7 @@ SELECT
     cohort_definition_id as outcome_cohort_id,
     conceptset_id as condition_concept_id
 FROM @results_database_schema.outcome_cohort_definition
-WHERE conceptset_id != 999999
+WHERE conceptset_id != 99999999
 {@outcome_cohort_ids_length} ? {AND cohort_definition_id in (@outcome_cohort_ids)};
 
 

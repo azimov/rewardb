@@ -6,7 +6,7 @@
 Requires the rewardb results to be generated already.
 This exports the data to a db backend and allows the config file to be used to run the shiny dashboard}
 \usage{
-buildFromConfig(filePath, performCalibration = TRUE)
+buildFromConfig(filePath, globalConfigPath, performCalibration = TRUE)
 }
 \arguments{
 \item{filePath}{- path to a yaml configuration file used}
