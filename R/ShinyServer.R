@@ -301,19 +301,23 @@ serverInstance <- function(input, output, session) {
         if (length(outcome)) {
             updateTabsetPanel(session, "mainPanel", "Detail")
             sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-            uncalibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
-            calibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=1)
 
-            if (nrow(calibratedTable)) {
+            calibOpts <- if (length(input$forestPlotCalibrated)) input$forestPlotCalibrated else c(0,1)
+
+            table <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=calibOpts)
+            calibratedTable <- table[table$CALIBRATED == 1, ]
+            uncalibratedTable <- table[table$CALIBRATED == 0, ]
+
+            if (nrow(calibratedTable) & nrow(uncalibratedTable)) {
                 calibratedTable$calibrated = "Calibrated"
                 uncalibratedTable$calibrated = "Uncalibrated"
                 uncalibratedTable$SOURCE_NAME <- paste0(uncalibratedTable$SOURCE_NAME, "\n uncalibrated")
                 calibratedTable$SOURCE_NAME <- paste0(calibratedTable$SOURCE_NAME, "\n Calibrated")
-                table <- rbind(uncalibratedTable[order(uncalibratedTable$SOURCE_ID, decreasing = TRUE), ],
-                               calibratedTable[order(calibratedTable$SOURCE_ID, decreasing = TRUE), ])
-                return(table)
             }
-            return(uncalibratedTable)
+
+            table <- rbind(uncalibratedTable[order(uncalibratedTable$SOURCE_ID, decreasing = TRUE), ],
+                               calibratedTable[order(calibratedTable$SOURCE_ID, decreasing = TRUE), ])
+            return(table)
         }
         return(data.frame())
     })
@@ -369,6 +373,7 @@ serverInstance <- function(input, output, session) {
           null <- EmpiricalCalibration::fitNull(log(subset$RR), subset$SE_LOG_RR)
           df <- data.frame(
             "SOURCE_ID" = source,
+            "Controls used" = nrow(subset),
             "mean" = round(exp(null[["mean"]]), 3),
             "sd" = round(exp(null[["sd"]]), 3)
           )
@@ -383,9 +388,9 @@ serverInstance <- function(input, output, session) {
       null <- getNullDist()
       output <- DT::datatable(
         null,
-        options = list(dom = 't'),
+        options = list(dom = 't', columnDefs = list(list(visible=FALSE, targets=c(0)))),
         rownames = FALSE,
-        caption = "Table: null distribution standaard deviation and mean by data source"
+        caption = "Table: null distribution mean and standaard deviation by data source. Select rows to filter in above plot."
       )
       return(output)
     })
