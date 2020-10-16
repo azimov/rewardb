@@ -30,10 +30,31 @@ dashboardUi  <- function (request) {
           tabPanel(
             "Forest plot",
             withSpinner(plotly::plotlyOutput("forestPlot", height = 500)),
-            div(
-              strong("Figure 1."),
-              paste("Forest plot of effect estimates from each database"),
-              downloadButton("downloadForestPlot", "Save")
+            hr(),
+            fluidRow(
+              box(
+                strong("Figure 1."),
+                paste("Forest plot of effect estimates from each database"),
+                downloadButton("downloadForestPlot", "Save"),
+                width = 6
+              ),
+              box(
+                pickerInput(
+                  "forestPlotCalibrated",
+                  "Display:",
+                  choices = list(
+                    "Uncalibrated results" = 0,
+                    "Calibrated Results" = 1
+                  ),
+                  selected = c(0, 1),
+                  options = shinyWidgets::pickerOptions(
+                    actionsBox = TRUE,
+                    noneSelectedText = ""
+                  ),
+                  multiple = TRUE
+                ),
+                width = 6
+              )
             )
           ),
           tabPanel(
@@ -44,7 +65,7 @@ dashboardUi  <- function (request) {
               paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates"),
               downloadButton("downloadCalibrationPlot", "Save")
             ),
-            p(textOutput("nullDistribution"))
+            DT::dataTableOutput(("nullDistribution"))
           )
         ),
         width = 12
@@ -75,13 +96,18 @@ dashboardUi  <- function (request) {
     ),
     box(
       p("Negative controls are used in this study to perform empirical calibration.
-      These are selected automatically using the common evidence model"),
+      These are selected automatically using the common evidence model. Indication mapping is used to filter results.
+      Inidcations are based on ingredient labels, spontaneous adverse events reports and pubmed literature searches"),
       downloadButton(
         "downloadControls",
-        "Download"
+        "Download Controls"
+      ),
+      downloadButton(
+        "downloadIndications",
+        "Download Indications"
       ),
       width = 6,
-      title=paste("Negative controls")
+      title=paste("Negative controls and indications")
     )
   )
 

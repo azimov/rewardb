@@ -173,7 +173,7 @@ calibrateTargets <- function(appContext, connection) {
     ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
 
   resultSet <- data.frame(resultSet[,!(names(resultSet) %in% c("OUTCOME_TYPE")) ])
-  #DatabaseConnector::dbAppendTable(dbConn, paste0(appContext$short_name, ".result"), rbind(resultSet, resultSetAtlas))
+  message(paste("Computed", nrow(resultSet), "calibrations"))
 
   # Apply to atlas cohorts
   atlasPositives <- getUncalibratedAtlasCohorts(appContext)
@@ -187,8 +187,9 @@ calibrateTargets <- function(appContext, connection) {
     ], idCol = "OUTCOME_COHORT_ID"), .keep=TRUE)
 
   resultSetAtlas <- data.frame(resultSetAtlas[,!(names(resultSetAtlas) %in% c("OUTCOME_TYPE")) ])
+  message(paste("Computed", nrow(resultSetAtlas), "calibrations"))
 
-  DatabaseConnector::dbAppendTable(connection, paste0(appContext$short_name, ".result"), resultSetAtlas)
+  DatabaseConnector::dbAppendTable(connection, paste0(appContext$short_name, ".result"), rbind(resultSet, resultSetAtlas))
 }
 
 #' Compute the calibrated results for cohort outcomes

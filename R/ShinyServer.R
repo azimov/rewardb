@@ -9,6 +9,7 @@ serverInstance <- function(input, output, session) {
     library(scales, warn.conflicts=FALSE)
     library(DT, warn.conflicts=FALSE)
     library(foreach, warn.conflicts=FALSE)
+    library(dplyr, warn.conflicts=FALSE)
 
     # Simple wrapper for always ensuring that database connection is opened and closed
     # Postgres + DatabaseConnector has problems with connections hanging around
@@ -29,6 +30,8 @@ serverInstance <- function(input, output, session) {
         writeLines("Closing connection")
         DatabaseConnector::disconnect(dbConn)
     })
+
+    dataSources <- queryDb("SELECT source_id, source_name FROM @schema.data_source;")
 
     niceColumnName <- list(
       SOURCE_NAME = "Database",
@@ -243,6 +246,21 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+    getIndications <- reactive({
+      sql <- readr::read_file(system.file("sql/export/", "mappedIndications.sql", package = "rewardb"))
+      df <- queryDb(sql)
+      return(df)
+    })
+
+    output$downloadIndications <- downloadHandler(
+      filename = function()  {
+        paste0(appContext$short_name, '-indications.csv')
+      },
+      content = function(file) {
+        write.csv(getIndications(), file, row.names = FALSE)
+      }
+    )
+
     output$downloadFullTable <- downloadHandler(
       filename = function() {
         paste0(appContext$short_name, '-filtered-', input$cutrange1, '-', input$cutrange2, '.csv')
@@ -283,19 +301,23 @@ serverInstance <- function(input, output, session) {
         if (length(outcome)) {
             updateTabsetPanel(session, "mainPanel", "Detail")
             sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-            uncalibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
-            calibratedTable <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=1)
 
-            if (nrow(calibratedTable)) {
+            calibOpts <- if (length(input$forestPlotCalibrated)) input$forestPlotCalibrated else c(0,1)
+
+            table <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=calibOpts)
+            calibratedTable <- table[table$CALIBRATED == 1, ]
+            uncalibratedTable <- table[table$CALIBRATED == 0, ]
+
+            if (nrow(calibratedTable) & nrow(uncalibratedTable)) {
                 calibratedTable$calibrated = "Calibrated"
                 uncalibratedTable$calibrated = "Uncalibrated"
                 uncalibratedTable$SOURCE_NAME <- paste0(uncalibratedTable$SOURCE_NAME, "\n uncalibrated")
                 calibratedTable$SOURCE_NAME <- paste0(calibratedTable$SOURCE_NAME, "\n Calibrated")
-                table <- rbind(uncalibratedTable[order(uncalibratedTable$SOURCE_ID, decreasing = TRUE), ],
-                               calibratedTable[order(calibratedTable$SOURCE_ID, decreasing = TRUE), ])
-                return(table)
             }
-            return(uncalibratedTable)
+
+            table <- rbind(uncalibratedTable[order(uncalibratedTable$SOURCE_ID, decreasing = TRUE), ],
+                               calibratedTable[order(calibratedTable$SOURCE_ID, decreasing = TRUE), ])
+            return(table)
         }
         return(data.frame())
     })
@@ -326,7 +348,6 @@ serverInstance <- function(input, output, session) {
     }
 
     getNegativeControlSubset <- function(treatment, outcome) {
-
       if (appContext$useExposureControls) {
         negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds = outcome)
       } else {
@@ -338,17 +359,64 @@ serverInstance <- function(input, output, session) {
       return(negatives)
     }
 
-    getCalibrationPlot <- function() {
+
+    getNullDist <- reactive({
+      s <- filteredTableSelected()
+      null <- data.frame()
+      treatment <- s$TARGET_COHORT_ID
+      outcome <- s$OUTCOME_COHORT_ID
+      if (!is.na(treatment)) {
+        negatives <- getNegativeControlSubset(treatment, outcome)
+        nulls <- data.frame()
+        for (source in unique(negatives$SOURCE_ID)) {
+          subset <- negatives[negatives$SOURCE_ID == source,]
+          null <- EmpiricalCalibration::fitNull(log(subset$RR), subset$SE_LOG_RR)
+          df <- data.frame(
+            "SOURCE_ID" = source,
+            "Controls used" = nrow(subset),
+            "mean" = round(exp(null[["mean"]]), 3),
+            "sd" = round(exp(null[["sd"]]), 3)
+          )
+          nulls <- rbind(nulls, df)
+        }
+        nulls <- inner_join(dataSources, nulls, by = "SOURCE_ID")
+      }
+      return(nulls)
+    })
+
+    output$nullDistribution <- DT::renderDataTable({
+      null <- getNullDist()
+      output <- DT::datatable(
+        null,
+        options = list(dom = 't', columnDefs = list(list(visible=FALSE, targets=c(0)))),
+        rownames = FALSE,
+        caption = "Table: null distribution mean and standaard deviation by data source. Select rows to filter in above plot."
+      )
+      return(output)
+    })
+
+    getCalibrationPlot <- reactive({
       s <- filteredTableSelected()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
 
       plot <- ggplot2::ggplot()
       if(!is.na(treatment)) {
+        null <- getNullDist()
+
+        selectedRows <- input$nullDistribution_rows_selected
+        validSourceIds <- null[selectedRows, ]$SOURCE_ID
+
+        if (length(validSourceIds) == 0) {
+          validSourceIds <- dataSources$SOURCE_ID
+        }
 
         sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
         positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+        positives <- positives[positives$SOURCE_ID %in% validSourceIds, ]
+
         negatives <- getNegativeControlSubset(treatment, outcome)
+        negatives <- negatives[negatives$SOURCE_ID %in% validSourceIds, ]
 
         plot <- EmpiricalCalibration::plotCalibrationEffect(
           logRrNegatives = log(negatives$RR),
@@ -356,35 +424,23 @@ serverInstance <- function(input, output, session) {
           logRrPositives = log(positives$RR),
           seLogRrPositives = positives$SE_LOG_RR
         )
+
+        if (min(positives$RR) < 0.25) {
+          # TODO submit a patch to EmpiricalCalibration package
+          suppressWarnings({
+            breaks <- c(0.0, 0.125, 0.25, 0.5, 1, 2, 4, 6, 8, 10)
+            plot <- plot +
+              ggplot2::scale_x_continuous("Relative Risk", trans = "log10", limits = c(min(positives$RR), 10), breaks = breaks, labels = breaks) +
+              ggplot2::geom_vline(xintercept = breaks, colour = "#AAAAAA", lty = 1, size = 0.5)
+          })
+        }
       }
       return(plot)
-    }
-
-    getNullDist <- function () {
-      s <- filteredTableSelected()
-      null <- c("mean" = 99, "sd" = 100)
-      treatment <- s$TARGET_COHORT_ID
-      outcome <- s$OUTCOME_COHORT_ID
-      if(!is.na(treatment)) {
-        negatives <- getNegativeControlSubset(treatment, outcome)
-        null <- EmpiricalCalibration::fitNull(log(negatives$RR), negatives$SE_LOG_RR)
-      }
-      return(null)
-    }
+    })
 
     output$calibrationPlot <- plotly::renderPlotly({
         plot <- getCalibrationPlot()
         return(plotly::ggplotly(plot))
-    })
-
-    output$nullDistribution <- shiny::renderText({
-      null <- getNullDist()
-      return(
-        paste(
-          "Null distribution mean:", round(exp(null["mean"]), 3),
-          "std:", round(exp(null["sd"]), 3)
-        )
-      )
     })
 
     output$downloadCalibrationPlot <- downloadHandler(
