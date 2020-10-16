@@ -344,7 +344,6 @@ serverInstance <- function(input, output, session) {
     }
 
     getNegativeControlSubset <- function(treatment, outcome) {
-
       if (appContext$useExposureControls) {
         negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds = outcome)
       } else {
@@ -356,34 +355,13 @@ serverInstance <- function(input, output, session) {
       return(negatives)
     }
 
-    getCalibrationPlot <- function() {
-      s <- filteredTableSelected()
-      treatment <- s$TARGET_COHORT_ID
-      outcome <- s$OUTCOME_COHORT_ID
 
-      plot <- ggplot2::ggplot()
-      if(!is.na(treatment)) {
-
-        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-        positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
-        negatives <- getNegativeControlSubset(treatment, outcome)
-
-        plot <- EmpiricalCalibration::plotCalibrationEffect(
-          logRrNegatives = log(negatives$RR),
-          seLogRrNegatives = negatives$SE_LOG_RR,
-          logRrPositives = log(positives$RR),
-          seLogRrPositives = positives$SE_LOG_RR
-        )
-      }
-      return(plot)
-    }
-
-    getNullDist <- function () {
+    getNullDist <- reactive({
       s <- filteredTableSelected()
       null <- data.frame()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
-      if(!is.na(treatment)) {
+      if (!is.na(treatment)) {
         negatives <- getNegativeControlSubset(treatment, outcome)
         nulls <- data.frame()
         for (source in unique(negatives$SOURCE_ID)) {
@@ -396,24 +374,68 @@ serverInstance <- function(input, output, session) {
           )
           nulls <- rbind(nulls, df)
         }
+        nulls <- inner_join(dataSources, nulls, by = "SOURCE_ID")
       }
       return(nulls)
-    }
-
-    output$calibrationPlot <- plotly::renderPlotly({
-        plot <- getCalibrationPlot()
-        return(plotly::ggplotly(plot))
     })
 
     output$nullDistribution <- DT::renderDataTable({
       null <- getNullDist()
       output <- DT::datatable(
-        inner_join(dataSources, null, by="SOURCE_ID"),
+        null,
         options = list(dom = 't'),
         rownames = FALSE,
         caption = "Table: null distribution standaard deviation and mean by data source"
       )
       return(output)
+    })
+
+    getCalibrationPlot <- reactive({
+      s <- filteredTableSelected()
+      treatment <- s$TARGET_COHORT_ID
+      outcome <- s$OUTCOME_COHORT_ID
+
+      plot <- ggplot2::ggplot()
+      if(!is.na(treatment)) {
+        null <- getNullDist()
+
+        selectedRows <- input$nullDistribution_rows_selected
+        validSourceIds <- null[selectedRows, ]$SOURCE_ID
+
+        if (length(validSourceIds) == 0) {
+          validSourceIds <- dataSources$SOURCE_ID
+        }
+
+        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+        positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated=0)
+        positives <- positives[positives$SOURCE_ID %in% validSourceIds, ]
+
+        negatives <- getNegativeControlSubset(treatment, outcome)
+        negatives <- negatives[negatives$SOURCE_ID %in% validSourceIds, ]
+
+        plot <- EmpiricalCalibration::plotCalibrationEffect(
+          logRrNegatives = log(negatives$RR),
+          seLogRrNegatives = negatives$SE_LOG_RR,
+          logRrPositives = log(positives$RR),
+          seLogRrPositives = positives$SE_LOG_RR
+        )
+
+        if (min(positives$RR) < 0.25) {
+          # TODO submit a patch to EmpiricalCalibration package
+          suppressWarnings({
+            breaks <- c(0.0, 0.125, 0.25, 0.5, 1, 2, 4, 6, 8, 10)
+            plot <- plot +
+              ggplot2::scale_x_continuous("Relative Risk", trans = "log10", limits = c(min(positives$RR), 10), breaks = breaks, labels = breaks) +
+              ggplot2::geom_vline(xintercept = breaks, colour = "#AAAAAA", lty = 1, size = 0.5)
+          })
+        }
+      }
+      return(plot)
+    })
+
+    output$calibrationPlot <- plotly::renderPlotly({
+        plot <- getCalibrationPlot()
+        return(plotly::ggplotly(plot))
     })
 
     output$downloadCalibrationPlot <- downloadHandler(
