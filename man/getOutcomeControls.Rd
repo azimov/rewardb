@@ -4,7 +4,12 @@
 \alias{getOutcomeControls}
 \title{Returns a set of specified negative controls for input target cohorts}
 \usage{
-getOutcomeControls(appContext, connection, minCohortSize = 10)
+getOutcomeControls(
+  appContext,
+  connection,
+  minCohortSize = 10,
+  targetIds = NULL
+)
 }
 \arguments{
 \item{appContext}{rewardb app context}
