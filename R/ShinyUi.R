@@ -25,7 +25,8 @@ dashboardUi  <- function (request) {
         tabPanel(
           "Detailed results",
           withSpinner(DT::dataTableOutput("fullResultsTable")),
-            downloadButton("downloadSubTable", "Download")
+            hr(),
+            downloadButton("downloadSubTable", "Download table")
           ),
           tabPanel(
             "Forest plot",
@@ -35,7 +36,8 @@ dashboardUi  <- function (request) {
               box(
                 strong("Figure 1."),
                 paste("Forest plot of effect estimates from each database"),
-                downloadButton("downloadForestPlot", "Save"),
+                br(),
+                downloadButton("downloadForestPlot", "Save Plot"),
                 width = 6
               ),
               box(

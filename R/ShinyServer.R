@@ -35,20 +35,16 @@ serverInstance <- function(input, output, session) {
 
     niceColumnName <- list(
       SOURCE_NAME = "Database",
+      CALIBRATED_RR = "Relative Risk *calibrated",
+      CALIBRATED_CI_95 = "CI 95*",
+      CALIBRATED_P_VALUE = "P*",
       RR = "Relative Risk",
-      CALIBRATED_RR = "Calibrated Relative Risk",
-      C_AT_RISK = "N Unexp",
+      CI_95 = "CI 95",
+      P_VALUE = "P",
       T_AT_RISK = "N Exp",
-      C_PT = "Unexposed time (years)",
       T_PT = "Exposed time (years)",
       C_CASES = "Unexposed cases",
-      T_CASES = "Exposed cases",
-      LB_95 = "CI95LB",
-      UB_95 = "CI95UB",
-      CALIBRATED_LB_95 = "calibrated CI95LB",
-      CALIBRATED_UB_95 = "calibrated CI95UB",
-      P_VALUE = "P",
-      CALIBRATED_P_VALUE = "calibrated P"
+      T_CASES = "Exposed cases"
     )
 
     niceColumnNameInv <- list()
@@ -205,7 +201,10 @@ serverInstance <- function(input, output, session) {
             }
 
             headers <- names(niceColumnNameInv)
-            table4 <- DT::datatable(table3[, headers], rownames = FALSE, escape = FALSE, )
+            table4 <- DT::datatable(
+              table3[, headers], rownames = FALSE, escape = FALSE, options = list(dom = 't'),
+              caption = "* Indicates values after empirical calibration"
+            )
             return(table4)
         }
     })
