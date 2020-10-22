@@ -79,7 +79,7 @@ create table @schema.outcome_cohort_definition
 
 CREATE TABLE @schema.atlas_outcome_reference (
     COHORT_DEFINITION_ID BIGINT,
-    ATLAS_ID INT,
+    ATLAS_ID BIGINT,
     sql_definition text,
     DEFINITION text, -- Stores sql used to generate the cohort
     atlas_url varchar(1000), -- Base atlas url used to pull cohort
