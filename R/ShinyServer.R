@@ -33,7 +33,7 @@ serverInstance <- function(input, output, session) {
 
     # Will only work with postgres > 9.4
     tableExists <- function(table) {
-      return(!is.null(queryDb("SELECT to_regclass('@schema.@table');", table = table)))
+      return(!is.na(queryDb("SELECT to_regclass('@schema.@table');", table = table))[[1]])
     }
 
     dataSources <- queryDb("SELECT source_id, source_name FROM @schema.data_source;")
@@ -459,6 +459,7 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+
     if (tableExists("time_on_treatment")) {
 
       output$timeToTreatmentStats <- DT::renderDataTable({
@@ -470,12 +471,12 @@ serverInstance <- function(input, output, session) {
             SELECT
               ds.source_name,
               mean_time_to_outcome,
-              round(sd_time_to_outcome, 3),
+              round(sd_time_to_outcome, 3) as sd_o,
               mean_tx_time,
-              round(sd_tx_time, 3)
+              round(sd_tx_time, 3) as sd_t
             FROM @schema.time_on_treatment tts
             LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
-            WHERE cohort_id = @treatment AND outcome_cohort_id = @outcome",
+            WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",
             treatment = treatment,
             outcome = outcome
           )
