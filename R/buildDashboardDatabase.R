@@ -331,6 +331,9 @@ buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTarget
   addCemEvidence(appContext)
   message("Running meta analysis")
   performMetaAnalysis(appContext)
+
+  getDashboardCohortStatistics(appContext$connection, appContext$cdmConnection, yaml::read_yaml("config/global-cfg.yml"), appContext)
+
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
 
