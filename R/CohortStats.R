@@ -32,6 +32,8 @@ getDashboardCohortStatistics <- function(connection, cdmConnection, config, appC
   outcomeCohortIds <- append(appContext$outcomeCohortIds, appContext$custom_outcome_cohort_ids)
 
   timeOnTreatment <- getAverageTimeOnTreatment(cdmConnection, config, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
+
   tableName = paste(appContext$short_name, "time_on_treatment_stats", sep = ".")
+  readr::write_excel_csv(timeOnTreatment, paste0(tableName, ".csv"))
   DatabaseConnector::insertTable(connection, tableName, timeOnTreatment)
 }
