@@ -31,6 +31,11 @@ serverInstance <- function(input, output, session) {
         DatabaseConnector::disconnect(dbConn)
     })
 
+    # Will only work with postgres > 9.4
+    tableExists <- function(table) {
+      return(!is.na(queryDb("SELECT to_regclass('@schema.@table');", table = table))[[1]])
+    }
+
     dataSources <- queryDb("SELECT source_id, source_name FROM @schema.data_source;")
 
     niceColumnName <- list(
@@ -453,6 +458,40 @@ serverInstance <- function(input, output, session) {
         ggplot2::ggsave(file, plot = getCalibrationPlot(), device = "png")
       }
     )
+
+
+    if (tableExists("time_on_treatment")) {
+
+      output$timeToTreatmentStats <- DT::renderDataTable({
+          s <- filteredTableSelected()
+          treatment <- s$TARGET_COHORT_ID
+          outcome <- s$OUTCOME_COHORT_ID
+
+          data <- queryDb("
+            SELECT
+              ds.source_name,
+              mean_time_to_outcome,
+              round(sd_time_to_outcome, 3) as sd_o,
+              mean_tx_time,
+              round(sd_tx_time, 3) as sd_t
+            FROM @schema.time_on_treatment tts
+            LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
+            WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",
+            treatment = treatment,
+            outcome = outcome
+          )
+
+          output <- DT::datatable(
+            data,
+            options = list(dom = 't', columnDefs = list(list(visible=FALSE, targets=c(0)))),
+            caption = "Table: shows mean time on treatment for cohort across databases"
+          )
+          return(output)
+      })
+
+      tabPanel <- tabPanel("Time on treatment", shinycssloaders::withSpinner(DT::dataTableOutput(("timeToTreatmentStats"))))
+      shiny::appendTab(inputId = "outcomeResultsTabs",  tabPanel)
+    }
 }
 
 #' Launch the REWARD-B Shiny app
