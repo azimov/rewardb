@@ -11,7 +11,7 @@ getAverageTimeOnTreatment <- function (connection, config, targetCohortIds = NUL
         sql,
         schema = config$cdmDatabase$schema,
         subset_targets = ifelse(length(targetCohortIds), 1, 0),
-        cohort_ids = targetCohortIds,
+        target_cohort_ids = targetCohortIds,
         outcome_cohort_table = dataSource$outcomeCohortTable,
         cohort_table = dataSource$cohortTable,
         outcome_cohort_ids = outcomeCohortIds,
