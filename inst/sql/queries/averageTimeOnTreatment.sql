@@ -1,5 +1,5 @@
 with drug_outcome as (
-    select a.cohort_definition_id as cohort_id,
+    select a.cohort_definition_id as target_cohort_id,
            b.cohort_definition_id as outcome_cohort_id,
            b.subject_id,
            b.cohort_start_date as outcome_date,
@@ -40,13 +40,14 @@ obs as (
 )
 
 select
-    cohort_id,
+    target_cohort_id,
     outcome_cohort_id,
     count(subject_id) as outcome_count,
     avg(time_to_outcome) as mean_time_to_outcome,
+    stdev(time_to_outcome) as sd_time_to_outcome,
     avg(time_on_treatment) as mean_tx_time,
     stdev(time_on_treatment) as sd_tx_time,
     sufficient_obs_time
 from obs
 where sufficient_obs_time = 1
-group by sufficient_obs_time, cohort_id, outcome_cohort_id
+group by sufficient_obs_time, target_cohort_id, outcome_cohort_id

@@ -21,7 +21,7 @@ dashboardUi  <- function (request) {
       box(
         HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
         tabsetPanel(
-          id = "tabsetPanelResults",
+          id = "outcomeResultsTabs",
         tabPanel(
           "Detailed results",
           withSpinner(DT::dataTableOutput("fullResultsTable")),
