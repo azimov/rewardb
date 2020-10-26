@@ -7,12 +7,12 @@ cdmConfig <- yaml::read_yaml(cdmConfigPath)
 
 # Set up a database with constructed cohorts etc
 buildPgDatabase(configFilePath = configFilePath)
-cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
+cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
 conceptSetId <- 11933
-conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
+conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
 insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
 
@@ -73,7 +73,7 @@ test_that("Full data generation on CDM", {
   expect_true(initialCount == reCount)
 
   # Test adding a new atlas cohort - requires exporting references again
-  cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
+  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
   sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
   insertAtlasCohortRef(connection, config, 1, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 

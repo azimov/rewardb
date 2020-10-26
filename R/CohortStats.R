@@ -5,22 +5,21 @@ getAverageTimeOnTreatment <- function (connection, config, targetCohortIds = NUL
   pathToSqlFile <- system.file("sql/queries", "averageTimeOnTreatment.sql", package = "rewardb")
   sql <- SqlRender::readSql(pathToSqlFile)
   results <- data.frame()
-  for (dataSource in config$dataSources) {
-      res <- DatabaseConnector::renderTranslateQuerySql(
-        connection,
-        sql,
-        schema = config$cdmDatabase$schema,
-        subset_targets = ifelse(length(targetCohortIds), 1, 0),
-        target_cohort_ids = targetCohortIds,
-        outcome_cohort_table = dataSource$outcomeCohortTable,
-        cohort_table = dataSource$cohortTable,
-        outcome_cohort_ids = outcomeCohortIds,
-        subset_outcomes = ifelse(length(outcomeCohortIds), 1, 0),
-        cdm_schema = dataSource$cdmDatabaseSchema
-      )
-      res$source_id <- dataSource$sourceId
-      results <- rbind(results, res)
-  }
+
+  res <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    sql,
+    schema = config$resultSchema,
+    subset_targets = ifelse(length(targetCohortIds), 1, 0),
+    target_cohort_ids = targetCohortIds,
+    outcome_cohort_table = config$tables$outcomeCohort,
+    cohort_table = config$tables$cohort,
+    outcome_cohort_ids = outcomeCohortIds,
+    subset_outcomes = ifelse(length(outcomeCohortIds), 1, 0),
+    cdm_schema = config$cdmSchema
+  )
+  res$source_id <- config$sourceId
+  results <- rbind(results, res)
 
   return(results)
 }

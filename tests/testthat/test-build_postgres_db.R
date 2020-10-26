@@ -44,9 +44,9 @@ test_that("build rewardb postgres db", {
 
 test_that("Add and remove atlas cohort references", {
 
-  cohortDefintion <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
+  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
   sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
-  rewardb::insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
+  insertAtlasCohortRef(connection = connection, config = config, atlasId = 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
@@ -55,7 +55,7 @@ test_that("Add and remove atlas cohort references", {
   )
   expect_true(12047 %in% qdf$ATLAS_ID)
 
-  rewardb::removeAtlasCohort(connection, config, 12047)
+  removeAtlasCohort(connection, config, 12047)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
@@ -68,8 +68,8 @@ test_that("Add and remove atlas cohort references", {
 test_that("Add and remove custom exposure references", {
 
   conceptSetId <- 11933
-  conceptSetDefintion <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
-  rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
+  conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
+  insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
@@ -90,7 +90,7 @@ test_that("Add and remove custom exposure references", {
 
   expect_true(nrow(qdf) > 0)
 
-  rewardb::removeCustomExposureCohort(connection, config, conceptSetId)
+  removeCustomExposureCohort(connection, config, conceptSetId)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,

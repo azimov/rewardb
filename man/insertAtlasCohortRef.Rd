@@ -16,7 +16,7 @@ insertAtlasCohortRef(
 )
 }
 \arguments{
-\item{connection}{DatabaseConnector::connection to cdm}
+\item{connection}{DatabaseConnector::connection to postgres}
 
 \item{config}{rewardb global config}
 

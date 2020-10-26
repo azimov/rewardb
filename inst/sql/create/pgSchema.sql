@@ -21,6 +21,19 @@ CREATE TABLE @schema.scc_result (
   I2 NUMERIC
 );
 
+CREATE TABLE @schema.time_on_treatment (
+  source_id INT NOT NULL,
+  outcome_cohort_id BIGINT NOT NULL,
+  target_cohort_id BIGINT NOT NULL,
+  mean_tx_time NUMERIC,
+  sd_tx_time NUMERIC,
+  sufficient_obs_time INT,
+  mean_time_to_outcome NUMERIC,
+  sd_time_to_outcome NUMERIC,
+  outcome_count NUMERIC,
+  drug_count NUMERIC
+);
+
 
 CREATE TABLE @schema.data_source (
     source_id INT PRIMARY KEY,

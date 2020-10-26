@@ -37,6 +37,7 @@ generateSccResults <- function(
   .createOutcomeCohorts = TRUE,
   .generateSummaryTables = TRUE,
   .runSCC = TRUE,
+  .generateCohortStats = TRUE,
   logFileName = "rbDataBuild.log"
 ) {
   logger <- .getLogger(logFileName)
@@ -53,7 +54,6 @@ generateSccResults <- function(
     }
 
     if (.createOutcomeCohorts) {
-
       ParallelLogger::logInfo("Creating outcome cohorts")
       createOutcomeCohorts(connection, config)
     }
@@ -61,10 +61,6 @@ generateSccResults <- function(
     if (.generateSummaryTables) {
       ParallelLogger::logInfo("Generating cohort summary tables")
       #createSummaryTables(connection, config, dataSources)
-    }
-
-    getDataFileName <- function(dataSource) {
-        file.path(config$exportPath, paste0("scc-results-full-", config$database, ".csv"))
     }
 
     if (.runSCC) {
@@ -76,15 +72,21 @@ generateSccResults <- function(
 
       tableNames <- list()
 
-      #createResultsTable(connection, config, dataSource)
       sccSummary <- runScc(connection, config)
-      dataFileName <- getDataFileName(config)
+      dataFileName <- file.path(config$exportPath, paste0("rb-results-", config$database, ".csv"))
       ParallelLogger::logInfo(paste("Writing file", dataFileName))
       readr::write_excel_csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na="")
       tableNames[[basename(dataFileName)]] <- "scc_result"
 
+      if (.generateCohortStats) {
+        timeOnTreatment <- getAverageTimeOnTreatment(connection, config)
+        statsFileName <- file.path(config$exportPath, paste0("rb-results-", config$database, "time_on_treatment_stats", ".csv"))
+        readr::write_excel_csv(timeOnTreatment, statsFileName, na="")
+        tableNames[[basename(statsFileName)]] <- "time_on_treatment"
+      }
+
       ParallelLogger::logInfo("Exporting results zip")
-      exportResults(config, tableNames = tableNames, csvPattern = "scc-results-full-*.csv")
+      exportResults(config, tableNames = tableNames, csvPattern = "rb-results-*.csv")
     }
 
   },
