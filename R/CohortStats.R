@@ -94,11 +94,7 @@ getSccStats <- function(connection,
     outcomePersonId <- "person_id"
   } else {
     outcomeStartDate <- "cohort_start_date"
-    if (cdmVersion == "4") {
-      outcomeId <- "cohort_concept_id"
-    } else {
-      outcomeId <- "cohort_definition_id"
-    }
+    outcomeId <- "cohort_definition_id"
     outcomePersonId <- "subject_id"
   }
 
