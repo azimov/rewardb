@@ -100,7 +100,7 @@ getSccStats <- function(connection,
 
   ParallelLogger::logInfo("Retrieving stats from database")
   sql <- SqlRender::readSql(system.file("sql/sql_server", "averageTimeOnTreatment.sql", package = "rewardb"))
-  results <- DatabaseConnector::renderTranslateQuerySql(
+  DatabaseConnector::renderTranslateExecuteSql(
                                                    connection = connection,
                                                    sql = sql,
                                                    oracleTempSchema = oracleTempSchema,
@@ -134,8 +134,8 @@ getSccStats <- function(connection,
                                                    washout_window = washoutPeriod,
                                                    followup_window = followupPeriod)
 
-  DatabaseConnector::renderTranslateExecuteSql(connection,
-                                               "TRUNCATE TABLE #risk_windows;
-                                                DROP TABLE #risk_windows;",  oracleTempSchema = oracleTempSchema)
+  results <- DatabaseConnector::renderTranslateQuerySql(connection = connection, "SELECT * FROM #results;")
+  DatabaseConnector::renderTranslateExecuteSql(connection = connection, "TRUNCATE TABLE #results; DROP TABLE #results;")
+
   return(results)
 }

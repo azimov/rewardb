@@ -1,6 +1,9 @@
 IF OBJECT_ID('tempdb..#risk_windows', 'U') IS NOT NULL
 	DROP TABLE #risk_windows;
 
+IF OBJECT_ID('tempdb..#results', 'U') IS NOT NULL
+	DROP TABLE #results;
+
 -- Create risk windows
 --HINT DISTRIBUTE_ON_KEY(person_id)
 SELECT
@@ -79,12 +82,14 @@ FROM (
 WHERE risk_window_end_exposed >= risk_window_start_exposed
 	AND risk_window_end_unexposed >= risk_window_start_unexposed;
 
+
+
 SELECT
     exposure_id as target_cohort_id,
     outcome_id as outcome_cohort_id,
     avg(time_at_risk_exposed) AS mean_tx_time,
     stdev(time_at_risk_exposed) AS sd_tx_time
-
+INTO #results
 FROM (
     SELECT
         exposure_id,
@@ -118,3 +123,6 @@ FROM (
     ON risk_windows.person_id = outcomes.person_id
 ) q WHERE q.is_exposed_outcome = 1 OR q.is_unexposed_outcome = 1
 GROUP BY exposure_id, outcome_id;
+
+TRUNCATE TABLE #risk_windows;
+DROP TABLE #risk_windows;
