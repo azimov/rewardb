@@ -470,8 +470,6 @@ serverInstance <- function(input, output, session) {
           data <- queryDb("
             SELECT
               ds.source_name,
-              mean_time_to_outcome,
-              round(sd_time_to_outcome, 3) as sd_o,
               mean_tx_time,
               round(sd_tx_time, 3) as sd_t
             FROM @schema.time_on_treatment tts
