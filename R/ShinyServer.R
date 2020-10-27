@@ -185,7 +185,6 @@ serverInstance <- function(input, output, session) {
     })
 
     fullResultsTable <- reactive({
-        option = list(columnDefs = list(list(targets = c(8, 11), class = "dt-right")))
         table3 <- metaAnalysisTbl()
         if(nrow(table3) >= 1) {
             table3$RR[table3$RR > 100] <- NA
@@ -293,7 +292,8 @@ serverInstance <- function(input, output, session) {
                 return(fullResultsTable())
             },
             error = function(e) {
-                return(data.frame())
+              ParallelLogger::logError(e)
+              return(data.frame())
             })
       }
     )
@@ -313,8 +313,8 @@ serverInstance <- function(input, output, session) {
             uncalibratedTable <- table[table$CALIBRATED == 0, ]
 
             if (nrow(calibratedTable) & nrow(uncalibratedTable)) {
-                calibratedTable$calibrated = "Calibrated"
-                uncalibratedTable$calibrated = "Uncalibrated"
+                calibratedTable$calibrated <- "Calibrated"
+                uncalibratedTable$calibrated <- "Uncalibrated"
                 uncalibratedTable$SOURCE_NAME <- paste0(uncalibratedTable$SOURCE_NAME, "\n uncalibrated")
                 calibratedTable$SOURCE_NAME <- paste0(calibratedTable$SOURCE_NAME, "\n Calibrated")
             }
@@ -355,7 +355,7 @@ serverInstance <- function(input, output, session) {
       if (appContext$useExposureControls) {
         negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds = outcome)
       } else {
-        otype <- if(getOutcomeType(outcome) == 1) 1 else 0;
+        otype <- if(getOutcomeType(outcome) == 1) 1 else 0
         negatives <- rewardb::getOutcomeControls(appContext, dbConn, targetIds = treatment)
         # Subset for outcome types
         negatives <- negatives[negatives$OUTCOME_TYPE == otype, ]
@@ -366,7 +366,6 @@ serverInstance <- function(input, output, session) {
 
     getNullDist <- reactive({
       s <- filteredTableSelected()
-      null <- data.frame()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
       if (!is.na(treatment)) {
@@ -470,10 +469,10 @@ serverInstance <- function(input, output, session) {
           data <- queryDb("
             SELECT
               ds.source_name,
-              mean_time_to_outcome,
-              round(sd_time_to_outcome, 3) as sd_o,
-              mean_tx_time,
-              round(sd_tx_time, 3) as sd_t
+              round(mean_tx_time, 3) as mean_treatment_time,
+              round(sd_tx_time, 3) as sd_tx_time,
+              round(mean_time_to_outcome, 3) as mean_time_to_outcome,
+              round(sd_time_to_outcome, 3) as sd_time_to_outcome
             FROM @schema.time_on_treatment tts
             LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
             WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",

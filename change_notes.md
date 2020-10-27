@@ -1,5 +1,8 @@
 #Changes Since Last Group Meeting
 
+## 4 November 2020
+* Added time to treatment statistics table
+
 ## 23 October 2020
 
 Main branch:
