@@ -98,9 +98,11 @@ getSccStats <- function(connection,
     outcomePersonId <- "subject_id"
   }
 
-  renderedSql <- SqlRender::loadRenderTranslateSql(sqlFilename = "averageTimeOnTreatment.sql",
-                                                   packageName = "rewardb",
-                                                   dbms = connection@dbms,
+  ParallelLogger::logInfo("Retrieving stats from database")
+  sql <- SqlRender::readSql(system.file("sql/sql_server", "averageTimeOnTreatment.sql", package = "rewardb"))
+  results <- DatabaseConnector::renderTranslateQuerySql(
+                                                   connection = connection,
+                                                   sql = sql,
                                                    oracleTempSchema = oracleTempSchema,
                                                    cdm_database_schema = cdmDatabaseSchema,
                                                    exposure_ids = exposureIds,
@@ -131,8 +133,6 @@ getSccStats <- function(connection,
                                                    has_full_time_at_risk = hasFullTimeAtRisk,
                                                    washout_window = washoutPeriod,
                                                    followup_window = followupPeriod)
-  ParallelLogger::logInfo("Retrieving stats from database")
-  results <- DatabaseConnector::querySql(connection, renderedSql)
 
   DatabaseConnector::renderTranslateExecuteSql(connection,
                                                "TRUNCATE TABLE #risk_windows;
