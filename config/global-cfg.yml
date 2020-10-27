@@ -1,59 +1,14 @@
 webApiUrl: "https://epi.jnj.com:8443/WebAPI"
-# These will be automatically included on any database rebuild. Other cohorts can still be added manually later
-maintinedAtlasCohortList: [7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822, 7823, 10357, 11073, 2538, 10593, 10605, 15078, 10607, 11643, 12047, 14615, 13719, 10977]
-exportPath: "export_may2020"
-
+testMode: false
 resultsTablePrefix: reward_results_dev
+exportPath: "export"
 
-cdmDatabase:
-  schema: "scratch.jgilber2"
-  vocabularySchema: "Vocabulary_20200525.dbo"
-  cemSchema: "CEM_V2_0_0_20200226.dbo"
-  cohortDefinitionTable: "rewardb_cohort_definition_dev"
-  outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
-  conceptSetDefinitionTable: "rewardb_conceptset_definition_dev"
-  mergedResultsTable: "may2020_rewardb_results"
-  atlasCohortReferenceTable: "rewardb_atlas_cohort_reference"
-  atlasConceptReferenceTable: "rewardb_atlas_concept_reference"
+connectionDetails:
+  dbms: "postgresql"
+  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
+  port: 5432
+  user: "reward_admin"
 
-cdmDataSource:
-  dbms: pdw
-  server: JRDUSAPSCTL01
-  port: 17001
-
-dataSources:
-  CCAE_1151:
-    sourceId: 11
-    database: "CDM_IBM_ccae_v1151"
-    cdmDatabaseSchema: "CDM_IBM_ccae_v1151.dbo" #this is where we'll pull drug and condition history for patients
-    drugEraSchema: "CDM_IBM_ccae_v1151.reward"
-    cohortTable: "homer_cohort_ccae_v1151_dev" # will be created and saved on scratch.dbo
-    outcomeCohortTable: "homer_outcome_cohort_ccae_v1151_dev" # will be created and saved on scratch.dbo
-    outcomeSummaryTable: "homer_outcome_summary_ccae_v1151_dev" # will be created and saved on scratch.dbo
-
-  Optum SES_1156:
-    sourceId: 10
-    database: "CDM_Optum_Extended_SES_v1156"
-    cdmDatabaseSchema: "CDM_Optum_Extended_SES_v1156.dbo"
-    drugEraSchema: "CDM_Optum_Extended_SES_v1156.reward"
-    cohortTable: "homer_cohort_optum_v1156_dev"
-    outcomeCohortTable: "homer_outcome_cohort_optum_v1156_dev"
-    outcomeSummaryTable: "homer_outcome_summary_optum_v1156_dev"
-
-  MDCD_1153:
-    sourceId: 12
-    database: "CDM_IBM_MDCD_v1153"
-    cdmDatabaseSchema: "CDM_IBM_MDCD_v1153.dbo"
-    drugEraSchema: "CDM_IBM_MDCD_v1153.reward"
-    cohortTable: "homer_cohort_mdcd_v1153_dev"
-    outcomeCohortTable: "homer_outcome_cohort_mdcd_v1153_dev"
-    outcomeSummaryTable: "homer_outcome_summary_mdcd_v1153_dev"
-
-  MDCR_1152:
-    sourceId: 13
-    database: "CDM_IBM_MDCR_v1152"
-    cdmDatabaseSchema: "CDM_IBM_MDCR_v1152.dbo"
-    drugEraSchema: "CDM_IBM_MDCR_v1152.reward"
-    cohortTable: "homer_cohort_mdcr_v1152_dev"
-    outcomeCohortTable: "homer_outcome_cohort_mdcr_v1152_dev"
-    outcomeSummaryTable: "homer_outcome_summary_mdcr_v1152_dev"
+rewardbResultsSchema: "rewardb"
+vocabularySchema: "vocabulary"
+cemSchema: "cem"

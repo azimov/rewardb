@@ -1,0 +1,22 @@
+sourceId: 10
+database: CDM_Optum_Extended_SES_v1156
+
+exportPath: "export_optum"
+
+connectionDetails:
+  dbms: pdw
+  server: JRDUSAPSCTL01
+  port: 17001
+
+securePassword: True
+
+resultSchema: "scratch.dbo"
+referenceSchema: "scratch.dbo"
+cdmSchema: "CDM_Optum_Extended_SES_v1156.dbo"
+vocabularySchema: "Vocabulary_20200525.dbo"
+drugEraSchema: "CDM_Optum_Extended_SES_v1156.reward"
+
+tables:
+  outcomeCohort: "rb_optum_v1156_outcome_cohort"
+  cohort: "rb_optum_v1156_cohort"
+  sccResult: "rb_optum_v1156_scc_result"

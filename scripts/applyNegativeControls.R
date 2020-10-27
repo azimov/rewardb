@@ -151,7 +151,7 @@ moreStats <- function(results) {
   )
 }
 
-appContext <- loadAppContext("config/config.tnfs.yml", TRUE, TRUE)
+appContext <- loadAppContext("../config/dashboard/config.tnfs.yml", TRUE, TRUE)
 res <- manualNegativeControlCalculation(appContext, appContext$cdmConnection)
 
 appContext$negative_control_outcome_list <- "extra/negative_controls/anti_tnfi_full_atlas.csv"

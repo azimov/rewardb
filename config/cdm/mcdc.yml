@@ -1,0 +1,22 @@
+sourceId: 12
+database: CDM_IBM_MDCD_v1153
+
+exportPath: "export_mdcd"
+
+connectionDetails:
+  dbms: pdw
+  server: JRDUSAPSCTL01
+  port: 17001
+
+securePassword: True
+
+resultSchema: "scratch.dbo"
+referenceSchema: "scratch.dbo"
+cdmSchema: "CDM_IBM_MDCD_v1153.dbo"
+vocabularySchema: "Vocabulary_20200525.dbo"
+drugEraSchema: "CDM_IBM_MDCD_v1153.reward"
+
+tables:
+  outcomeCohort: "rb_mdcd_v1153_outcome_cohort"
+  cohort: "rb_mdcd_v1153_cohort"
+  sccResult: "rb_mdcd_v1153_scc_result"
