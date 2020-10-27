@@ -87,8 +87,10 @@ WHERE risk_window_end_exposed >= risk_window_start_exposed
 SELECT
     exposure_id as target_cohort_id,
     outcome_id as outcome_cohort_id,
-    avg(time_at_risk_exposed) AS mean_tx_time,
-    stdev(time_at_risk_exposed) AS sd_tx_time
+    avg(time_at_risk_exposed/1.0) AS mean_tx_time,
+    stdev(time_at_risk_exposed) AS sd_tx_time,
+    avg(time_to_outcome/1.0) AS mean_time_to_outcome,
+    stdev(time_to_outcome) AS sd_time_to_outcome
 INTO #results
 FROM (
     SELECT
@@ -103,7 +105,8 @@ FROM (
             THEN 1
             ELSE 0
         END AS is_unexposed_outcome,
-  	    DATEDIFF(DAY, risk_window_start_exposed, risk_window_end_exposed) + 1 AS time_at_risk_exposed
+  	    DATEDIFF(DAY, risk_window_start_exposed, risk_window_end_exposed) + 1 AS time_at_risk_exposed,
+  	    abs(DATEDIFF(DAY, risk_window_start_exposed, outcome_date) + 1) AS time_to_outcome
     FROM #risk_windows risk_windows
     INNER JOIN (
         SELECT person_id,

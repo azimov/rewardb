@@ -470,8 +470,10 @@ serverInstance <- function(input, output, session) {
           data <- queryDb("
             SELECT
               ds.source_name,
-              mean_tx_time,
-              round(sd_tx_time, 3) as sd_t
+              round(mean_tx_time, 3),
+              round(sd_tx_time, 3) as sd_tx_time,
+              round(mean_time_to_outcome, 3),
+              round(sd_time_to_outcome, 3) as sd_time_to_outcome
             FROM @schema.time_on_treatment tts
             LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
             WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",
