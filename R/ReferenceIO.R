@@ -34,13 +34,13 @@ exportReferenceTables <- function(
       table = table
     )
     file <- file.path(exportPath, paste0(table, ".csv"))
-    readr::write_excel_csv(data, file, na = "")
+    write.csv(data, file, na = "")
     meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
   }
 
   DatabaseConnector::disconnect(connection)
 
-  metaDataFilename <- file.path(config$exportPath, rewardb::CONST_META_FILE_NAME)
+  metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
   jsonlite::write_json(meta, metaDataFilename)
 
   exportFiles <- file.path(exportPath, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
@@ -62,7 +62,7 @@ importReferenceTables <- function(cdmConfig, zipFilePath, refFolder) {
     tableName <- strsplit(basename(file), ".csv")[[1]]
     DatabaseConnector::insertTable(
       connection,
-      tableName = paste0(cdmConfig$referenceSchema, ".", tableName),
+      tableName = paste(cdmConfig$referenceSchema, tableName, sep = "."),
       data = data,
       progressBar = TRUE,
       dropTableIfExists = TRUE,
