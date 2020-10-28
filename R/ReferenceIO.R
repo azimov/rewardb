@@ -34,7 +34,7 @@ exportReferenceTables <- function(
       table = table
     )
     file <- file.path(exportPath, paste0(table, ".csv"))
-    write.csv(data, file, na = "")
+    write.csv(data, file, na = "", row.names = FALSE)
     meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
   }
 
