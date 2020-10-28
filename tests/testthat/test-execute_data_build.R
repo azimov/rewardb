@@ -1,6 +1,6 @@
 configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
-config <- yaml::read_yaml(configFilePath)
-connection <- DatabaseConnector::connect(config$rewardbDatabase)
+config <- loadGlobalConfig(configFilePath)
+connection <- DatabaseConnector::connect(config$connectionDetails)
 
 # Set up a database with constructed cohorts etc
 rewardb::buildPgDatabase(configFilePath = configFilePath)
@@ -27,7 +27,7 @@ unlink("rb-import")
 
 test_that("Full data generation and export", {
   generateSccResults(cdmConfigPath)
-  importResultsFiles(config$rewardbDatabase, "test", "rewardb-export.zip")
+  importResultsFiles(config$connectionDetails, "test", "rewardb-export.zip")
 
   # Assert that the tables contain data
   qdf <- DatabaseConnector::renderTranslateQuerySql(

@@ -109,6 +109,6 @@ importResultsFiles <- function(
 }
 
 importResultsZip <- function(resultsZipPath, configFilePath="config/global-cfg.yml", unzipPath = "rb-import") {
-  config <- yaml::read_yaml(configFilePath)
-  rewardb::importResultsFiles(config$rewardbDatabase, config$rewardbResultsSchema, resultsZipPath, unzipPath = unzipPath)
+  config <- loadGlobalConfig(configFilePath)
+  rewardb::importResultsFiles(config$connectionDetails, config$rewardbResultsSchema, resultsZipPath, unzipPath = unzipPath)
 }

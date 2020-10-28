@@ -22,7 +22,7 @@
 #' of combined outcome, exposure pairs and runs SCC analysis.
 #' if dataSources is set to a vector then the anlaysis will only be performed on this subset - these must be specified in the config yml file
 #'
-#' @param configFilePath path on disk to a yaml configuration file containing all needed config setting to point at relevant cdm
+#' @param cdmConfigFilePath path on disk to a yaml configuration file containing all needed config setting to point at relevant cdm
 #' @param .createReferences create the reference tables (set to false if already ran)
 #' @param .addDefaultAtlasCohorts use default cohort ids speciefied in config file (these can be added later manually)
 #' @param .createExposureCohorts Create the drug exposure cohorts default is TRUE
@@ -32,7 +32,7 @@
 #' @param dataSources vector of strings or null - keys to cdm stores to use. By default all cdms are added for a given config file
 #' @export
 generateSccResults <- function(
-  configFilePath,
+  cdmConfigFilePath,
   .createExposureCohorts = TRUE,
   .createOutcomeCohorts = TRUE,
   .generateSummaryTables = TRUE,
@@ -42,7 +42,7 @@ generateSccResults <- function(
 ) {
   logger <- .getLogger(logFileName)
   # load config
-  config <- yaml::read_yaml(configFilePath)
+  config <- yaml::read_yaml(cdmConfigFilePath)
   connection <- DatabaseConnector::connect(config$connectionDetails)
 
   tryCatch(

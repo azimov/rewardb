@@ -1,6 +1,6 @@
 configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
-config <- yaml::read_yaml(configFilePath)
-connection <- DatabaseConnector::connect(config$rewardbDatabase)
+config <- loadGlobalConfig(configFilePath)
+connection <- DatabaseConnector::connect(config$connectionDetails)
 
 cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
 cdmConfig <- yaml::read_yaml(cdmConfigPath)

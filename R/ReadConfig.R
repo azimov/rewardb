@@ -79,14 +79,20 @@ getTargetCohortIds <- function (appContext, connection) {
 #' @examples
 #' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
 loadAppContext <- function(configPath, globalConfigPath, .env=.GlobalEnv) {
-    config <- yaml::read_yaml(globalConfigPath)
     appContext <- .setDefaultOptions(yaml::read_yaml(configPath))
-
-    appContext$globalConfig <- config
-
-    appContext$connectionDetails <- config$connectionDetails
-    appContext$connectionDetails$password <- getPasswordSecurely()
+    appContext$globalConfig <- loadGlobalConfig(globalConfigPath)
+    appContext$connectionDetails <- appContext$globalConfig$connectionDetails
 
     class(appContext) <- append(class(appContext), "rewardb::appContext")
     .env$appContext <- appContext
+}
+
+# Path for config shared across shiny apps and data build
+loadGlobalConfig <- function(globalConfigPath) {
+    config <- yaml::read_yaml(globalConfigPath)
+
+    if (is.null(config$connectionDetails$password)) {
+        config$connectionDetails$password <- getPasswordSecurely()
+    }
+    return(config)
 }

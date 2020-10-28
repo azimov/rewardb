@@ -3,7 +3,7 @@ testMode: true
 resultsTablePrefix: reward_results_dev
 exportPath: "export"
 
-rewardbDatabase:
+connectionDetails:
   dbms: "postgresql"
   server: "localhost/rewardb"
   port: 54321

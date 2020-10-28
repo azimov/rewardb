@@ -1,6 +1,6 @@
 configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
-config <- yaml::read_yaml(configFilePath)
-connection <- DatabaseConnector::connect(config$rewardbDatabase)
+config <- loadGlobalConfig(configFilePath)
+connection <- DatabaseConnector::connect(config$connectionDetails)
 
 # Set up a database with constructed cohorts etc
 buildPgDatabase(configFilePath = configFilePath)
@@ -26,7 +26,7 @@ unlink(refFolder)
 exportReferenceTables(config)
 importReferenceTables(cdmConfig, zipFilePath, refFolder)
 generateSccResults(cdmConfigPath)
-importResultsFiles(config$rewardbDatabase, "test", "rewardb-export.zip")
+importResultsFiles(config$connectionDetails, "test", "rewardb-export.zip")
 
 test_that("Dashboard creation works", {
   Sys.setenv("REWARD_B_PASSWORD" = "postgres")

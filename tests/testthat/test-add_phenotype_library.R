@@ -4,11 +4,11 @@
 # Created on: 2020-10-21
 
 configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
-config <- yaml::read_yaml(configFilePath)
-connection <- DatabaseConnector::connect(config$rewardbDatabase)
+config <- loadGlobalConfig(configFilePath)
+connection <- DatabaseConnector::connect(config$connectionDetails)
 
 # Set up a database with constructed cohorts etc
-rewardb::buildPgDatabase(configFilePath = configFilePath)
+buildPgDatabase(configFilePath = configFilePath)
 
 test_that("Phenotype Library From github", {
   addPhenotypeLibrary(connection, config)
