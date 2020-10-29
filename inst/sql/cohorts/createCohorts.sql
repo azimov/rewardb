@@ -31,7 +31,7 @@ from
       on de0.drug_concept_id = ings.concept_id
       -- where de0.drug_concept_id in (42904205, 40226579, 1337068) -- REMOVE FOR FULL RUN
   ) de1
-inner join @reference_schema.cohort_definition cr ON (cr.drug_conceptset_id = de1.drug_concept_id  AND cr.atc_flg = 0)
+inner join @reference_schema.@cohort_definition cr ON (cr.drug_conceptset_id = de1.drug_concept_id  AND cr.atc_flg = 0)
 left join #computed_cohorts cc ON cc.cohort_definition_id = cr.cohort_definition_id
 inner join @cdm_database_schema.observation_period op1
   on de1.person_id = op1.person_id
@@ -88,7 +88,7 @@ from
       on de0.drug_concept_id = atc_rxnorm.descendant_concept_id
     --  where de0.drug_concept_id in (42904205, 40226579, 1337068) -- REMOVE FOR FULL RUN
   ) de1
-inner join @reference_schema.cohort_definition cr ON (cr.drug_conceptset_id = de1.drug_concept_id  AND cr.atc_flg = 1)
+inner join @reference_schema.@cohort_definition cr ON (cr.drug_conceptset_id = de1.drug_concept_id  AND cr.atc_flg = 1)
 left join #computed_cohorts cc ON cc.cohort_definition_id = cr.cohort_definition_id
 inner join @cdm_database_schema.observation_period op1
   on de1.person_id = op1.person_id

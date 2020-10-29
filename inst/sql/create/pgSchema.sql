@@ -222,6 +222,7 @@ INSERT INTO @schema.outcome_cohort_definition
   , outcome_type
 )
 select
+    DISTINCT
     'Incident outcome of ' + c1.concept_name + ' - first occurence of diagnosis which is observed in hospital in future' as cohort_definition_name
   , 'Incident outcome of ' + c1.concept_name + ' WITH INP' as short_name
   ,	c1.concept_id as CONCEPTSET_ID
@@ -241,6 +242,7 @@ INSERT INTO @schema.outcome_cohort_definition
   , outcome_type
 )
 select
+  DISTINCT
   'Incident outcome of ' + c1.concept_name + ' - first occurence of diagnosis' as cohort_definition_name
   , 'Incident outcome of ' + c1.concept_name + ' TWO DX' as short_name
   ,	c1.concept_id as CONCEPTSET_ID

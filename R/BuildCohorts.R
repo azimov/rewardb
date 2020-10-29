@@ -20,7 +20,8 @@ createCohorts <- function(connection, config) {
     drug_era_schema = config$cdmSchema, # Use cdm drug eras
     cohort_database_schema = config$resultSchema,
     vocab_schema = config$vocabularySchema,
-    cohort_table = config$tables$cohort
+    cohort_table = config$tables$cohort,
+    cohort_definition = config$tables$cohortDefinition
   )
 
   customExposureOptions <- list(
@@ -32,6 +33,9 @@ createCohorts <- function(connection, config) {
     cohort_database_schema = config$resultSchema,
     vocab_schema = config$vocabularySchema,
     cohort_table = config$tables$cohort,
+    cohort_definition = config$tables$cohortDefinition,
+    custom_exposure = config$tables$customExposure,
+    custom_exposure_concept = config$tables$customExposureConcept,
     only_add_subset = 0
   )
   do.call(DatabaseConnector::renderTranslateExecuteSql, options)
@@ -51,7 +55,7 @@ getUncomputedAtlasCohorts <- function(connection, config) {
   # Get only null atlas cohorts
   atlaSql <- "
   SELECT aor.*
-  FROM @reference_schema.atlas_outcome_reference aor
+  FROM @reference_schema.@atlas_outcome_reference aor
   LEFT JOIN
     (
       SELECT DISTINCT cohort_definition_id
@@ -64,37 +68,10 @@ getUncomputedAtlasCohorts <- function(connection, config) {
     atlaSql,
     reference_schema = config$referenceSchema,
     result_schema = config$resultSchema,
-    outcome_cohort_table = config$tables$outcomeCohort
+    outcome_cohort_table = config$tables$outcomeCohort,
+    atlas_outcome_reference = config$tables$atlasOutcomeReference
   )
   return(atlasCohorts)
-}
-
-#' Pulls concept set from webApi and adds cohort
-#' @param connection DatabaseConnector connection to cdm
-#' @param config
-#' @param conceptSetId concept set in WebAPI
-#' @param dataSources dataSources to run cohort on
-addCustomExposureCohorts <- function(connection, config, conceptSetIds) {
-  # Add conceptSetId/name to custom_exposure_cohort table
-  # Get all items, add them to the custom_exposure_concept table
-  options <- list(
-    connection = connection,
-    sql = SqlRender::readSql(system.file("sql/cohorts", "addCustomExposureCohorts.sql", package = "rewardb")),
-    cdm_database_schema = config$cdmSchema,
-    reference_schema = config$referenceSchema,
-    drug_era_schema = config$cdmSchema, # Use cdm drug eras
-    cohort_database_schema = config$resultSchema,
-    vocab_schema = config$vocabularySchema,
-    cohort_table = config$tables$cohort,
-    only_add_subset = 1,
-    custom_exposure_subset = conceptSetIds
-  )
-  do.call(DatabaseConnector::renderTranslateExecuteSql, options)
-
-  if (!is.null(config$drugEraSchema)) {
-    options$drug_era_schema <- config$drugEraSchema # Custom drug era tables live here
-    do.call(DatabaseConnector::renderTranslateExecuteSql, options)
-  }
 }
 
 #' Create outcome cohorts in the CDM - this function can take a very very long time
@@ -118,7 +95,8 @@ createOutcomeCohorts <- function(connection, config) {
     reference_schema = config$referenceSchema,
     cdm_database_schema = config$cdmSchema,
     cohort_database_schema = config$resultSchema,
-    outcome_cohort_table = config$tables$outcomeCohort
+    outcome_cohort_table = config$tables$outcomeCohort,
+    outcome_cohort_definition = config$tables$outcomeCohortDefinition,
   )
 
   atlasCohorts <- getUncomputedAtlasCohorts(connection, config)

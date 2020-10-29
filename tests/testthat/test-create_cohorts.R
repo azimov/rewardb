@@ -3,7 +3,7 @@ config <- loadGlobalConfig(configFilePath)
 connection <- DatabaseConnector::connect(config$connectionDetails)
 
 cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
-cdmConfig <- yaml::read_yaml(cdmConfigPath)
+cdmConfig <- loadCdmConfig(cdmConfigPath)
 
 # Set up a database with constructed cohorts etc
 buildPgDatabase(configFilePath = configFilePath)

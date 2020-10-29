@@ -12,7 +12,7 @@ conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json
 rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
 cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
-cdmConfig <- yaml::read_yaml(cdmConfigPath)
+cdmConfig <- loadCdmConfig(cdmConfigPath)
 
 zipFilePath <- "rewardb-references.zip"
 refFolder <- "reference_test_folder"

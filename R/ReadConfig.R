@@ -10,20 +10,15 @@ getPasswordSecurely <- function(.envVar = "REWARD_B_PASSWORD") {
 
 #' Sets the default options to the app context.
 #' Will be more widely used in future iterations
-#' @param appContext list of configuration options
-.setDefaultOptions <- function (appContext) {
-    defaults <- list(
-        useExposureControls = FALSE,
-        custom_exposure_ids = c()
-    )
-
+#' @param config list of configuration options
+.setDefaultOptions <- function (config, defaults) {
     for(n in names(defaults)) {
-      if(is.null(appContext[[n]])) {
-        appContext[[n]] <- defaults[[n]]
+      if(is.null(config[[n]])) {
+        config[[n]] <- defaults[[n]]
       }
     }
 
-    return(appContext)
+    return(config)
 }
 
 getOutcomeCohortIds <- function (appContext, connection) {
@@ -79,7 +74,13 @@ getTargetCohortIds <- function (appContext, connection) {
 #' @examples
 #' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
 loadAppContext <- function(configPath, globalConfigPath, .env=.GlobalEnv) {
-    appContext <- .setDefaultOptions(yaml::read_yaml(configPath))
+
+    defaults <- list(
+        useExposureControls = FALSE,
+        custom_exposure_ids = c()
+    )
+
+    appContext <- .setDefaultOptions(yaml::read_yaml(configPath), defaults)
     appContext$globalConfig <- loadGlobalConfig(globalConfigPath)
     appContext$connectionDetails <- appContext$globalConfig$connectionDetails
 
@@ -94,5 +95,21 @@ loadGlobalConfig <- function(globalConfigPath) {
     if (is.null(config$connectionDetails$password)) {
         config$connectionDetails$password <- getPasswordSecurely()
     }
+    return(config)
+}
+
+
+loadCdmConfig <- function(cdmConfigPath) {
+    defaults <- list()
+    config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)
+
+    defaultTables <- list()
+
+    for (table in rewardb::CONST_REFERENCE_TABLES) {
+        defaultTables[[SqlRender::snakeCaseToCamelCase(table)]] <- table
+    }
+
+    config$tables <- .setDefaultOptions(config$tables, defaultTables)
+
     return(config)
 }

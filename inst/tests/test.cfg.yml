@@ -1,3 +1,4 @@
+# Test global config file
 webApiUrl: "https://epi.jnj.com:8443/WebAPI"
 testMode: true
 resultsTablePrefix: reward_results_dev

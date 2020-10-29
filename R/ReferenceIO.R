@@ -52,21 +52,22 @@ exportReferenceTables <- function(
 #'
 #' @description
 #' Note that this always overwrites the existing reference tables stored in the database
-importReferenceTables <- function(cdmConfig, zipFilePath, refFolder) {
+importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, useMppBulkLoad = FALSE) {
   unzipAndVerify(zipFilePath, refFolder, TRUE)
   connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
 
   fileList <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
   for (file in fileList) {
     data <- read.csv(file)
-    tableName <- strsplit(basename(file), ".csv")[[1]]
+    tableName <- cdmConfig$tables[[SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])]]
     DatabaseConnector::insertTable(
       connection,
       tableName = paste(cdmConfig$referenceSchema, tableName, sep = "."),
       data = data,
       progressBar = TRUE,
       dropTableIfExists = TRUE,
-      createTable = TRUE
+      createTable = TRUE,
+      useMppBulkLoad = useMppBulkLoad
     )
   }
   DatabaseConnector::disconnect(connection)

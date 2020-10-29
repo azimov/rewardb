@@ -20,3 +20,11 @@ tables:
   outcomeCohort: "rb_mdcd_v1153_outcome_cohort"
   cohort: "rb_mdcd_v1153_cohort"
   sccResult: "rb_mdcd_v1153_scc_result"
+  # Reference table definitions
+  cohortDefinition: "rb_cohort_definition"
+  outcomeCohortDefinition: "rb_outcome_cohort_definition"
+  conceptSetDefinition: "rb_concept_set_definition"
+  atlasOutcomeReference: "rb_atlas_outcome_reference"
+  atlasConceptReference: "rb_atlas_concept_reference"
+  customExposure: "rb_custom_exposure"
+  customExposureConcept: "rb_custom_exposure_concept"
