@@ -46,8 +46,8 @@ insert into @drug_era_schema.drug_era_info (ingredient_concept_id, ingredient_na
 --- Notes: we use the maintenance_days to define the drug exposure duration, but we allow a 30d gap window between exposures to considder them together.
 --- if a 0 day grace period is required, change the DATEADD(day,-30,EVENT_DATE) and DATEADD(day,30,EVENT_DATE) to add/subtract 0 days.
 
+--HINT DISTRIBUTE_ON_KEY(person_id)
 create table #reward_drug_era
-WITH (distribution=HASH(person_id))
 as
 with cteDrugTarget (DRUG_EXPOSURE_ID, PERSON_ID, DRUG_CONCEPT_ID, DRUG_TYPE_CONCEPT_ID, DRUG_EXPOSURE_START_DATE, DRUG_EXPOSURE_END_DATE, INGREDIENT_CONCEPT_ID) as
 (
@@ -106,9 +106,8 @@ GROUP BY person_id, drug_concept_id, drug_type_concept_id, DRUG_ERA_END_DATE
 ;
 
 --select distinct drug_concept_id from #reward_drug_era;
-
+--HINT DISTRIBUTE_ON_KEY(person_id)
 create table @drug_era_schema.drug_era
-with (distribution=hash(person_id))
 as
 select (select max(drug_era_id) from dbo.drug_era) + row_number() over (order by (select 1)) as drug_era_id, person_id, drug_concept_id, drug_era_start_date, drug_era_end_date, drug_exposure_count
 FROM #reward_drug_era

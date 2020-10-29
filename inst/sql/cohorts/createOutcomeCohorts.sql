@@ -1,3 +1,4 @@
+--HINT DISTRIBUTE_ON_KEY(cohort_definition_id)
 create table #computed_o_cohorts AS
 SELECT DISTINCT cohort_definition_id
 FROM @cohort_database_schema.@outcome_cohort_table;

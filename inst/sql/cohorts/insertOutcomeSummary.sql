@@ -18,6 +18,7 @@ inner join @cohort_database_schema.@outcome_cohort_definition_table hocd1
 if object_id('tempdb..#drug_summary', 'U') is not null
 	drop table #drug_summary;
 
+--HINT DISTRIBUTE_ON_KEY(target_cohort_definition_id)
 create table #drug_summary as
 select
 	c1.cohort_definition_id as target_cohort_definition_id
@@ -38,6 +39,7 @@ if object_id('tempdb..#drug_outcome_count', 'U') is not null
 	drop table #drug_outcome_count
 ;
 
+--HINT DISTRIBUTE_ON_KEY(target_cohort_definition_id)
 create table #drug_outcome_count as
 select
 	c1.cohort_definition_id as target_cohort_definition_id
@@ -65,6 +67,7 @@ if object_id('tempdb..#drug_outcome_summary', 'U') is not null
 	drop table #drug_outcome_summary
 ;
 
+--HINT DISTRIBUTE_ON_KEY(target_cohort_definition_id)
 create table #drug_outcome_summary as
 select
 	do1.target_cohort_definition_id
