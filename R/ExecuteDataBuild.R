@@ -33,6 +33,7 @@
 #' @export
 generateSccResults <- function(
   cdmConfigFilePath,
+  exportZipFile = "reward-b-scc-results.zip",
   .createExposureCohorts = TRUE,
   .createOutcomeCohorts = TRUE,
   .generateSummaryTables = TRUE,
@@ -86,7 +87,7 @@ generateSccResults <- function(
       }
 
       ParallelLogger::logInfo("Exporting results zip")
-      exportResults(config, tableNames = tableNames, csvPattern = "rb-results-*.csv")
+      exportResults(config, exportZipFile = exportZipFile, tableNames = tableNames, csvPattern = "rb-results-*.csv")
     }
 
   },
