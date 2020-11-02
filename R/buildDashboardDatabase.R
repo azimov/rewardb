@@ -312,7 +312,7 @@ performMetaAnalysis <- function(appContext) {
 #' @param calibrateOutcomes - where subset of outcomes is specified
 #' @param calibrateTargets - where a subset of target exposures is specified
 #' @export
-buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTargets = FALSE) {
+buildFromConfig <- function(filePath) {
   appContext <- loadAppContext(filePath, createConnection = TRUE, useCdm = TRUE)
   message("Creating schema")
   DatabaseConnector::executeSql(appContext$connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
@@ -337,15 +337,13 @@ buildFromConfig <- function(filePath, calibrateOutcomes = FALSE, calibrateTarget
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
 
-  if (calibrateTargets) {
-    message("Calibrating targets")
-    .removeCalibratedResults(appContext)
-    rewardb::calibrateTargets(appContext)
-  }
-
-  if (calibrateOutcomes) {
+  if (appCOntext$useExposureControls) {
    message("Calibrating outcomes")
    rewardb::calibrateOutcomes(appContext)
    rewardb::calibrateOutcomesCustomCohorts(appContext)
+  } else {
+    message("Calibrating targets")
+    .removeCalibratedResults(appContext)
+    rewardb::calibrateTargets(appContext)
   }
 }
