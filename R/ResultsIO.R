@@ -6,7 +6,6 @@ exportResults <- function(
 ) {
   # Collect all files and make a hash
   meta <- list()
-  meta$config <- config
   meta$hashList <- list()
   meta$tableNames <- tableNames
 

@@ -6,7 +6,7 @@
 
 configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
 config <- loadGlobalConfig(configFilePath)
-connection <- DatabaseConnector::connect(config$connectionDetails)
+connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 test_that("build rewardb postgres db", {
   rewardb::buildPgDatabase(configFilePath = configFilePath)

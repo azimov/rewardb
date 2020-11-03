@@ -1,6 +1,6 @@
 buildPgDatabase <- function(configFilePath = "config/global-cfg.yml") {
   config <- loadGlobalConfig(configFilePath)
-  connection <- DatabaseConnector::connect(config$connectionDetails)
+  connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   tryCatch({
     message("creating rewardb results schema")
     sql <- SqlRender::readSql(system.file("sql/create", "pgSchema.sql", package = "rewardb"))
@@ -18,7 +18,7 @@ importCemSummary <- function(summaryFilePath, configFilePath = "config/global-cf
   checkmate::assert_file_exists(summaryFilePath)
 
   config <- loadGlobalConfig(configFilePath)
-  connection <- DatabaseConnector::connect(config$connectionDetails)
+  connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   tryCatch({
     # Load data frame
     evidence <- read.csv(summaryFilePath)

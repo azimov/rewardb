@@ -19,10 +19,9 @@ exportReferenceTables <- function(
   exportZipFile = "rewardb-references.zip"
 ) {
 
-  connection <- DatabaseConnector::connect(config$connectionDetails)
+  connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   # Collect all files and make a hash
   meta <- list()
-  meta$config <- config
   meta$hashList <- list()
   meta$tableNames <- CONST_REFERENCE_TABLES
 

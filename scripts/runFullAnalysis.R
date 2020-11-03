@@ -8,7 +8,7 @@ atlasCohorts <- c(7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 75
 
 
 config <- loadGlobalConfig("config/global-cfg.yml")
-connection <- DatabaseConnector::connect(config$connectionDetails)
+connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 # Add atlas cohorts
 for (atlasId in atlasCohorts) {
   insertAtlasCohortRef(connection, config, atlasId)

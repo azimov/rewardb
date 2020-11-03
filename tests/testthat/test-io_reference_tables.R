@@ -6,7 +6,7 @@
 
 configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
 config <- loadGlobalConfig(configFilePath)
-connection <- DatabaseConnector::connect(config$connectionDetails)
+connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 # Set up a database with constructed cohorts etc
 rewardb::buildPgDatabase(configFilePath = configFilePath)
@@ -17,8 +17,7 @@ conceptSetId <- 11933
 conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
 rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
-
-cdmConfig <- yaml::read_yaml(system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb"))
+cdmConfig <- loadCdmConfig(system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb"))
 
 zipFilePath <- "rewardb-references.zip"
 refFolder <- "reference_test_folder"
@@ -40,6 +39,7 @@ test_that("Export/Import reference zip file", {
 
   # Verify the tables existinces
   for (table in rewardb::CONST_REFERENCE_TABLES) {
+    table <- cdmConfig$tables[[SqlRender::camelCaseToSnakeCase(table)]]
     testSql <- "SELECT count(*) as tbl_count FROM @schema.@table"
     resp <- DatabaseConnector::renderTranslateQuerySql(connection, testSql, schema=cdmConfig$referenceSchema, table=table)
     expect_true(nrow(resp) > 0)

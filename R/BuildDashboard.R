@@ -122,7 +122,7 @@ computeMetaAnalysis <- function(appContext, connection) {
 #' @export
 buildFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE) {
   appContext <- loadAppContext(filePath, globalConfigPath)
-  connection <- DatabaseConnector::connect(appContext$connectionDetails)
+  connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
 
   message("Creating schema")
   createDashSchema(appContext, connection)

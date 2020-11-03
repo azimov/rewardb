@@ -95,12 +95,17 @@ loadGlobalConfig <- function(globalConfigPath) {
     if (is.null(config$connectionDetails$password)) {
         config$connectionDetails$password <- getPasswordSecurely()
     }
+
+    config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
     return(config)
 }
 
 
 loadCdmConfig <- function(cdmConfigPath) {
-    defaults <- list()
+    defaults <- list(
+        "passwordEnvironmentVariable" = "UNSET_DB_PASS_VAR",
+        useSecurePassword = FALSE
+    )
     config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)
 
     defaultTables <- list()
@@ -110,6 +115,11 @@ loadCdmConfig <- function(cdmConfigPath) {
     }
 
     config$tables <- .setDefaultOptions(config$tables, defaultTables)
+
+    if (config$useSecurePassword) {
+        config$connectionDetails$password <- getPasswordSecurely(.envVar = config$passwordEnvironmentVariable)
+    }
+    config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
 
     return(config)
 }
