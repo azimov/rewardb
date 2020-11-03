@@ -1,7 +1,7 @@
 name: Post Traumatic Stress Disorder
 short_name: ptsd
 description: 'Patients with ptsd'
-outcome_concept_ids: [436676]
+outcome_concept_ids: [436676, 443414, 4100536]
 custom_outcome_cohort_ids: [7545]
 target_concept_ids: ~
 useExposureControls: true

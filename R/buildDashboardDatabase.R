@@ -337,7 +337,7 @@ buildFromConfig <- function(filePath) {
   DatabaseConnector::disconnect(appContext$connection)
   DatabaseConnector::disconnect(appContext$cdmConnection)
 
-  if (appCOntext$useExposureControls) {
+  if (appContext$useExposureControls) {
    message("Calibrating outcomes")
    rewardb::calibrateOutcomes(appContext)
    rewardb::calibrateOutcomesCustomCohorts(appContext)
