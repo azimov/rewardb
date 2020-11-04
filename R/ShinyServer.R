@@ -393,6 +393,7 @@ serverInstance <- function(input, output, session) {
         null,
         options = list(dom = 't', columnDefs = list(list(visible=FALSE, targets=c(0)))),
         rownames = FALSE,
+        colnames = c("Source", "N controls", "Mean", "Stdev"),
         caption = "Table: null distribution mean and standaard deviation by data source. Select rows to filter in above plot."
       )
       return(output)
@@ -471,25 +472,69 @@ serverInstance <- function(input, output, session) {
               ds.source_name,
               round(mean_tx_time, 3) as mean_treatment_time,
               round(sd_tx_time, 3) as sd_tx_time,
-              round(mean_time_to_outcome, 3) as mean_time_to_outcome,
-              round(sd_time_to_outcome, 3) as sd_time_to_outcome
+              min_tx_time,
+              p10_tx_time,
+              p25_tx_time,
+              median_tx_time,
+              p75_tx_time,
+              p90_tx_time,
+              max_tx_time
             FROM @schema.time_on_treatment tts
             LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
-            WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",
+            WHERE exposure_id = @treatment AND outcome_id = @outcome",
             treatment = treatment,
             outcome = outcome
           )
 
           output <- DT::datatable(
             data,
+            colnames = c("Source",  "Mean", "sd", "Min", "P10", "P25", "Median", "P75", "P90", "Max"),
             options = list(dom = 't', columnDefs = list(list(visible=FALSE, targets=c(0)))),
-            caption = "Table: shows mean time on treatment for cohort across databases"
+            caption = "Table: shows time on treatment distibution in days for cohort across databases."
           )
           return(output)
       })
 
       tabPanel <- tabPanel("Time on treatment", shinycssloaders::withSpinner(DT::dataTableOutput(("timeToTreatmentStats"))))
       shiny::appendTab(inputId = "outcomeResultsTabs",  tabPanel)
+
+      output$timeOnTreatmentStats <- DT::renderDataTable({
+          s <- filteredTableSelected()
+          treatment <- s$TARGET_COHORT_ID
+          outcome <- s$OUTCOME_COHORT_ID
+
+          data <- queryDb("
+            SELECT
+              ds.source_name,
+              round(mean_time_to_outcome, 3) as mean_time_to_outcome,
+              round(sd_time_to_outcome, 3) as sd_time_to_outcome,
+              min_time_to_outcome,
+              p10_time_to_outcome,
+              p25_time_to_outcome,
+              median_time_to_outcome,
+              p75_time_to_outcome,
+              p90_time_to_outcome,
+              max_time_to_outcome
+
+            FROM @schema.time_on_treatment tts
+            LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
+            WHERE exposure_id = @treatment AND outcome_id = @outcome",
+            treatment = treatment,
+            outcome = outcome
+          )
+
+          output <- DT::datatable(
+            data,
+            colnames = c("Source",  "Mean", "sd", "Min", "P10", "P25", "Median", "P75", "P90", "Max"),
+            options = list(dom = 't', columnDefs = list(list(visible=FALSE, targets=c(0)))),
+            caption = "Table: shows time to outcome distribution in days for cohort across databases."
+          )
+          return(output)
+      })
+
+      tabPanelTimeOn <- tabPanel("Time to outcome", shinycssloaders::withSpinner(DT::dataTableOutput(("timeOnTreatmentStats"))))
+      shiny::appendTab(inputId = "outcomeResultsTabs",  tabPanelTimeOn)
+
     }
 }
 
