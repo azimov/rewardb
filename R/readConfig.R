@@ -14,7 +14,8 @@ getPasswordSecurely <- function() {
 .setDefaultOptions <- function (appContext) {
     defaults <- list(
         useExposureControls = FALSE,
-        custom_exposure_ids = c()
+        custom_exposure_ids = c(),
+        debugMode = FALSE
     )
 
     for(n in names(defaults)) {

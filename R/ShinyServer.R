@@ -20,6 +20,9 @@ serverInstance <- function(input, output, session) {
         return (df)
       },
       error = function(e) {
+        if(appContext$debugMode) {
+          print(e)
+        }
         ParallelLogger::logError(e)
         DatabaseConnector::disconnect(dbConn)
         dbConn <<- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
@@ -459,32 +462,64 @@ serverInstance <- function(input, output, session) {
       }
     )
 
+    getTimeToTreatmentStats <- reactive({
+      s <- filteredTableSelected()
+          treatment <- s$TARGET_COHORT_ID
+          outcome <- s$OUTCOME_COHORT_ID
+
+      data <- queryDb("
+        SELECT
+          ds.source_name,
+          round(mean_tx_time, 3) as mean,
+          round(sd_tx_time, 3) as sd,
+          min_tx_time as min,
+          p10_tx_time as p10,
+          p25_tx_time as p25,
+          median_tx_time as median,
+          p75_tx_time as p75,
+          p90_tx_time as p90,
+          max_tx_time as max
+        FROM @schema.time_on_treatment tts
+        LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
+        WHERE exposure_id = @treatment AND outcome_id = @outcome",
+        treatment = treatment,
+        outcome = outcome
+      )
+
+      return(data)
+    })
+
+  getTimeToOutcomeStats <- reactive({
+    s <- filteredTableSelected()
+    treatment <- s$TARGET_COHORT_ID
+    outcome <- s$OUTCOME_COHORT_ID
+
+    data <- queryDb("
+            SELECT
+              ds.source_name,
+              round(mean_time_to_outcome, 3) as mean,
+              round(sd_time_to_outcome, 3) as sd,
+              min_time_to_outcome as min,
+              p10_time_to_outcome as p10,
+              p25_time_to_outcome as p25,
+              median_time_to_outcome as median,
+              p75_time_to_outcome as p75,
+              p90_time_to_outcome as p90,
+              max_time_to_outcome as max
+
+            FROM @schema.time_on_treatment tts
+            LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
+            WHERE exposure_id = @treatment AND outcome_id = @outcome",
+                    treatment = treatment,
+                    outcome = outcome
+    )
+    return(data)
+  })
 
     if (tableExists("time_on_treatment")) {
 
       output$timeToTreatmentStats <- DT::renderDataTable({
-          s <- filteredTableSelected()
-          treatment <- s$TARGET_COHORT_ID
-          outcome <- s$OUTCOME_COHORT_ID
-
-          data <- queryDb("
-            SELECT
-              ds.source_name,
-              round(mean_tx_time, 3) as mean_treatment_time,
-              round(sd_tx_time, 3) as sd_tx_time,
-              min_tx_time,
-              p10_tx_time,
-              p25_tx_time,
-              median_tx_time,
-              p75_tx_time,
-              p90_tx_time,
-              max_tx_time
-            FROM @schema.time_on_treatment tts
-            LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
-            WHERE exposure_id = @treatment AND outcome_id = @outcome",
-            treatment = treatment,
-            outcome = outcome
-          )
+          data <- getTimeToTreatmentStats()
 
           output <- DT::datatable(
             data,
@@ -495,44 +530,41 @@ serverInstance <- function(input, output, session) {
           return(output)
       })
 
-      tabPanel <- tabPanel("Time on treatment", shinycssloaders::withSpinner(DT::dataTableOutput(("timeToTreatmentStats"))))
+      output$timeOnTreatmentDist <- plotly::renderPlotly({
+        dt <- getTimeToTreatmentStats()
+        plot <- boxPlotDist(dt)
+        return(plotly::ggplotly(plot))
+      })
+
+      tabPanel <- tabPanel(
+        "Time on treatment",
+        shinycssloaders::withSpinner(plotly::plotlyOutput("timeOnTreatmentDist")),
+        shinycssloaders::withSpinner(DT::dataTableOutput(("timeToTreatmentStats")))
+      )
       shiny::appendTab(inputId = "outcomeResultsTabs",  tabPanel)
 
-      output$timeOnTreatmentStats <- DT::renderDataTable({
-          s <- filteredTableSelected()
-          treatment <- s$TARGET_COHORT_ID
-          outcome <- s$OUTCOME_COHORT_ID
-
-          data <- queryDb("
-            SELECT
-              ds.source_name,
-              round(mean_time_to_outcome, 3) as mean_time_to_outcome,
-              round(sd_time_to_outcome, 3) as sd_time_to_outcome,
-              min_time_to_outcome,
-              p10_time_to_outcome,
-              p25_time_to_outcome,
-              median_time_to_outcome,
-              p75_time_to_outcome,
-              p90_time_to_outcome,
-              max_time_to_outcome
-
-            FROM @schema.time_on_treatment tts
-            LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
-            WHERE exposure_id = @treatment AND outcome_id = @outcome",
-            treatment = treatment,
-            outcome = outcome
-          )
+      output$timeToOutcomeStats <- DT::renderDataTable({
+          data <- getTimeToOutcomeStats()
 
           output <- DT::datatable(
             data,
             colnames = c("Source",  "Mean", "sd", "Min", "P10", "P25", "Median", "P75", "P90", "Max"),
             options = list(dom = 't', columnDefs = list(list(visible=FALSE, targets=c(0)))),
-            caption = "Table: shows time to outcome distribution in days for cohort across databases."
+            caption = "Table: shows time to outcome distribution measaured in days between exposure and cohort across different databases."
           )
           return(output)
       })
 
-      tabPanelTimeOn <- tabPanel("Time to outcome", shinycssloaders::withSpinner(DT::dataTableOutput(("timeOnTreatmentStats"))))
+      output$timeToOutcomeDist <- plotly::renderPlotly({
+        dt <- getTimeToOutcomeStats()
+        plot <- boxPlotDist(dt)
+        return(plotly::ggplotly(plot))
+      })
+
+      tabPanelTimeOn <- tabPanel("Time to outcome",
+                                 shinycssloaders::withSpinner(plotly::plotlyOutput("timeToOutcomeDist")),
+                                 shinycssloaders::withSpinner(DT::dataTableOutput(("timeToOutcomeStats")))
+      )
       shiny::appendTab(inputId = "outcomeResultsTabs",  tabPanelTimeOn)
 
     }
