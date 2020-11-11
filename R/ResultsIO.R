@@ -75,8 +75,14 @@ importResultsFiles <- function(
           ParallelLogger::logWarn(paste("Skipping table", tableName, "not found in schema", tables))
           next
         }
-        # Read first line to get header column order, we assume these are large files
-        head <- read.csv(file=csvFile, nrows=1)
+
+        head <- read.csv(file=csvFile, nrows=2)
+
+        if (nrow(head) == 0) {
+          ParallelLogger::logWarn(paste("Skipping file", csvFile, "as it is empty"))
+          next
+        }
+
         headers <- stringi::stri_join(names(head),collapse = ", ")
 
         copyCommand <- paste(

@@ -1,19 +1,21 @@
 getAllExposureIds <- function(connection, config) {
-  sql <- "SELECT cohort_definition_id FROM @reference_schema.cohort_definition"
+  sql <- "SELECT cohort_definition_id FROM @reference_schema.@cohort_definition"
   queryRes <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
-    reference_schema = config$referenceSchema
+    reference_schema = config$referenceSchema,
+    cohort_definition = config$table$cohortDefinition
   )
   return(queryRes$COHORT_DEFINITION_ID)
 }
 
 getAllOutcomeIds <- function(connection, config) {
-  sql <- "SELECT cohort_definition_id FROM @reference_schema.outcome_cohort_definition"
+  sql <- "SELECT cohort_definition_id FROM @reference_schema.@outcome_cohort_definition"
   queryRes <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
-    reference_schema = config$referenceSchema
+    reference_schema = config$referenceSchema,
+    outcome_cohort_definition = config$table$outcomeCohortDefinition
   )
   return(queryRes$COHORT_DEFINITION_ID)
 }
