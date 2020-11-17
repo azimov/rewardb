@@ -1,4 +1,4 @@
-buildPgDatabase <- function(configFilePath = "config/global-cfg.yml") {
+buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildCem = TRUE) {
   config <- loadGlobalConfig(configFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   tryCatch({
@@ -7,9 +7,26 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml") {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql,
-      vocabulary_schema = "vocabulary",
       schema = config$rewardbResultsSchema
     )
+
+    sql <- SqlRender::readSql(system.file("sql/create", "referenceTables.sql", package = "rewardb"))
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection,
+      sql,
+      schema = config$rewardbResultsSchema
+    )
+
+    sql <- SqlRender::readSql(system.file("sql/create", "cohortReferences.sql", package = "rewardb"))
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection,
+      sql,
+      vocabulary_schema = 'vocabulary',
+      schema = config$rewardbResultsSchema
+    )
+
+    sql <- SqlRender::readSql(system.file("sql/create", "cemSchema.sql", package = "rewardb"))
+    DatabaseConnector::renderTranslateExecuteSql(connection, sql)
   })
   DatabaseConnector::disconnect(connection)
 }
