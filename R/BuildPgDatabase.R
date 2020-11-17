@@ -14,7 +14,8 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildCem =
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql,
-      schema = config$rewardbResultsSchema
+      schema = config$rewardbResultsSchema,
+      include_constraints = 1
     )
 
     sql <- SqlRender::readSql(system.file("sql/create", "cohortReferences.sql", package = "rewardb"))

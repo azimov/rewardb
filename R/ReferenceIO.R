@@ -51,23 +51,45 @@ exportReferenceTables <- function(
 #'
 #' @description
 #' Note that this always overwrites the existing reference tables stored in the database
-importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, useMppBulkLoad = FALSE) {
+importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePsqlUpload = FALSE) {
   unzipAndVerify(zipFilePath, refFolder, TRUE)
   connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
 
-  fileList <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
-  for (file in fileList) {
-    data <- read.csv(file)
-    tableName <- cdmConfig$tables[[SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])]]
-    DatabaseConnector::insertTable(
-      connection,
-      tableName = paste(cdmConfig$referenceSchema, tableName, sep = "."),
-      data = data,
-      progressBar = TRUE,
-      dropTableIfExists = TRUE,
-      createTable = TRUE,
-      useMppBulkLoad = useMppBulkLoad
-    )
-  }
+  tryCatch(
+    {
+      sql <- SqlRender::readSql(system.file("sql/create", "referenceTables.sql", package = "rewardb"))
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection,
+        sql,
+        schema = cdmConfig$referenceSchema,
+        concept_set_definition = cdmConfig$tables$conceptSetDefinition,
+        cohort_definition = cdmConfig$tables$cohortDefinition,
+        outcome_cohort_definition = cdmConfig$tables$outcomeCohortDefinition,
+        atlas_outcome_reference = cdmConfig$tables$atlasOutcomeReference,
+        atlas_concept_reference = cdmConfig$tables$atlasConceptReference,
+        custom_exposure = cdmConfig$tables$customExposure,
+        custom_exposure_concept = cdmConfig$tables$customExposureConcept
+      )
+
+      fileList <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
+      for (file in fileList) {
+        data <- read.csv(file)
+        tableName <- cdmConfig$tables[[SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])]]
+        DatabaseConnector::dbAppendTable(
+          conn = connection,
+          name = paste(cdmConfig$referenceSchema, tableName, sep = "."),
+          value = data,
+          progressBar = TRUE,
+          oracleTempSchema = cdmConfig$oracleTempSchema
+        )
+      }
+
+    },
+
+    error = function(err) {
+      ParallelLogger::logError(err)
+      reuturn(NULL)
+    }
+  )
   DatabaseConnector::disconnect(connection)
 }
