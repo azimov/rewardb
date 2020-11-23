@@ -9,6 +9,6 @@ connectionDetails:
   port: 5432
   user: "reward_admin"
 
-rewardbResultsSchema: "rewardb"
+rewardbResultsSchema: "rewardb_2020_Nov_12"
 vocabularySchema: "vocabulary"
 cemSchema: "cem"

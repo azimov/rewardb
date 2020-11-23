@@ -120,12 +120,26 @@ createOutcomeCohorts <- function(connection, config) {
 #' repeat perscriptions). Could be something like a vaccine where exposed time is non trivial.
 #' @param connection DatabaseConnector connection to cdm
 #' @param
-createCustomDrugEras <- function(connection, config) {
-  sql <- SqlRender::readSql(system.file("sql/create", "customDrugEra.sql", package = "rewardb"))
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection,
-    sql = sql,
-    cdm_database = config$cdmSchema
+createCustomDrugEras <- function(configPath) {
+
+  config <- rewardb::loadCdmConfig(configPath)
+  connection <- DatabaseConnector::connect(config$connectionDetails)
+
+  tryCatch({
+    sql <- SqlRender::readSql(system.file("sql/cohorts", "customDrugEra.sql", package = "rewardb"))
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection,
+      sql = sql,
+      cdm_database = config$cdmSchema,
+      drug_era_schema = config$drugEraSchema
+    )
+  },
+  error = function(err) {
+    ParallelLogger::logError(err)
+    return(NULL)
+  }
   )
+
+  DatabaseConnector::disconnect(connection)
 
 }

@@ -40,6 +40,8 @@ pgCopy <- function(connectionDetails, csvFile, schema, tableName, sep = ",") {
   passwordCommand <- paste0("PGPASSWORD=", connectionDetails$password)
 
   if (.Platform$OS.type == "windows") {
+
+    winPsqlPath <- Sys.getenv("WIN_PSQL_PATH")
     passwordCommand <- paste0("$env:", passwordCommand, ";")
     command <- paste0('"', file.path(winPsqlPath, "psql.exe"), '"')
 
