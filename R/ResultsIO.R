@@ -25,43 +25,17 @@ getMetaDt <- function(unzipPath) {
   jsonlite::read_json(file.path(unzipPath, rewardb::CONST_META_FILE_NAME))
 }
 
-.checkPsqlExists <- function(cmd, testCmd = "--version") {
-  res <- base::system(paste(cmd, testCmd))
-  if (res != 0) {
-    stop("Error psql command did not retrun a 0 status. Copy util will not function")
-  }
-}
-
 #' Only works with postgres
 importResultsFiles <- function(
   connectionDetails,
   resultsSchema,
   exportZipFilePath,
   unzipPath = "rb-import",
-  winPsqlPath = NULL,
   .checkTables = TRUE)
 {
   checkmate::assert(connectionDetails$dbms == "postgresql")
-  passwordCommand <- paste0("PGPASSWORD=", connectionDetails$password)
-  if (.Platform$OS.type == "windows") {
-    if (is.null(winPsqlPath)) {
-      winPsqlPath <- Sys.getenv("WIN_PSQL_PATH")
-    }
-
-    passwordCommand <- paste0("$env:", passwordCommand, ";")
-    command <- paste0('"', file.path(winPsqlPath, "psql.exe"), '"')
-
-    if (!file.exists(command)) {
-      stop("Error, could not find psql")
-    }
-  } else {
-    command <- "psql"
-  }
-
-  .checkPsqlExists(command)
   files <- unzipAndVerify(exportZipFilePath, unzipPath, TRUE)
   meta <- getMetaDt(unzipPath)
-  hostServerDb <- strsplit(connectionDetails$server, "/")[[1]]
 
   connection <- DatabaseConnector::connect(connectionDetails)
   # Bulk insert data in to tables with pgcopy
@@ -80,33 +54,7 @@ importResultsFiles <- function(
           next
         }
 
-        head <- read.csv(file=csvFile, nrows=2)
-
-        if (nrow(head) == 0) {
-          ParallelLogger::logWarn(paste("Skipping file", csvFile, "as it is empty"))
-          next
-        }
-
-        headers <- stringi::stri_join(names(head),collapse = ", ")
-
-        copyCommand <- paste(
-          passwordCommand,
-          command,
-          "-h", hostServerDb[[1]],
-          "-d", hostServerDb[[2]],
-          "-p", connectionDetails$port,
-          "-U", connectionDetails$user,
-          "-c \"\\copy", paste0(resultsSchema, ".", tableName),
-          paste0("(", headers, ")"),
-          "FROM", paste0("'", csvFile, "'"),
-          "DELIMITER ',' CSV HEADER;\""
-        )
-
-        result <- base::system(copyCommand)
-        if (result != 0) {
-          stop("Copy failure, psql returned a non zero status")
-        }
-        ParallelLogger::logInfo(paste("Copy file complete", csvFile))
+        pgCopy(connectionDetails, csvFile, resultsSchema, tableName)
       }
     },
     error = ParallelLogger::logError
