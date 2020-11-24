@@ -34,6 +34,13 @@ unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   return(lapply(names(meta$hashList), function(file) { tools::file_path_as_absolute(file.path(unzipPath, file)) }))
 }
 
+.checkPsqlExists <- function(cmd, testCmd = "--version") {
+  res <- base::system(paste(cmd, testCmd))
+  if (res != 0) {
+    stop("Error psql command did not retrun a 0 status. Copy util will not function")
+  }
+}
+
 pgCopy <- function(connectionDetails,
                    csvFileName,
                    schema,
@@ -70,6 +77,8 @@ pgCopy <- function(connectionDetails,
     command <- "psql"
   }
 
+  .checkPsqlExists(command)
+
   head <- read.csv(file = csvFileName, nrows = 1, sep=sep)
   headers <- paste(names(head), collapse = ", ")
   headers <- paste0("(", headers, ")")
@@ -90,7 +99,6 @@ pgCopy <- function(connectionDetails,
                        "FROM", filePathStr,
                        paste0("DELIMITER '", sep, "' CSV HEADER QUOTE E'\b';\""))
 
-  print(copyCommand)
   result <- base::system(copyCommand)
 
   if (result != 0) {
