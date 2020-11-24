@@ -30,19 +30,11 @@ importResultsFiles(config$connectionDetails, "test", "rewardb-export.zip")
 
 test_that("Dashboard creation works", {
   Sys.setenv("REWARD_B_PASSWORD" = "postgres")
-  appContext <- loadAppContext(system.file("tests", "test.dashboard.yml", package = "rewardb"), configFilePath)
-  expect_is(appContext, "rewardb::appContext")
-  createDashSchema(appContext = appContext, connection = connection)
+  buildDashboardFromConfig(system.file("tests", "test.dashboard.yml", package = "rewardb"), configFilePath, performCalibration = TRUE)
 
-  addCemEvidence(appContext, connection)
+  # Check schema exists
 
-  computeMetaAnalysis(appContext, connection)
-
-  .removeCalibratedResults(appContext, connection)
-  if (appContext$useExposureControls) {
-    calibrateOutcomes(appContext, connection)
-  } else {
-    calibrateTargets(appContext, connection)
-  }
-
+  # Check meta analysis data has been added
 })
+
+DatabaseConnector::disconnect(connection)

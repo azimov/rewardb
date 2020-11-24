@@ -108,9 +108,10 @@ computeMetaAnalysis <- function(appContext, connection) {
 
   results$STUDY_DESIGN <- "scc"
   results$CALIBRATED <- 0
-
-  resultsTable <- paste0(appContext$short_name, ".result")
-  DatabaseConnector::dbAppendTable(connection, resultsTable, results)
+  csvFileName <- paste0(appContext$short_name, "-meta-analysis.csv")
+  write.csv(results, csvFileName, , na = "", row.names = FALSE)
+  pgCopy(connectionDetails = appContext$connectionDetails, csvFileName, appContext$short_name, "result")
+  unlink(csvFileName)
 }
 
 

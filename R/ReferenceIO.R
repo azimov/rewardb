@@ -38,8 +38,6 @@ exportReferenceTables <- function(
         meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
       }
 
-
-
       metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
       jsonlite::write_json(meta, metaDataFilename)
 
