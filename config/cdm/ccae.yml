@@ -4,22 +4,26 @@ database: CDM_IBM_ccae_v1151
 exportPath: "export_ccae"
 
 connectionDetails:
-  dbms: pdw
-  server: JRDUSAPSCTL01
-  port: 17001
+  extraSettings: "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
+  dbms: redshift
+  server: rhealth-prod-1.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/truven_ccae
+  port: 5439
+  user: unset
+  password: unset
 
-securePassword: True
+useSecurePassword: True
+passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
 
-resultSchema: "scratch.dbo"
-referenceSchema: "scratch.dbo"
-cdmSchema: "CDM_IBM_ccae_v1151.dbo"
-vocabularySchema: "Vocabulary_20200525.dbo"
-drugEraSchema: "CDM_IBM_ccae_v1151.reward"
+resultSchema: "scratch_rewardb"
+referenceSchema: "scratch_rewardb"
+cdmSchema: "cdm"
+vocabularySchema: "cdm"
+drugEraSchema: "scratch_rewardb"
 
 tables:
-  outcomeCohort: "rb_ccae_v1151_outcome_cohort"
-  cohort: "rb_ccae_v1151_cohort"
-  sccResult: "rb_ccae_v1151_scc_result"
+  outcomeCohort: "rb_outcome_cohort"
+  cohort: "rb_cohort"
+  sccResult: "rb_scc_result"
   # Reference table definitions
   cohortDefinition: "rb_cohort_definition"
   outcomeCohortDefinition: "rb_outcome_cohort_definition"
