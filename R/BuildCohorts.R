@@ -88,7 +88,27 @@ createOutcomeCohorts <- function(connection, config) {
     outcome_cohort_table = config$tables$outcomeCohort
   )
 
-  sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortsRefs.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql = sql,
+    cdm_database_schema = config$cdmSchema,
+    cohort_database_schema = config$resultSchema,
+    outcome_cohort_table = config$tables$outcomeCohort
+  )
+
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createType0OutcomeCohorts.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql = sql,
+    reference_schema = config$referenceSchema,
+    cdm_database_schema = config$cdmSchema,
+    cohort_database_schema = config$resultSchema,
+    outcome_cohort_table = config$tables$outcomeCohort,
+    outcome_cohort_definition = config$tables$outcomeCohortDefinition,
+  )
+
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createType1OutcomeCohorts.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql = sql,

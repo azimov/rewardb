@@ -1,9 +1,15 @@
+IF OBJECT_ID('@cohort_database_schema.computed_o_cohorts', 'U') IS NOT NULL
+	DROP TABLE @cohort_database_schema.computed_o_cohorts;
+
+IF OBJECT_ID('@cohort_database_schema.concept_ancestor_grp', 'U') IS NOT NULL
+	DROP TABLE @cohort_database_schema.concept_ancestor_grp;
+
 --HINT DISTRIBUTE_ON_KEY(cohort_definition_id)
-create table #computed_o_cohorts AS
+create table @cohort_database_schema.computed_o_cohorts AS
 SELECT DISTINCT cohort_definition_id
 FROM @cohort_database_schema.@outcome_cohort_table;
 
-create table #concept_ancestor_grp as
+create table @cohort_database_schema.concept_ancestor_grp as
 select
   ca1.ancestor_concept_id
   , ca1.descendant_concept_id
@@ -40,144 +46,5 @@ inner join
   on ca1.ancestor_concept_id = t1.concept_id
 ;
 
--- create clustered columnstore index cci_cag1 on #concept_ancestor_grp;
-
--- first diagnosis, which eventually leads to hospitalization for same outcome
---HINT DISTRIBUTE_ON_KEY(person_id)
-create table #cohorts as
-select
-  ocr.cohort_definition_id
-  , t1.person_id
-  , t1.cohort_start_date
-  , t1.cohort_start_date as cohort_end_date
-from
-(
-  select
-    co1.person_id
-    , ca1.ancestor_concept_id
-    , min(co1.condition_start_date) as cohort_start_date
-  from @cdm_database_schema.condition_occurrence co1
-  inner join #concept_ancestor_grp ca1
-    on co1.condition_concept_id = ca1.descendant_concept_id
-  group by
-    co1.person_id
-    , ca1.ancestor_concept_id
-) t1
-inner join @reference_schema.@outcome_cohort_definition ocr ON (
-    ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 1
-)
-left join computed_o_cohorts coc ON ocr.cohort_definition_id = coc.cohort_definition_id
-inner join
-(
-  select
-    co1.person_id
-    , ca1.ancestor_concept_id
-    , min(vo1.visit_start_date) as cohort_start_date
-  from @cdm_database_schema.condition_occurrence co1
-  inner join @cdm_database_schema.visit_occurrence vo1
-    on co1.person_Id = vo1.person_id
-    and co1.visit_occurrence_id = vo1.visit_occurrence_id
-    and visit_concept_id = 9201
-  inner join #concept_ancestor_grp ca1
-    on co1.condition_concept_id = ca1.descendant_concept_id
-  group by
-    co1.person_id
-    , ca1.ancestor_concept_id
-) t2
-  on t1.person_id = t2.person_id
-  and t1.ancestor_concept_id = t2.ancestor_concept_id
-
-WHERE coc.cohort_definition_id IS NULL
-;
-
-insert into @cohort_database_schema.@outcome_cohort_table
-(
-  cohort_definition_id
-  , subject_id
-  , cohort_start_date
-  , cohort_end_date
-)
-select
-  cohort_definition_id
-  , person_id
-  , cohort_start_date
-  , cohort_end_date
-from #cohorts
-;
 
 
-
---incident outcomes - requiring two visits, first visit is used as date of outcome
---HINT DISTRIBUTE_ON_KEY(person_id)
-create table #cohortsb as
-select
-  ocr.cohort_definition_id
-  , t1.person_id
-  , t1.cohort_start_date
-  , t1.cohort_start_date as cohort_end_date
-from
-(
-  select
-    co1.person_id
-    , ca1.ancestor_concept_id
-    , min(co1.condition_start_date) as cohort_start_date
-  from @cdm_database_schema.condition_occurrence co1
-  inner join #concept_ancestor_grp ca1
-    on co1.condition_concept_id = ca1.descendant_concept_id
-  group by
-    co1.person_id
-    , ca1.ancestor_concept_id
-) t1
-inner join @reference_schema.@outcome_cohort_definition ocr ON (
-    ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 0
-)
-left join computed_o_cohorts coc ON ocr.cohort_definition_id = coc.cohort_definition_id
-inner join
-(
-  select
-    co1.person_id
-    , ca1.ancestor_concept_id
-    , min(vo1.visit_start_date) as cohort_start_date
-    , max(vo1.visit_start_date) as confirmed_date
-  from @cdm_database_schema.condition_occurrence co1
-  inner join @cdm_database_schema.visit_occurrence vo1
-    on co1.person_Id = vo1.person_id
-    and co1.visit_occurrence_id = vo1.visit_occurrence_id
-  inner join #concept_ancestor_grp ca1
-    on co1.condition_concept_id = ca1.descendant_concept_id
-  group by
-    co1.person_id
-    , ca1.ancestor_concept_id
-) t2
-  on t1.person_id = t2.person_id
-  and t1.ancestor_concept_id = t2.ancestor_concept_id
-  where t2.cohort_start_date < t2.confirmed_date -- here's the piece that finds two unique visit dates
-  AND coc.cohort_definition_id IS NULL -- Stop recomputing cohorts
-;
-
-insert into @cohort_database_schema.@outcome_cohort_table
-(
-  cohort_definition_id
-  , subject_id
-  , cohort_start_date
-  , cohort_end_date
-)
-select
-  cohort_definition_id
-  , person_id
-  , cohort_start_date
-  , cohort_end_date
-from #cohortsb
-;
-
-truncate table #concept_ancestor_grp;
-drop table #concept_ancestor_grp;
-
-truncate table #cohorts;
-drop table #cohorts;
-
-truncate table #cohortsb;
-drop table #cohortsb;
-
-truncate table #computed_o_cohorts;
-drop table #computed_o_cohorts;
