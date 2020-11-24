@@ -18,34 +18,37 @@ exportReferenceTables <- function(
   exportPath = tempdir(),
   exportZipFile = "rewardb-references.zip"
 ) {
-
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-  # Collect all files and make a hash
-  meta <- list()
-  meta$hashList <- list()
-  meta$tableNames <- CONST_REFERENCE_TABLES
+  tryCatch(
+    {
+      # Collect all files and make a hash
+      meta <- list()
+      meta$hashList <- list()
+      meta$tableNames <- CONST_REFERENCE_TABLES
 
-  for (table in rewardb::CONST_REFERENCE_TABLES) {
-    data <- DatabaseConnector::renderTranslateQuerySql(
-      connection,
-      "SELECT * FROM @schema.@table;",
-      schema = config$rewardbResultsSchema,
-      table = table
-    )
-    file <- file.path(exportPath, paste0(table, ".csv"))
-    write.csv(data, file, na = "", row.names = FALSE)
-    meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
-  }
+      for (table in rewardb::CONST_REFERENCE_TABLES) {
+        data <- DatabaseConnector::renderTranslateQuerySql(
+          connection,
+          "SELECT * FROM @schema.@table;",
+          schema = config$rewardbResultsSchema,
+          table = table
+        )
+        file <- file.path(exportPath, paste0(table, ".csv"))
+        write.csv(data, file, na = "", row.names = FALSE)
+        meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
+      }
 
+      metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
+      jsonlite::write_json(meta, metaDataFilename)
+
+      exportFiles <- file.path(exportPath, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
+      zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)
+
+      ParallelLogger::logInfo(paste("Created export zipfile", exportZipFile))
+    },
+    error = ParallelLogger::logError
+  )
   DatabaseConnector::disconnect(connection)
-
-  metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
-  jsonlite::write_json(meta, metaDataFilename)
-
-  exportFiles <- file.path(exportPath, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
-  zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)
-
-  ParallelLogger::logInfo(paste("Created export zipfile", exportZipFile))
 }
 
 #'

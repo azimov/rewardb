@@ -34,46 +34,70 @@ unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   return(lapply(names(meta$hashList), function(file) { tools::file_path_as_absolute(file.path(unzipPath, file)) }))
 }
 
+pgCopy <- function(connectionDetails,
+                   csvFileName,
+                   schema,
+                   tableName,
+                   sep = ",") {
+  startTime <- Sys.time()
 
-pgCopy <- function(connectionDetails, csvFile, schema, tableName, sep = ",") {
-  checkmate::assert(connectionDetails$dbms == "postgresql")
-  passwordCommand <- paste0("PGPASSWORD=", connectionDetails$password)
+  # For backwards compatibility with older versions of DatabaseConnector
+  if (is(connectionDetails$server, "function")) {
+    hostServerDb <- strsplit(connectionDetails$server(), "/")[[1]]
+    port <- connectionDetails$port()
+    user <- connectionDetails$user()
+    password <- connectionDetails$password()
+  } else {
+    hostServerDb <- strsplit(connectionDetails$server, "/")[[1]]
+    port <- connectionDetails$port
+    user <- connectionDetails$user
+    password <- connectionDetails$password
+  }
+
+  # Required by psql:
+  Sys.setenv("PGPASSWORD" = password)
+  rm(password)
+  on.exit(Sys.unsetenv("PGPASSWORD"))
 
   if (.Platform$OS.type == "windows") {
-
     winPsqlPath <- Sys.getenv("WIN_PSQL_PATH")
-    passwordCommand <- paste0("$env:", passwordCommand, ";")
-    command <- paste0('"', file.path(winPsqlPath, "psql.exe"), '"')
-
+    command <- file.path(winPsqlPath, "psql.exe")
     if (!file.exists(command)) {
-      stop("Error, could not find psql")
+      stop("Could not find psql.exe in ", winPsqlPath)
     }
+    command <- paste0("\"", command, "\"")
   } else {
     command <- "psql"
   }
-  # Read first line to get header column order, we assume these are large files
-  head <- read.csv(file = csvFile, nrows = 1, sep=sep)
-  headers <- stringi::stri_join(names(head), collapse = ", ")
-  hostServerDb <- strsplit(connectionDetails$server, "/")[[1]]
 
-  copyCommand <- paste(
-    passwordCommand,
-    command,
-    "-h", hostServerDb[[1]],
-    "-d", hostServerDb[[2]],
-    "-p", connectionDetails$port,
-    "-U", connectionDetails$user,
-    "-c \"\\copy", paste0(schema, ".", tableName),
-    paste0("(", headers, ")"),
-    "FROM", paste0("'", csvFile, "'"),
-    paste0("DELIMITER '", sep, "' CSV HEADER QUOTE E'\b';\"")
-  )
+  head <- read.csv(file = csvFileName, nrows = 1, sep=sep)
+  headers <- paste(names(head), collapse = ", ")
+  headers <- paste0("(", headers, ")")
+  tablePath <- paste(schema, tableName, sep = ".")
+  filePathStr <- paste0("'", csvFileName, "'")
 
-  result <- base::system(copyCommand)
-  if (result != 0) {
-    stop("Copy failure, psql returned a non zero status")
+  if (is.null(port)) {
+    port <- 5432
   }
-  ParallelLogger::logInfo(paste("Copy file complete", csvFile))
+
+  copyCommand <- paste(command,
+                       "-h", hostServerDb[[1]], # Host
+                       "-d", hostServerDb[[2]], # Database
+                       "-p", port,
+                       "-U", user,
+                       "-c \"\\copy", tablePath,
+                       headers,
+                       "FROM", filePathStr,
+                       paste0("DELIMITER '", sep, "' CSV HEADER QUOTE E'\b';\""))
+
+  print(copyCommand)
+  result <- base::system(copyCommand)
+
+  if (result != 0) {
+    stop("Error while bulk uploading data, psql returned a non zero status. Status = ", result)
+  }
+  delta <- Sys.time() - startTime
+  writeLines(paste("Uploading data took", signif(delta, 3), attr(delta, "units")))
 }
 
 importVocabularyZip <- function(connectionDetails, vocabularyPath, vocabularySchema = "vocabulary") {
