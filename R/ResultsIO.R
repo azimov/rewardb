@@ -44,6 +44,10 @@ importResultsFiles <- function(
   checkmate::assert(connectionDetails$dbms == "postgresql")
   passwordCommand <- paste0("PGPASSWORD=", connectionDetails$password)
   if (.Platform$OS.type == "windows") {
+    if (is.null(winPsqlPath)) {
+      winPsqlPath <- Sys.getenv("WIN_PSQL_PATH")
+    }
+
     passwordCommand <- paste0("$env:", passwordCommand, ";")
     command <- paste0('"', file.path(winPsqlPath, "psql.exe"), '"')
 

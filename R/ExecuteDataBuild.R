@@ -46,9 +46,7 @@ generateSccResults <- function(
   config <- yaml::read_yaml(cdmConfigFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
-  tryCatch(
-    {
-
+  tryCatch({
     if (.createExposureCohorts) {
       ParallelLogger::logInfo("Creating exposure cohorts")
       createCohorts(connection, config)
@@ -91,9 +89,9 @@ generateSccResults <- function(
     }
 
   },
-    error = ParallelLogger::logError,
-    finally = function() {
-      DatabaseConnector::disconnect(connection)
-      ParallelLogger::unregisterLogger(logger)
-  })
+  error = ParallelLogger::logError
+  )
+  DatabaseConnector::disconnect(connection)
+  ParallelLogger::unregisterLogger(logger)
+
 }

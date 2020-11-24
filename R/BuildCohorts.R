@@ -88,7 +88,27 @@ createOutcomeCohorts <- function(connection, config) {
     outcome_cohort_table = config$tables$outcomeCohort
   )
 
-  sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortsRefs.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql = sql,
+    cdm_database_schema = config$cdmSchema,
+    cohort_database_schema = config$resultSchema,
+    outcome_cohort_table = config$tables$outcomeCohort
+  )
+
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createType0OutcomeCohorts.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql = sql,
+    reference_schema = config$referenceSchema,
+    cdm_database_schema = config$cdmSchema,
+    cohort_database_schema = config$resultSchema,
+    outcome_cohort_table = config$tables$outcomeCohort,
+    outcome_cohort_definition = config$tables$outcomeCohortDefinition,
+  )
+
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createType1OutcomeCohorts.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql = sql,
@@ -120,12 +140,26 @@ createOutcomeCohorts <- function(connection, config) {
 #' repeat perscriptions). Could be something like a vaccine where exposed time is non trivial.
 #' @param connection DatabaseConnector connection to cdm
 #' @param
-createCustomDrugEras <- function(connection, config) {
-  sql <- SqlRender::readSql(system.file("sql/create", "customDrugEra.sql", package = "rewardb"))
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection,
-    sql = sql,
-    cdm_database = config$cdmSchema
+createCustomDrugEras <- function(configPath) {
+
+  config <- rewardb::loadCdmConfig(configPath)
+  connection <- DatabaseConnector::connect(config$connectionDetails)
+
+  tryCatch({
+    sql <- SqlRender::readSql(system.file("sql/cohorts", "customDrugEra.sql", package = "rewardb"))
+    DatabaseConnector::renderTranslateExecuteSql(
+      connection,
+      sql = sql,
+      cdm_database = config$cdmSchema,
+      drug_era_schema = config$drugEraSchema
+    )
+  },
+  error = function(err) {
+    ParallelLogger::logError(err)
+    return(NULL)
+  }
   )
+
+  DatabaseConnector::disconnect(connection)
 
 }
