@@ -1,5 +1,4 @@
 # Compute the average time on treatement for cohort pairs
-# TODO: tidy up and optimize the sql to have this pre computed
 getAverageTimeOnTreatment <- function(connection, config, targetCohortIds = NULL, outcomeCohortIds = NULL) {
   results <- data.frame()
   for (dataSource in config$dataSources) {

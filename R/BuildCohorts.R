@@ -88,7 +88,7 @@ createOutcomeCohorts <- function(connection, config) {
     outcome_cohort_table = config$tables$outcomeCohort
   )
 
-  sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortsRefs.sql", package = "rewardb"))
+  sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql = sql,
