@@ -109,12 +109,9 @@ importResultsFiles <- function(
         ParallelLogger::logInfo(paste("Copy file complete", csvFile))
       }
     },
-    error = ParallelLogger::logError,
-    finally = function() {
-      DatabaseConnector::disconnect(connection)
-    }
+    error = ParallelLogger::logError
   )
-
+  DatabaseConnector::disconnect(connection)
 }
 
 importResultsZip <- function(resultsZipPath, configFilePath="config/global-cfg.yml", unzipPath = "rb-import") {

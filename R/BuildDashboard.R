@@ -120,26 +120,30 @@ computeMetaAnalysis <- function(appContext, connection) {
 #' @param filePath - path to a yaml configuration file used
 #' @param performCalibration - use empirical calibration package to compute adjusted p values, effect estimates and confidence intervals
 #' @export
-buildFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE) {
+buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE) {
   appContext <- loadAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  tryCatch(
+    {
+      message("Creating schema")
+      createDashSchema(appContext, connection)
+      message("Adding negative controls from CEM")
+      addCemEvidence(appContext, connection)
+      message("Running meta analysis")
+      computeMetaAnalysis(appContext, connection)
 
-  message("Creating schema")
-  createDashSchema(appContext, connection)
-  message("Adding negative controls from CEM")
-  addCemEvidence(appContext, connection)
-  message("Running meta analysis")
-  computeMetaAnalysis(appContext, connection)
-
-  if (performCalibration) {
-    .removeCalibratedResults(appContext, connection)
-    if (appContext$useExposureControls) {
-      message("Calibrating outcomes")
-      calibrateOutcomes(appContext, connection)
-    } else {
-      message("Calibrating targets")
-      calibrateTargets(appContext, connection)
-    }
-  }
+      if (performCalibration) {
+        .removeCalibratedResults(appContext, connection)
+        if (appContext$useExposureControls) {
+          message("Calibrating outcomes")
+          calibrateOutcomes(appContext, connection)
+        } else {
+          message("Calibrating targets")
+          calibrateTargets(appContext, connection)
+        }
+      }
+    },
+    error = ParallelLogger::logError
+  )
   DatabaseConnector::disconnect(connection)
 }
