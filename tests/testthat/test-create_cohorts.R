@@ -27,6 +27,7 @@ test_that("Full data generation on CDM", {
 
   createCohorts(connection, cdmConfig)
 
+  print("Checking target cohorts")
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT count(*) as cohort_count FROM @schema.@cohort_table",
@@ -37,6 +38,7 @@ test_that("Full data generation on CDM", {
   # Target cohorts should be created
   expect_true(initialCount > 0)
 
+  print("Checking regeneration")
   createCohorts(connection, cdmConfig)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
@@ -49,6 +51,7 @@ test_that("Full data generation on CDM", {
   # Should only run the cohorts once!
   expect_true(initialCount == reCount)
 
+  print("Checking outcome cohorts")
   createOutcomeCohorts(connection, cdmConfig)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
@@ -60,6 +63,8 @@ test_that("Full data generation on CDM", {
   # Outcome cohorts should be created
   initialCount <- qdf$COHORT_COUNT[[1]]
   expect_true(initialCount > 0)
+
+  print("Checking outcome cohorts regeneration")
   createOutcomeCohorts(connection, cdmConfig)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
