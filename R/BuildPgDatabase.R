@@ -34,14 +34,6 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildCem =
 
 importCemSummary <- function(summaryFilePath, configFilePath = "config/global-cfg.yml") {
   checkmate::assert_file_exists(summaryFilePath)
-
   config <- loadGlobalConfig(configFilePath)
-  connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-  tryCatch({
-    # Load data frame
-    evidence <- read.csv(summaryFilePath)
-    # Insert in to db
-    DatabaseConnector::dbAppendTable(connection, "cem.matrix_summary", evidence)
-  })
-  DatabaseConnector::disconnect(connection)
+  pgCopy(connectionDetails = config$connectionDetails, summaryFilePath, "cem", "matrix_summary")
 }
