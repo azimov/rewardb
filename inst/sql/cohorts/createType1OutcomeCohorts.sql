@@ -1,3 +1,6 @@
+{DEFAULT @fetch = ''}
+{DEFAULT @offset = ''}
+
 insert into @cohort_database_schema.@outcome_cohort_table
 (
   cohort_definition_id
@@ -48,4 +51,6 @@ inner join
   and t1.ancestor_concept_id = t2.ancestor_concept_id
 
 WHERE coc.cohort_definition_id IS NULL
+  {@offset != ''} ? {OFFSET @offset ROWS}
+  {@fetch != ''} ?  {FETCH NEXT @fetch ROWS ONLY}
 ;
