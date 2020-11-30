@@ -78,7 +78,7 @@ getUncomputedAtlasCohorts <- function(connection, config) {
 #' @param connection DatabaseConnector connection to cdm
 #' @param config
 #' @param dataSources dataSources to run cohort on
-createOutcomeCohorts <- function(connection, config) {
+createOutcomeCohorts <- function(connection, config, .fetchSize = 1000) {
 
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortTable.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
@@ -97,27 +97,47 @@ createOutcomeCohorts <- function(connection, config) {
     outcome_cohort_table = config$tables$outcomeCohort
   )
 
-  sql <- SqlRender::readSql(system.file("sql/cohorts", "createType0OutcomeCohorts.sql", package = "rewardb"))
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection,
-    sql = sql,
-    reference_schema = config$referenceSchema,
-    cdm_database_schema = config$cdmSchema,
-    cohort_database_schema = config$resultSchema,
-    outcome_cohort_table = config$tables$outcomeCohort,
-    outcome_cohort_definition = config$tables$outcomeCohortDefinition,
+
+  outcomeTypes <- list(
+    type0 = list(
+      countSql = SqlRender::readSql(system.file("sql/cohorts", "countType0OutcomeCohorts.sql", package = "rewardb")),
+      sql = sql <- SqlRender::readSql(system.file("sql/cohorts", "createType0OutcomeCohorts.sql", package = "rewardb"))
+    ),
+    type1 = list(
+      countSql = SqlRender::readSql(system.file("sql/cohorts", "countType1OutcomeCohorts.sql", package = "rewardb")),
+      sql = sql <- SqlRender::readSql(system.file("sql/cohorts", "createType1OutcomeCohorts.sql", package = "rewardb"))
+    )
   )
 
-  sql <- SqlRender::readSql(system.file("sql/cohorts", "createType1OutcomeCohorts.sql", package = "rewardb"))
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection,
-    sql = sql,
-    reference_schema = config$referenceSchema,
-    cdm_database_schema = config$cdmSchema,
-    cohort_database_schema = config$resultSchema,
-    outcome_cohort_table = config$tables$outcomeCohort,
-    outcome_cohort_definition = config$tables$outcomeCohortDefinition,
-  )
+  for (cohortType in outcomeTypes) {
+    countDt <- DatabaseConnector::renderTranslateQuerySql(
+      connection,
+      sql = cohortType$countSql,
+      reference_schema = config$referenceSchema,
+      cdm_database_schema = config$cdmSchema,
+      cohort_database_schema = config$resultSchema,
+      outcome_cohort_definition = config$tables$outcomeCohortDefinition,
+    )
+    offset <- 0
+    count <- countDt$COHORT_COUNT[1]
+
+    print(paste("************** CREATING: ", count, "Outcome cohorts *******************"))
+    while (offset < count) {
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection,
+        sql = cohortType$sql,
+        reference_schema = config$referenceSchema,
+        cdm_database_schema = config$cdmSchema,
+        cohort_database_schema = config$resultSchema,
+        outcome_cohort_table = config$tables$outcomeCohort,
+        outcome_cohort_definition = config$tables$outcomeCohortDefinition,
+        offset = offset,
+        fetch = .fetchSize
+      )
+      print(paste("Offset", offset, "Fetch", .fetchSize))
+      offset <- offset + .fetchSize + 1
+    }
+  }
 
   atlasCohorts <- getUncomputedAtlasCohorts(connection, config)
 

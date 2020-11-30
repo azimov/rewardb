@@ -1,19 +1,5 @@
-{DEFAULT @fetch = ''}
-{DEFAULT @offset = ''}
-
---incident outcomes - requiring two visits, first visit is used as date of outcome
-insert into @cohort_database_schema.@outcome_cohort_table
-(
-  cohort_definition_id
-  , subject_id
-  , cohort_start_date
-  , cohort_end_date
-)
 select
-  ocr.cohort_definition_id
-  , t1.person_id as subject_id
-  , t1.cohort_start_date
-  , t1.cohort_start_date as cohort_end_date
+    count(*) as cohort_count
 from
 (
   select
@@ -52,6 +38,3 @@ inner join
   and t1.ancestor_concept_id = t2.ancestor_concept_id
   where t2.cohort_start_date < t2.confirmed_date -- here's the piece that finds two unique visit dates
   AND coc.cohort_definition_id IS NULL -- Stop recomputing cohorts
-  {@offset != ''} ? {OFFSET @offset ROWS}
-  {@fetch != ''} ?  {FETCH NEXT @fetch ROWS ONLY}
-;
