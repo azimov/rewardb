@@ -1,6 +1,3 @@
-{DEFAULT @fetch = ''}
-{DEFAULT @offset = ''}
-
 insert into @cohort_database_schema.@outcome_cohort_table
 (
   cohort_definition_id
@@ -29,7 +26,7 @@ from
 inner join @reference_schema.@outcome_cohort_definition ocr ON (
     ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 1
 )
-left join @cohort_database_schema.computed_o_cohorts coc ON ocr.cohort_definition_id = coc.cohort_definition_id
+inner join #cohorts_to_compute coc ON ocr.cohort_definition_id = coc.cohort_definition_id
 inner join
 (
   select
@@ -49,8 +46,7 @@ inner join
 ) t2
   on t1.person_id = t2.person_id
   and t1.ancestor_concept_id = t2.ancestor_concept_id
-
-WHERE coc.cohort_definition_id IS NULL
-  {@offset != ''} ? {OFFSET @offset ROWS}
-  {@fetch != ''} ?  {FETCH NEXT @fetch ROWS ONLY}
 ;
+
+-- Add the cohorts we have just generated to the computed set
+insert into #computed_o_cohorts (cohort_definition_id) select cohort_definition_id from #cohorts_to_compute;
