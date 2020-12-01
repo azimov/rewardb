@@ -1,6 +1,3 @@
-{DEFAULT @fetch = ''}
-{DEFAULT @offset = ''}
-
 --incident outcomes - requiring two visits, first visit is used as date of outcome
 insert into @cohort_database_schema.@outcome_cohort_table
 (
@@ -30,7 +27,7 @@ from
 inner join @reference_schema.@outcome_cohort_definition ocr ON (
     ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 0
 )
-left join @cohort_database_schema.computed_o_cohorts coc ON ocr.cohort_definition_id = coc.cohort_definition_id
+inner join #cohorts_to_compute coc ON coc.cohort_definition_id = ocr.cohort_definition_id
 inner join
 (
   select
@@ -51,7 +48,7 @@ inner join
   on t1.person_id = t2.person_id
   and t1.ancestor_concept_id = t2.ancestor_concept_id
   where t2.cohort_start_date < t2.confirmed_date -- here's the piece that finds two unique visit dates
-  AND coc.cohort_definition_id IS NULL -- Stop recomputing cohorts
-  {@offset != ''} ? {OFFSET @offset ROWS}
-  {@fetch != ''} ?  {FETCH NEXT @fetch ROWS ONLY}
+  AND coc.cohort_definition_id IS NULL
 ;
+-- Add the cohorts we have just generated to the computed set
+insert into #computed_o_cohorts (cohort_definition_id) select cohort_definition_id from #cohorts_to_compute;

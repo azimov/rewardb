@@ -100,29 +100,48 @@ createOutcomeCohorts <- function(connection, config, .fetchSize = 1000) {
 
   outcomeTypes <- list(
     type0 = list(
+      type = 0,
       countSql = SqlRender::readSql(system.file("sql/cohorts", "countType0OutcomeCohorts.sql", package = "rewardb")),
       sql = sql <- SqlRender::readSql(system.file("sql/cohorts", "createType0OutcomeCohorts.sql", package = "rewardb"))
     ),
     type1 = list(
+      type = 1,
       countSql = SqlRender::readSql(system.file("sql/cohorts", "countType1OutcomeCohorts.sql", package = "rewardb")),
       sql = sql <- SqlRender::readSql(system.file("sql/cohorts", "createType1OutcomeCohorts.sql", package = "rewardb"))
     )
   )
 
-  for (cohortType in outcomeTypes) {
-    countDt <- DatabaseConnector::renderTranslateQuerySql(
-      connection,
-      sql = cohortType$countSql,
-      reference_schema = config$referenceSchema,
-      cdm_database_schema = config$cdmSchema,
-      cohort_database_schema = config$resultSchema,
-      outcome_cohort_definition = config$tables$outcomeCohortDefinition,
-    )
-    offset <- 0
-    count <- countDt$COHORT_COUNT[1]
+  # Build our set of already computed cohorts (ones with records).
+  computedCohortsSql <- SqlRender::readSql(system.file("sql/cohorts", "outcomeComputedCohorts.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+     connection,
+     computedCohortsSql,
+     cohort_database_schema = config$resultSchema,
+     outcome_cohort_table = config$tables$outcomeCohort
+  )
 
-    print(paste("************** CREATING: ", count, "Outcome cohorts *******************"))
-    while (offset < count) {
+  computeSql <- SqlRender::readSql(system.file("sql/cohorts", "outcomeCohortsToCompute.sql", package = "rewardb"))
+  # Closure calls sql to create uncomputed cohorts
+  cohortsToCompute <- function (oType) {
+    DatabaseConnector::renderTranslateExecuteSql(
+       connection,
+       computeSql,
+       reference_schema = config$referenceSchema,
+       outcome_cohort_definition = config$tables$outcomeCohortDefinition,
+       outcome_type = oType
+    )
+    count <- DatabaseConnector::renderTranslateQuerySql(
+      connection,
+      "SELECT count(*) as c_count FROM #cohorts_to_compute"
+    )$C_COUNT[[1]]
+
+    return(count)
+  }
+
+  for (cohortType in outcomeTypes) {
+    count <- cohortsToCompute(cohortType$type)
+    while (count) {
+      print(paste(count, "Uncomputed cohorts"))
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = cohortType$sql,
@@ -130,12 +149,9 @@ createOutcomeCohorts <- function(connection, config, .fetchSize = 1000) {
         cdm_database_schema = config$cdmSchema,
         cohort_database_schema = config$resultSchema,
         outcome_cohort_table = config$tables$outcomeCohort,
-        outcome_cohort_definition = config$tables$outcomeCohortDefinition,
-        offset = offset,
-        fetch = .fetchSize
+        outcome_cohort_definition = config$tables$outcomeCohortDefinition
       )
-      print(paste("Offset", offset, "Fetch", .fetchSize))
-      offset <- offset + .fetchSize + 1
+      count <- cohortsToCompute(cohortType$type)
     }
   }
 
