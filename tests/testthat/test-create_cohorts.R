@@ -20,6 +20,8 @@ zipFilePath <- "rewardb-references.zip"
 refFolder <- "reference_test_folder"
 unlink(zipFilePath)
 unlink(refFolder)
+DatabaseConnector::renderTranslateExecuteSql(connection,"DROP SCHEMA @schema CASCADE;", schema = cdmConfig$resultSchema)
+DatabaseConnector::renderTranslateExecuteSql(connection,"CREATE SCHEMA @schema", schema = cdmConfig$resultSchema)
 exportReferenceTables(config)
 importReferenceTables(cdmConfig, zipFilePath, refFolder)
 
@@ -80,13 +82,14 @@ test_that("Full data generation on CDM", {
   # Test adding a new atlas cohort - requires exporting references again
   cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
   sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
-  insertAtlasCohortRef(connection, config, 1, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
+  insertAtlasCohortRef(connection, config, 100, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
   exportReferenceTables(config)
   importReferenceTables(cdmConfig, zipFilePath, refFolder)
 
   uncomputed <- getUncomputedAtlasCohorts(connection, cdmConfig)
-  expect_true(1 %in% uncomputed$ATLAS_ID)
+  
+  expect_true(100 %in% uncomputed$ATLAS_ID)
   expect_true(nrow(uncomputed) > 0)
 
   createOutcomeCohorts(connection, cdmConfig)

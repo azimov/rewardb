@@ -1,4 +1,4 @@
-{DEFAULT @batch_size = 1000}
+{DEFAULT @batch_size = 10000}
 
 IF OBJECT_ID('tempdb..#cohorts_to_compute', 'U') IS NOT NULL
 	DROP TABLE #cohorts_to_compute;
