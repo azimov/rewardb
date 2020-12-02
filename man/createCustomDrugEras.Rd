@@ -5,7 +5,7 @@
 \title{create the custom drug eras, these are for drugs with nonstandard eras (e.g. where doeses aren't picked up by
 repeat perscriptions). Could be something like a vaccine where exposed time is non trivial.}
 \usage{
-createCustomDrugEras(connection, config)
+createCustomDrugEras(configPath)
 }
 \arguments{
 \item{connection}{DatabaseConnector connection to cdm}
