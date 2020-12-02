@@ -2,13 +2,14 @@
 #' @param connection DatabaseConnector connection to cdm
 #' @param config
 #' @param dataSources dataSources to run cohort on
-createCohorts <- function(connection, config) {
+createCohorts <- function(connection, config, deleteExisting = FALSE) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createCohortTable.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql = sql,
     cohort_database_schema = config$resultSchema,
-    cohort_table = config$tables$cohort
+    cohort_table = config$tables$cohort,
+    delete_existing = deleteExisting
   )
 
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createCohorts.sql", package = "rewardb"))
