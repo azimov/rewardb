@@ -78,7 +78,7 @@ getUncomputedAtlasCohorts <- function(connection, config) {
 #' @param connection DatabaseConnector connection to cdm
 #' @param config
 #' @param dataSources dataSources to run cohort on
-createOutcomeCohorts <- function(connection, config, deleteExisting = 0) {
+createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
 
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortTable.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
