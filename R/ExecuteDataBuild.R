@@ -43,7 +43,7 @@ generateSccResults <- function(
 ) {
   logger <- .getLogger(logFileName)
   # load config
-  config <- yaml::read_yaml(cdmConfigFilePath)
+  config <- loadCdmConfig(cdmConfigFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
   tryCatch({
