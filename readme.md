@@ -54,7 +54,7 @@ The same applies for the CDM data source that the results were generated in:
 ### Making the database 
 Then we want to create the database schema and perform empirical calibration.
 
-    appContext <- rewardb::buildFromConfig("config/config.my-study.yml")
+    appContext <- rewardb::buildDashboardFromConfig("config/config.my-study.yml")
 
 ### Viewing the dashboard 
 point at your new config file, e.g. `config/config.my-study.yml` relative to the current working directory.

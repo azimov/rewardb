@@ -54,7 +54,7 @@ exportReferenceTables <- function(
 #'
 #' @description
 #' Note that this always overwrites the existing reference tables stored in the database
-importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePsqlUpload = FALSE) {
+importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePgCopy = FALSE) {
   unzipAndVerify(zipFilePath, refFolder, TRUE)
   connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
 
@@ -76,22 +76,31 @@ importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePsqlUplo
 
       fileList <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
       for (file in fileList) {
-        data <- read.csv(file)
-        tableName <- cdmConfig$tables[[SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])]]
-        DatabaseConnector::dbAppendTable(
-          conn = connection,
-          name = paste(cdmConfig$referenceSchema, tableName, sep = "."),
-          value = data,
-          progressBar = TRUE,
-          oracleTempSchema = cdmConfig$oracleTempSchema
-        )
+        snakeName <- SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])
+        tableName <- cdmConfig$tables[[snakeName]]
+
+        # TODO: Find a solution to uploading atlas cohort references faster than
+        if (usePgCopy & snakeName != "atlasOutcomeReference") {
+          print(paste("Using pgcopy to upload", snakeName, tableName, file))
+          pgCopy(connectionDetails = cdmConfig$connectionDetails, csvFileName = file, schema = cdmConfig$referenceSchema, tableName = tableName)
+        } else {
+          print(paste("Using db append table", snakeName, tableName, file))
+          data <- read.csv(file)
+          DatabaseConnector::dbAppendTable(
+            conn = connection,
+            name = paste(cdmConfig$referenceSchema, tableName, sep = "."),
+            value = data,
+            progressBar = TRUE,
+            oracleTempSchema = cdmConfig$oracleTempSchema
+          )
+        }
       }
 
     },
 
     error = function(err) {
       ParallelLogger::logError(err)
-      reuturn(NULL)
+      return(NULL)
     }
   )
   DatabaseConnector::disconnect(connection)

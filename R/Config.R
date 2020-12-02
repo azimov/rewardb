@@ -1,9 +1,12 @@
 #' Gets password from user. Ignored if REWARD_B_PASSWORD system env variable is set (e.g. in .Rprofile)
 getPasswordSecurely <- function(.envVar = "REWARD_B_PASSWORD") {
-    pass <- Sys.getenv(".envVar")
+    pass <- Sys.getenv(.envVar)
     if(pass == "") {
         pass <- askpass::askpass("Please enter the reward b database password")
-        Sys.setenv(.envVar = pass)
+        args = list(pass)
+        names(args) = .envVar
+        do.call(Sys.setenv, args)
+        on.exit(Sys.unsetenv(.envVar))
     }
     return(pass)
 }
@@ -103,7 +106,7 @@ loadGlobalConfig <- function(globalConfigPath) {
 
 loadCdmConfig <- function(cdmConfigPath) {
     defaults <- list(
-        "passwordEnvironmentVariable" = "UNSET_DB_PASS_VAR",
+        passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",
         useSecurePassword = FALSE
     )
     config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)

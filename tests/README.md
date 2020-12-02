@@ -7,7 +7,7 @@ file can be used to build a docker container.
 If you wish to use the docker container (recommended), from the inst/test folder run the commands:
 
     docker build . -t eunomia
-    docker run -p 54321:5432 eunomia
+    docker run --rm -p 54321:5432 eunomia
     
 The docker container will now be running with a database that can accept connections on port 54321.
 The username and password are postgres. The CDM database is `eunomia` the rewardb database is `rewardb`.
