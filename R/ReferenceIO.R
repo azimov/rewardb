@@ -80,17 +80,18 @@ importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePgCopy =
         tableName <- cdmConfig$tables[[snakeName]]
 
         # TODO: Find a solution to uploading atlas cohort references faster than
-        if (usePgCopy & snakeName != "atlasOutcomeReference") {
+        if (cdmConfig$connectionDetails$dbms == "postgresql" & usePgCopy & snakeName != "atlasOutcomeReference") {
           print(paste("Using pgcopy to upload", snakeName, tableName, file))
           pgCopy(connectionDetails = cdmConfig$connectionDetails, csvFileName = file, schema = cdmConfig$referenceSchema, tableName = tableName)
         } else {
           print(paste("Using db append table", snakeName, tableName, file))
           data <- read.csv(file)
-          DatabaseConnector::dbAppendTable(
-            conn = connection,
-            name = paste(cdmConfig$referenceSchema, tableName, sep = "."),
-            value = data,
+          DatabaseConnector::insertTable(
+            connection = connection,
+            tableName = paste(cdmConfig$referenceSchema, tableName, sep = "."),
+            data = data,
             progressBar = TRUE,
+            dropTableIfExists = TRUE,
             oracleTempSchema = cdmConfig$oracleTempSchema
           )
         }
