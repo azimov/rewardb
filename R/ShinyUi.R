@@ -79,7 +79,7 @@ dashboardUi  <- function (request) {
       p("Mission:"),
       includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
       width = 6,
-      title=paste("Real World Assessment and Research of Drug Benefits (REWARD-B)")
+      title=paste("Real World Assessment and Research of Drug performance (REWARD)")
     ),
     box(
       includeHTML(system.file("html", "contact.html", package = "rewardb")),
@@ -185,7 +185,7 @@ dashboardUi  <- function (request) {
     )
   )
 
-  appTitle <- paste("REWARD-B:", appContext$name)
+  appTitle <- paste("REWARD:", appContext$name)
   # Put them together into a dashboardPage
   ui <- dashboardPage(
     dashboardHeader(title = appTitle),
