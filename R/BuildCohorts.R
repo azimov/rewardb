@@ -163,7 +163,7 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
   apply(atlasCohorts, 1, function(cohortReference) {
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
-      sql = cohortReference["SQL_DEFINITION"],
+      sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
       cdm_database_schema = config$cdmSchema,
       vocabulary_database_schema = config$vocabularySchema,
       target_database_schema = config$resultSchema,

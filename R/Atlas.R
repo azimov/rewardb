@@ -120,6 +120,9 @@ insertAtlasCohortRef <- function(
 
     cohortDefinitionId <- newEntry$COHORT_DEFINITION_ID[[1]]
 
+    encodedFormDescription <- base64enc::base64encode(charToRaw(RJSONIO::toJSON(cohortDefinition)))
+    encodedFormSql <- base64enc::base64encode(charToRaw(sqlDefinition))
+
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = "INSERT INTO @schema.atlas_outcome_reference
@@ -129,8 +132,8 @@ insertAtlasCohortRef <- function(
       cohort_definition_id = cohortDefinitionId,
       atlas_id = atlasId,
       atlas_url = gsub("'", "''", webApiUrl),
-      definition = gsub("'", "''", RJSONIO::toJSON(cohortDefinition)),
-      sql_definition = gsub("'", "''", sqlDefinition),
+      definition = encodedFormDescription,
+      sql_definition = encodedFormSql,
     )
 
     ParallelLogger::logInfo(paste("inserting concept reference", atlasId))
