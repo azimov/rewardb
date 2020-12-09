@@ -45,7 +45,8 @@ pgCopy <- function(connectionDetails,
                    csvFileName,
                    schema,
                    tableName,
-                   sep = ",") {
+                   sep = ",",
+                   .echoCommand = FALSE) {
   startTime <- Sys.time()
 
   # For backwards compatibility with older versions of DatabaseConnector
@@ -98,6 +99,10 @@ pgCopy <- function(connectionDetails,
                        headers,
                        "FROM", filePathStr,
                        paste0("DELIMITER '", sep, "' CSV HEADER QUOTE E'\b';\""))
+
+  if(.echoCommand) {
+    print(copyCommand)
+  }
 
   result <- base::system(copyCommand)
 
