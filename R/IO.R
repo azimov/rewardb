@@ -98,7 +98,7 @@ pgCopy <- function(connectionDetails,
                        "-c \"\\copy", tablePath,
                        headers,
                        "FROM", filePathStr,
-                       paste0("DELIMITER '", sep, "' CSV HEADER QUOTE E'\b';\""))
+                       paste0("DELIMITER '", sep, "' CSV HEADER QUOTE E'\b' NULL AS '' ;\""))
 
   if(.echoCommand) {
     print(copyCommand)
