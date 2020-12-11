@@ -20,5 +20,28 @@
       "washoutPeriod" : 0,
       "followupPeriod" : 0
     }
+  },
+
+  {
+    "name" : "Any exposure SCC",
+    "typeId": "scc",
+    "description" : "Any outcome/exposure, full TAR, assumes cohort washout and follow up",
+    "options" : {
+      "firstExposureOnly" : false,
+      "firstOutcomeOnly" : false,
+      "minAge" : "",
+      "maxAge" : "",
+      "studyStartDate" : "",
+      "studyEndDate" : "",
+      "addLengthOfExposureExposed" : true,
+      "riskWindowStartExposed" : 1,
+      "riskWindowEndExposed" : 1,
+      "addLengthOfExposureUnexposed" : true,
+      "riskWindowEndUnexposed" : -1,
+      "riskWindowStartUnexposed" : -1,
+      "hasFullTimeAtRisk" : true,
+      "washoutPeriod" : 0,
+      "followupPeriod" : 0
+    }
   }
 ]
