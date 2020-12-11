@@ -2,7 +2,7 @@
   {
     "name" : "default SCC",
     "typeId": "scc",
-    "description" : "First exposure/outcome only, full TAR, assumes cohort washout and follow up",
+    "description" : "First exposure/outcome only. full TAR. assumes cohort washout and follow up",
     "options" : {
       "firstExposureOnly" : true,
       "firstOutcomeOnly" : true,
@@ -25,7 +25,7 @@
   {
     "name" : "Any exposure SCC",
     "typeId": "scc",
-    "description" : "Any outcome/exposure, full TAR, assumes cohort washout and follow up",
+    "description" : "Any outcome/exposure. full TAR. assumes cohort washout and follow up",
     "options" : {
       "firstExposureOnly" : false,
       "firstOutcomeOnly" : false,

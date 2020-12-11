@@ -72,7 +72,8 @@ importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePgCopy =
         atlas_outcome_reference = cdmConfig$tables$atlasOutcomeReference,
         atlas_concept_reference = cdmConfig$tables$atlasConceptReference,
         custom_exposure = cdmConfig$tables$customExposure,
-        custom_exposure_concept = cdmConfig$tables$customExposureConcept
+        custom_exposure_concept = cdmConfig$tables$customExposureConcept,
+        analysis_setting = cdmConfig$tables$analysisSetting
       )
 
       fileList <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))

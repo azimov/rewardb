@@ -11,27 +11,6 @@ conceptSetId <- 11933
 conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
 rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
-
-sccOpts <- list(
-  firstExposureOnly = FALSE,
-  firstOutcomeOnly = FALSE,
-  minAge = "",
-  maxAge = "",
-  studyStartDate = "",
-  studyEndDate = "",
-  addLengthOfExposureExposed = TRUE,
-  riskWindowStartExposed = 1,
-  riskWindowEndExposed = 1,
-  addLengthOfExposureUnexposed = TRUE,
-  riskWindowEndUnexposed = -1,
-  riskWindowStartUnexposed = -1,
-  hasFullTimeAtRisk = TRUE,
-  washoutPeriod = 0,
-  followupPeriod = 0
-)
-
-addAnalysisSetting(connection, config, "SCC 2 Test", "scc", "TEST SCC", options = sccOpts)
-
 cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
 cdmConfig <- loadCdmConfig(cdmConfigPath)
 
