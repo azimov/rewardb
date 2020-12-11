@@ -28,7 +28,10 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildCem =
 
     sql <- SqlRender::readSql(system.file("sql/create", "cemSchema.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(connection, sql)
-  })
+    addAnalysisSettingsJson(connection, config)
+  },
+  error = ParallelLogger::logError
+  )
   DatabaseConnector::disconnect(connection)
 }
 
@@ -36,4 +39,17 @@ importCemSummary <- function(summaryFilePath, configFilePath = "config/global-cf
   checkmate::assert_file_exists(summaryFilePath)
   config <- loadGlobalConfig(configFilePath)
   pgCopy(connectionDetails = config$connectionDetails, summaryFilePath, "cem", "matrix_summary")
+}
+
+addAnalysisSetting <- function(connection, config, name, typeId, description, options) {
+  jsonStr <- RJSONIO::toJSON(options)
+  optionsEnc <- base64enc::base64encode(charToRaw(jsonStr))
+  iSql <- "INSERT INTO @schema.analysis_setting (type_id, analysis_name, description, options) VALUES('@type_id','@name','@description','@options')"
+  DatabaseConnector::renderTranslateExecuteSql(connection, iSql, name = name, type_id = typeId, description = description, options = optionsEnc, schema = config$rewardbResultsSchema)
+}
+
+addAnalysisSettingsJson <- function(connection, config, settingsFilePath = system.file("settings", "default.json", package = "rewardb")) {
+  for (settings in RJSONIO::fromJSON(settingsFilePath)) {
+    addAnalysisSetting(connection = connection, config = config, name = settings$name, typeId = settings$typeId, description = settings$description, options = settings$options)
+  }
 }

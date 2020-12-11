@@ -33,7 +33,6 @@
 #' @export
 generateSccResults <- function(
   cdmConfigFilePath,
-  exportZipFile = "reward-b-scc-results.zip",
   .createExposureCohorts = TRUE,
   .createOutcomeCohorts = TRUE,
   .generateSummaryTables = TRUE,
@@ -63,31 +62,40 @@ generateSccResults <- function(
     }
 
     if (.runSCC) {
-      ParallelLogger::logInfo("Generating fresh scc results tables")
       # run SCC
       if (!dir.exists(config$exportPath)) {
         dir.create(config$exportPath)
       }
 
-      tableNames <- list()
+      getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc'"
+      sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                                        getSccSettingsSql,
+                                                                        reference_schema = config$referenceSchema,
+                                                                        analysis_setting = config$tables$analysisSetting)
 
-      sccSummary <- runScc(connection, config)
-      dataFileName <- file.path(config$exportPath, paste0("rb-results-", config$database, ".csv"))
-      ParallelLogger::logInfo(paste("Writing file", dataFileName))
-      readr::write_excel_csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na="")
-      tableNames[[basename(dataFileName)]] <- "scc_result"
+      apply(sccAnalysisSettings, 1, function(analysis) {
+        tableNames <- list()
+        analysisId <- analysis[["ANALYSIS_ID"]]
+        ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
+        analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
 
-      if (.generateCohortStats) {
-        timeOnTreatment <- getAverageTimeOnTreatment(connection, config)
-        statsFileName <- file.path(config$exportPath, paste0("rb-results-", config$database, "time_on_treatment_stats", ".csv"))
-        readr::write_excel_csv(timeOnTreatment, statsFileName, na="")
-        tableNames[[basename(statsFileName)]] <- "time_on_treatment"
-      }
+        sccSummary <- runScc(connection, config, analysisId, analysisSettings)
+        dataFileName <- file.path(config$exportPath, paste0("rb-results-", config$database, "-aid-", analysisId, ".csv"))
+        ParallelLogger::logInfo(paste("Writing file", dataFileName))
+        readr::write_excel_csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na="")
+        tableNames[[basename(dataFileName)]] <- "scc_result"
 
-      ParallelLogger::logInfo("Exporting results zip")
-      exportResults(config, exportZipFile = exportZipFile, tableNames = tableNames, csvPattern = "rb-results-*.csv")
+        if (.generateCohortStats) {
+          timeOnTreatment <- getAverageTimeOnTreatment(connection, config, analysisSettings, analysisId = analysisId)
+          statsFileName <- file.path(config$exportPath, paste0("rb-results-", config$database, "-aid-", analysisId, "-time_on_treatment_stats", ".csv"))
+          readr::write_excel_csv(timeOnTreatment, statsFileName, na="")
+          tableNames[[basename(statsFileName)]] <- "time_on_treatment"
+        }
+        ParallelLogger::logInfo("Exporting results zip")
+        exportZipFile <- paste0("reward-b-scc-results-aid-", analysisId,".zip")
+        exportResults(config, exportZipFile = exportZipFile, tableNames = tableNames, csvPattern = paste0("rb-results-", config$database, "-aid-", analysisId, "*.csv"))
+      })
     }
-
   },
   error = ParallelLogger::logError
   )

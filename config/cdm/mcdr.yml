@@ -28,3 +28,4 @@ tables:
   atlasConceptReference: "rb_atlas_concept_reference"
   customExposure: "rb_custom_exposure"
   customExposureConcept: "rb_custom_exposure_concept"
+  analysisSetting: "rb_analysis_setting"

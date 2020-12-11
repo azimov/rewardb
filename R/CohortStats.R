@@ -1,34 +1,23 @@
 # Compute the average time on treatement for cohort pairs
-getAverageTimeOnTreatment <- function(connection, config, targetCohortIds = NULL, outcomeCohortIds = NULL) {
-  results <- data.frame()
-  for (dataSource in config$dataSources) {
-    res <- getSccStats(
-      connection = connection,
-      cdmDatabaseSchema = config$cdmSchema,
-      outcomeDatabaseSchema = config$resultSchema,
-      exposureDatabaseSchema = config$resultSchema,
-      exposureIds = targetCohortIds,
-      outcomeIds = outcomeCohortIds,
-      exposureTable = config$tables$cohort,
-      outcomeTable = config$tables$outcomeCohort
-    )
-    res$source_id <- dataSource$sourceId
-    results <- rbind(results, res)
-  }
+getAverageTimeOnTreatment <- function(connection, config, analysisOptions = list(), analysisId = 1, targetCohortIds = NULL, outcomeCohortIds = NULL) {
+  args <- list(
+    connection = connection,
+    cdmDatabaseSchema = config$cdmSchema,
+    outcomeDatabaseSchema = config$resultSchema,
+    exposureDatabaseSchema = config$resultSchema,
+    exposureIds = targetCohortIds,
+    outcomeIds = outcomeCohortIds,
+    exposureTable = config$tables$cohort,
+    outcomeTable = config$tables$outcomeCohort
+  )
+
+  results <- do.call(getSccStats, c(args, analysisOptions))
+  results$source_id <- config$sourceId
+  results$analysis_id <- config$analysisId
+  colnames(results)[colnames(results) == "EXPOSURE_ID"] <- "TARGET_COHORT_ID"
+  colnames(results)[colnames(results) == "OUTCOME_ID"] <- "OUTCOME_COHORT_ID"
 
   return(results)
-}
-
-
-getDashboardCohortStatistics <- function(connection, cdmConnection, config, appContext) {
-  targetCohortIds <- appContext$targetCohortIds
-  outcomeCohortIds <- append(appContext$outcomeCohortIds, appContext$custom_outcome_cohort_ids)
-
-  timeOnTreatment <- getAverageTimeOnTreatment(cdmConnection, config, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
-
-  tableName = paste(appContext$short_name, "time_on_treatment", sep = ".")
-  readr::write_excel_csv(timeOnTreatment, paste0("data/", tableName, ".csv"))
-  DatabaseConnector::insertTable(connection, tableName, timeOnTreatment)
 }
 
 
@@ -41,8 +30,8 @@ getSccStats <- function(connection,
                         outcomeTable = "condition_era",
                         exposureTable = "drug_era",
                         oracleTempSchema = NULL,
-                        # Settings made in original activesurvelance_dev package
                         firstExposureOnly = TRUE,
+                        firstOutcomeOnly = TRUE,
                         minAge = "",
                         maxAge = "",
                         studyStartDate = "",
@@ -117,6 +106,7 @@ getSccStats <- function(connection,
                                                    outcome_id = outcomeId,
                                                    outcome_person_id = outcomePersonId,
                                                    first_exposure_only = firstExposureOnly,
+                                                   first_outcome_only = firstOutcomeOnly,
                                                    min_age = minAge,
                                                    max_age = maxAge,
                                                    study_start_date = studyStartDate,

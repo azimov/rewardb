@@ -5,6 +5,7 @@ CREATE SCHEMA @schema;
 
 CREATE TABLE @schema.scc_result (
   source_id INT NOT NULL,
+  analysis_id INT NOT NULL,
   outcome_cohort_id BIGINT NOT NULL,
   target_cohort_id BIGINT NOT NULL,
   rr NUMERIC,
@@ -22,16 +23,28 @@ CREATE TABLE @schema.scc_result (
 );
 
 CREATE TABLE @schema.time_on_treatment (
-  source_id INT NOT NULL,
-  outcome_cohort_id BIGINT NOT NULL,
-  target_cohort_id BIGINT NOT NULL,
-  mean_tx_time NUMERIC,
-  sd_tx_time NUMERIC,
-  sufficient_obs_time INT,
-  mean_time_to_outcome NUMERIC,
-  sd_time_to_outcome NUMERIC,
-  outcome_count NUMERIC,
-  drug_count NUMERIC
+    source_id INT NOT NULL,
+    analyis_id INT,
+    outcome_cohort_id BIGINT NOT NULL,
+    target_cohort_id BIGINT NOT NULL,
+    mean_time_to_outcome NUMERIC,
+    sd_time_to_outcome NUMERIC,
+    min_time_to_outcome NUMERIC,
+    p10_time_to_outcome NUMERIC,
+    p25_time_to_outcome NUMERIC,
+    median_time_to_outcome NUMERIC,
+    p75_time_to_outcome NUMERIC,
+    p90_time_to_outcome NUMERIC,
+    max_time_to_outcome NUMERIC,
+    mean_tx_time NUMERIC,
+    sd_tx_time NUMERIC,
+    min_tx_time NUMERIC,
+    p10_tx_time NUMERIC,
+    p25_tx_time NUMERIC,
+    median_tx_time NUMERIC,
+    p75_tx_time NUMERIC,
+    p90_tx_time NUMERIC,
+    max_tx_time NUMERIC
 );
 
 

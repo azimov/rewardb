@@ -7,7 +7,8 @@ CONST_REFERENCE_TABLES <- c(
   "custom_exposure",
   "custom_exposure_concept",
   "concept_set_definition",
-  "outcome_cohort_definition"
+  "outcome_cohort_definition",
+  "analysis_setting"
 )
 
 #' Export Reference tables

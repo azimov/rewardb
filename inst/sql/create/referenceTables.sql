@@ -5,6 +5,7 @@
 {DEFAULT @atlas_concept_reference = 'atlas_concept_reference'}
 {DEFAULT @custom_exposure = 'custom_exposure'}
 {DEFAULT @custom_exposure_concept = 'custom_exposure_concept'}
+{DEFAULT @analysis_setting = 'analysis_setting'}
 {DEFAULT @include_constraints = ''}
 
 IF OBJECT_ID('@schema.@concept_set_definition', 'U') IS NOT NULL
@@ -28,6 +29,8 @@ IF OBJECT_ID('@schema.@custom_exposure', 'U') IS NOT NULL
 IF OBJECT_ID('@schema.@custom_exposure_concept', 'U') IS NOT NULL
 	DROP TABLE @schema.@custom_exposure_concept CASCADE;
 
+IF OBJECT_ID('@schema.@analysis_setting', 'U') IS NOT NULL
+	DROP TABLE @schema.@analysis_setting CASCADE;
 
 /* CONCEPT SET TABLE */
 create table @schema.@concept_set_definition
@@ -122,3 +125,11 @@ CREATE TABLE @schema.@custom_exposure_concept (
 	        ON DELETE CASCADE
     }
 );
+
+CREATE TABLE @schema.@analysis_setting (
+    analysis_id {@include_constraints != ''} ? {SERIAL PRIMARY KEY} : {INT},
+    type_id VARCHAR(5),
+    analysis_name VARCHAR(255),
+    description TEXT,
+    options TEXT -- JSON stored as base64 encoded string
+)

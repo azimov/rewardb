@@ -26,7 +26,7 @@ unlink(refFolder)
 exportReferenceTables(config)
 importReferenceTables(cdmConfig, zipFilePath, refFolder)
 generateSccResults(cdmConfigPath)
-importResultsFiles(config$connectionDetails, "test", "rewardb-export.zip")
+importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug=TRUE)
 
 test_that("Dashboard creation works", {
   Sys.setenv("REWARD_B_PASSWORD" = "postgres")
