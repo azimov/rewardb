@@ -11,6 +11,27 @@ conceptSetId <- 11933
 conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
 rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
+
+sccOpts <- list(
+  firstExposureOnly = FALSE,
+  firstOutcomeOnly = FALSE,
+  minAge = "",
+  maxAge = "",
+  studyStartDate = "",
+  studyEndDate = "",
+  addLengthOfExposureExposed = TRUE,
+  riskWindowStartExposed = 1,
+  riskWindowEndExposed = 1,
+  addLengthOfExposureUnexposed = TRUE,
+  riskWindowEndUnexposed = -1,
+  riskWindowStartUnexposed = -1,
+  hasFullTimeAtRisk = TRUE,
+  washoutPeriod = 0,
+  followupPeriod = 0
+)
+
+addAnalysisSetting(connection, config, "SCC 2 Test", "scc", "TEST SCC", options = sccOpts)
+
 cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
 cdmConfig <- loadCdmConfig(cdmConfigPath)
 
@@ -28,15 +49,41 @@ unlink("rb-import")
 test_that("Full data generation and export", {
   generateSccResults(cdmConfigPath)
   importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug = TRUE)
+  importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-2.zip", .debug = TRUE)
 
   # Assert that the tables contain data
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT count(*) as results_count FROM @results_schema.scc_result",
+    "SELECT count(*) as results_count FROM @results_schema.scc_result WHERE ANALYSIS_ID = 1",
+    results_schema = config$rewardbResultsSchema
+  )
+
+  expect_true(qdf$RESULTS_COUNT[[1]] > 0)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT count(*) as results_count FROM @results_schema.scc_result WHERE ANALYSIS_ID = 2",
+    results_schema = config$rewardbResultsSchema
+  )
+
+  expect_true(qdf$RESULTS_COUNT[[1]] > 0)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT count(*) as results_count FROM @results_schema.time_on_treatment WHERE ANALYSIS_ID = 1",
     results_schema = config$rewardbResultsSchema
   )
   # Outcome cohorts should be created
   expect_true(qdf$RESULTS_COUNT[[1]] > 0)
+
+  qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT count(*) as results_count FROM @results_schema.time_on_treatment WHERE ANALYSIS_ID = 2",
+    results_schema = config$rewardbResultsSchema
+  )
+  # Outcome cohorts should be created
+  expect_true(qdf$RESULTS_COUNT[[1]] > 0)
+
 })
 DatabaseConnector::disconnect(connection)
 unlink("export")

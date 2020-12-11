@@ -1,5 +1,5 @@
 # Compute the average time on treatement for cohort pairs
-getAverageTimeOnTreatment <- function(connection, config, analysisOptions = list(), analysisId = 1, targetCohortIds = NULL, outcomeCohortIds = NULL) {
+getAverageTimeOnTreatment <- function(connection, config, analysisOptions = list(), analysisId = NULL, targetCohortIds = NULL, outcomeCohortIds = NULL) {
   args <- list(
     connection = connection,
     cdmDatabaseSchema = config$cdmSchema,
@@ -13,7 +13,7 @@ getAverageTimeOnTreatment <- function(connection, config, analysisOptions = list
 
   results <- do.call(getSccStats, c(args, analysisOptions))
   results$source_id <- config$sourceId
-  results$analysis_id <- config$analysisId
+  results$analysis_id <- analysisId
   colnames(results)[colnames(results) == "EXPOSURE_ID"] <- "TARGET_COHORT_ID"
   colnames(results)[colnames(results) == "OUTCOME_ID"] <- "OUTCOME_COHORT_ID"
 

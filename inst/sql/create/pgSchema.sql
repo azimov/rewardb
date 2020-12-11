@@ -24,7 +24,7 @@ CREATE TABLE @schema.scc_result (
 
 CREATE TABLE @schema.time_on_treatment (
     source_id INT NOT NULL,
-    analyis_id INT,
+    analysis_id INT,
     outcome_cohort_id BIGINT NOT NULL,
     target_cohort_id BIGINT NOT NULL,
     mean_time_to_outcome NUMERIC,
