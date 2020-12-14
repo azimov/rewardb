@@ -61,13 +61,7 @@ dashboardUi  <- function (request) {
           ),
           tabPanel(
             "Calibration plot",
-            withSpinner(plotly::plotlyOutput("calibrationPlot", height = 500)),
-            div(
-              strong("Figure 2."),
-              paste("Plot of calibration of effect estimates. Blue indicates controls, yellow diamonds indicate uncalibrated effect estimates"),
-              downloadButton("downloadCalibrationPlot", "Save")
-            ),
-            DT::dataTableOutput(("nullDistribution"))
+            calibrationPlotUi("calibrationPlot", figureTitle =  "Figure 2.")
           )
         ),
         width = 12
