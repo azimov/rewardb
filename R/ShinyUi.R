@@ -30,34 +30,7 @@ dashboardUi  <- function (request) {
           ),
           tabPanel(
             "Forest plot",
-            withSpinner(plotly::plotlyOutput("forestPlot", height = 500)),
-            hr(),
-            fluidRow(
-              box(
-                strong("Figure 1."),
-                paste("Forest plot of effect estimates from each database"),
-                br(),
-                downloadButton("downloadForestPlot", "Save Plot"),
-                width = 6
-              ),
-              box(
-                pickerInput(
-                  "forestPlotCalibrated",
-                  "Display:",
-                  choices = list(
-                    "Uncalibrated results" = 0,
-                    "Calibrated Results" = 1
-                  ),
-                  selected = c(0, 1),
-                  options = shinyWidgets::pickerOptions(
-                    actionsBox = TRUE,
-                    noneSelectedText = ""
-                  ),
-                  multiple = TRUE
-                ),
-                width = 6
-              )
-            )
+            forestPlotUi("forestPlot")
           ),
           tabPanel(
             "Calibration plot",

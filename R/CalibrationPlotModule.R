@@ -18,10 +18,11 @@ calibrationPlotUi <- function(id, figureTitle = "Figure.", figureText = CONST_CA
 }
 
 calibrationPlotServer <- function(id, dbConn, queryDb, appContext, selectedExposureOutcome) {
-  dataSources <- queryDb("SELECT source_id, source_name FROM @schema.data_source;")
+
   server <- moduleServer(id, function(input, output, session) {
     ParallelLogger::logInfo("Initialized calibration plot module for: ", appContext$short_name)
 
+    dataSources <- queryDb("SELECT source_id, source_name FROM @schema.data_source;")
     getOutcomeType <- function(outcome) {
       res <- queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome = outcome)
       return(res$TYPE_ID[[1]])
