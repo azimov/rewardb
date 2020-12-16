@@ -17,23 +17,24 @@ calibrationPlotUi <- function(id, figureTitle = "Figure.", figureText = CONST_CA
   )
 }
 
-calibrationPlotServer <- function(id, dbConn, queryDb, appContext, selectedExposureOutcome) {
+calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
 
   server <- moduleServer(id, function(input, output, session) {
     ParallelLogger::logInfo("Initialized calibration plot module for: ", appContext$short_name)
 
-    dataSources <- queryDb("SELECT source_id, source_name FROM @schema.data_source;")
+    dataSources <- model$queryDb("SELECT source_id, source_name FROM @schema.data_source;")
+
     getOutcomeType <- function(outcome) {
-      res <- queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome = outcome)
+      res <- model$queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome = outcome)
       return(res$TYPE_ID[[1]])
     }
 
     getNegativeControlSubset <- function(treatment, outcome) {
-      if (appContext$useExposureControls) {
-        negatives <- rewardb::getExposureControls(appContext, dbConn, outcomeCohortIds = outcome)
+      if (model$appContext$useExposureControls) {
+        negatives <- model$getExposureControls(outcomeCohortIds = outcome)
       } else {
         otype <- if (getOutcomeType(outcome) == 1) 1 else 0
-        negatives <- rewardb::getOutcomeControls(appContext, dbConn, targetIds = treatment)
+        negatives <- model$getOutcomeControls(targetIds = treatment)
         # Subset for outcome types
         negatives <- negatives[negatives$OUTCOME_TYPE == otype,]
       }
@@ -92,7 +93,7 @@ calibrationPlotServer <- function(id, dbConn, queryDb, appContext, selectedExpos
         }
 
         sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-        positives <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated = 0)
+        positives <- model$queryDb(sql, treatment = treatment, outcome = outcome, calibrated = 0)
         positives <- positives[positives$SOURCE_ID %in% validSourceIds,]
 
         negatives <- getNegativeControlSubset(treatment, outcome)
@@ -128,7 +129,7 @@ calibrationPlotServer <- function(id, dbConn, queryDb, appContext, selectedExpos
         s <- selectedExposureOutcome()
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
-        paste0(appContext$short_name, '-calibration-plot-', treatment, "-", outcome, '.png')
+        paste0(model$appContext$short_name, '-calibration-plot-', treatment, "-", outcome, '.png')
       },
       content = function(file) {
         ggplot2::ggsave(file, plot = getCalibrationPlot(), device = "png")

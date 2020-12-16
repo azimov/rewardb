@@ -4,7 +4,7 @@
 #' @param outcomeCohortIds cohorts to get negative controls for
 #' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
 #' @return data.frame of negative control exposures for specified outcomes
-getOutcomeControls <- function(appContext, connection, minCohortSize=10, targetIds=NULL) {
+getOutcomeControls <- function(appContext, connection, targetIds = NULL, minCohortSize=10) {
 
   sql <- "
     SELECT r.*, o.type_id as outcome_type
@@ -15,14 +15,13 @@ getOutcomeControls <- function(appContext, connection, minCohortSize=10, targetI
     INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
     AND r.calibrated = 0
     AND T_CASES >= @min_cohort_size
-    {@target_cohort_ids_length} ? {AND r.target_cohort_id IN (@target_cohort_ids)}
+    {@target_cohort_ids != ''} ? {AND r.target_cohort_id IN (@target_cohort_ids)}
   "
   negatives <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
     schema=appContext$short_name,
     min_cohort_size=minCohortSize,
-    target_cohort_ids_length = length(targetIds),
     target_cohort_ids = targetIds
   )
   return(negatives)

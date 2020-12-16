@@ -31,8 +31,7 @@ forestPlotUi <- function(id) {
   )
 }
 
-
-forestPlotServer <- function(id, dbConn, queryDb, appContext, selectedExposureOutcome) {
+forestPlotServer <- function(id, model, selectedExposureOutcome) {
   server <- moduleServer(id, function(input, output, session) {
     forestPlotTable <- reactive({
       s <- selectedExposureOutcome()
@@ -44,7 +43,7 @@ forestPlotServer <- function(id, dbConn, queryDb, appContext, selectedExposureOu
 
         calibOpts <- if (length(input$forestPlotCalibrated)) input$forestPlotCalibrated else c(0, 1)
 
-        table <- queryDb(sql, treatment = treatment, outcome = outcome, calibrated = calibOpts)
+        table <- model$queryDb(sql, treatment = treatment, outcome = outcome, calibrated = calibOpts)
         calibratedTable <- table[table$CALIBRATED == 1,]
         uncalibratedTable <- table[table$CALIBRATED == 0,]
 

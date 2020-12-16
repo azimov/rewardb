@@ -11,35 +11,13 @@ serverInstance <- function(input, output, session) {
   library(foreach, warn.conflicts = FALSE)
   library(dplyr, warn.conflicts = FALSE)
 
-  # Simple wrapper for always ensuring that database connection is opened and closed
-  # Postgres + DatabaseConnector has problems with connections hanging around
-  dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-
-  queryDb <- function(query, ...) {
-    tryCatch({
-      df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = appContext$short_name, ...)
-      return(df)
-    },
-      error = function(e) {
-        if (appContext$debugMode) {
-          print(e)
-        }
-        ParallelLogger::logError(e)
-        DatabaseConnector::disconnect(dbConn)
-        dbConn <<- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-      }
-    )
-  }
+  model <- DbModel(appContext)
 
   session$onSessionEnded(function() {
     writeLines("Closing connection")
-    DatabaseConnector::disconnect(dbConn)
+    model$exit()
+    rm(model)
   })
-
-  # Will only work with postgres > 9.4
-  tableExists <- function(table) {
-    return(!is.na(queryDb("SELECT to_regclass('@schema.@table');", table = table))[[1]])
-  }
 
   niceColumnName <- list(
     SOURCE_NAME = "Database",
@@ -60,13 +38,11 @@ serverInstance <- function(input, output, session) {
   for (n in names(niceColumnName)) {
     niceColumnNameInv[niceColumnName[[n]]] <- n
   }
-  getOutcomeCohortTypes <- reactive(
-  {
+  getOutcomeCohortTypes <- reactive({
     cohortTypeMapping <- list("ATLAS defined" = 2, "Inpatient" = 1, "Two diagnosis codes" = 0)
     rs <- foreach(i = input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
     return(rs)
-  }
-  )
+  })
   # Query full results, only filter is Risk range parameters
   mainTableRe <- reactive({
     benefit <- input$cutrange1
@@ -78,7 +54,7 @@ serverInstance <- function(input, output, session) {
     calibrated <- ifelse(input$calibrated, 1, 0)
     bSelection <- paste0("'", paste0(input$scBenefit, sep = "'"))
     rSelection <- paste0("'", paste0(input$scRisk, sep = "'"))
-    df <- queryDb(
+    df <- model$queryDb(
       mainTableSql,
       risk = risk,
       benefit = benefit,
@@ -95,14 +71,14 @@ serverInstance <- function(input, output, session) {
     return(df)
   })
 
-  df <- queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME")
+  df <- model$queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME")
   updateSelectizeInput(session, "outcomeCohorts", choices = df$COHORT_NAME, server = TRUE)
 
-  df <- queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.TARGET ORDER BY COHORT_NAME")
+  df <- model$queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.TARGET ORDER BY COHORT_NAME")
   updateSelectizeInput(session, "targetCohorts", choices = df$COHORT_NAME, server = TRUE)
 
   if (appContext$useExposureControls) {
-    df <- queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
+    df <- model$queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
     updateSelectizeInput(session, "exposureClass", choices = df$EXPOSURE_CLASS_NAME, server = TRUE)
   }
 
@@ -181,7 +157,7 @@ serverInstance <- function(input, output, session) {
     if (length(outcome)) {
       updateTabsetPanel(session, "mainPanel", "Detail")
       sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRowsGrouped.sql", package = "rewardb"))
-      table <- queryDb(sql, treatment = treatment, outcome = outcome)
+      table <- model$queryDb(sql, treatment = treatment, outcome = outcome)
       return(table)
     }
     return(data.frame())
@@ -223,7 +199,7 @@ serverInstance <- function(input, output, session) {
     calibrated <- ifelse(input$calibrated, 1, 0)
     bSelection <- paste0("'", paste0(input$scBenefit, sep = "'"))
     rSelection <- paste0("'", paste0(input$scRisk, sep = "'"))
-    df <- queryDb(mainTableSql, risk = risk, benefit = benefit,
+    df <- model$queryDb(mainTableSql, risk = risk, benefit = benefit,
                   risk_selection = rSelection, benefit_selection = bSelection, calibrated = calibrated)
     return(df)
   })
@@ -239,7 +215,7 @@ serverInstance <- function(input, output, session) {
 
   getNegativeControls <- reactive({
     sql <- readr::read_file(system.file("sql/export/", "negativeControls.sql", package = "rewardb"))
-    df <- queryDb(sql)
+    df <- model$queryDb(sql)
     return(df)
   })
 
@@ -254,7 +230,7 @@ serverInstance <- function(input, output, session) {
 
   getIndications <- reactive({
     sql <- readr::read_file(system.file("sql/export/", "mappedIndications.sql", package = "rewardb"))
-    df <- queryDb(sql)
+    df <- model$queryDb(sql)
     return(df)
   })
 
@@ -302,15 +278,15 @@ serverInstance <- function(input, output, session) {
   )
 
 
-  forestPlotServer("forestPlot", dbConn, queryDb, appContext, selectedExposureOutcome)
-  calibrationPlotServer("calibrationPlot", dbConn, queryDb, appContext, selectedExposureOutcome)
+  forestPlotServer("forestPlot", model, selectedExposureOutcome)
+  calibrationPlotServer("calibrationPlot", model, selectedExposureOutcome)
 
-  if (tableExists("time_on_treatment")) {
-    timeOnTreatmentServer("timeOnTreatment", dbConn, queryDb, appContext, selectedExposureOutcome)
+  if (model$tableExists("time_on_treatment")) {
+    timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
     tabPanelTimeOnTreatment <- tabPanel("Time on treatment", timeOnTreatmentUi("timeOnTreatment"))
     shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeOnTreatment)
 
-    timeToOutcomeServer("timeOnTreatment", dbConn, queryDb, appContext, selectedExposureOutcome)
+    timeToOutcomeServer("timeToOutcome", model, selectedExposureOutcome)
     tabPanelTimeToOutcome <- tabPanel("Time to outcome", timeToOutcomeUi("timeToOutcome"))
     shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeToOutcome)
   }
