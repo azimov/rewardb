@@ -3,6 +3,7 @@
 DROP TABLE IF EXISTS @schema.result;
 CREATE TABLE @schema.result (
   source_id INT NOT NULL,
+  analysis_id INT,
   outcome_cohort_id BIGINT NOT NULL,
   target_cohort_id BIGINT NOT NULL,
   calibrated INT NOT NULL DEFAULT 0, -- is the result calibrated with empirical calibration?

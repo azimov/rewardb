@@ -29,6 +29,5 @@ exportReferenceTables(config)
 cdmConfig <- loadCdmConfig("config/cdm/ccae.yml")
 importReferenceTables(cdmConfig, "rewardb-references.zip", "ref_input")
 
-exportZipFile <- "reward-b-scc-results-ccae.zip"
-generateSccResults("config/cdm/ccae.yml", exportZipFile = exportZipFile)
-importResultsFiles(config$connectionDetails, "rewardb", exportZipFile)
+generateSccResults("config/cdm/ccae.yml")
+importResultsFiles(config$connectionDetails, "rewardb")

@@ -3,7 +3,6 @@
 export(buildDashboardFromConfig)
 export(calibrateOutcomes)
 export(calibrateTargets)
-export(compileResults)
 export(forestPlot)
 export(generateSccResults)
 export(getMetaAnalysisData)

@@ -159,19 +159,20 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
 
   atlasCohorts <- getUncomputedAtlasCohorts(connection, config)
 
-  # Generate each cohort
-  apply(atlasCohorts, 1, function(cohortReference) {
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
-      cdm_database_schema = config$cdmSchema,
-      vocabulary_database_schema = config$vocabularySchema,
-      target_database_schema = config$resultSchema,
-      target_cohort_table = config$tables$outcomeCohort,
-      target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
-    )
-  })
-
+  if (length(atlasCohorts)) {
+    # Generate each cohort
+    apply(atlasCohorts, 1, function(cohortReference) {
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection,
+        sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
+        cdm_database_schema = config$cdmSchema,
+        vocabulary_database_schema = config$vocabularySchema,
+        target_database_schema = config$resultSchema,
+        target_cohort_table = config$tables$outcomeCohort,
+        target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
+      )
+    })
+  }
 }
 
 #' create the custom drug eras, these are for drugs with nonstandard eras (e.g. where doeses aren't picked up by

@@ -4,7 +4,7 @@
 \alias{createCohorts}
 \title{Create exposures cohorts in the CDM - this function can take a long time}
 \usage{
-createCohorts(connection, config)
+createCohorts(connection, config, deleteExisting = FALSE)
 }
 \arguments{
 \item{connection}{DatabaseConnector connection to cdm}

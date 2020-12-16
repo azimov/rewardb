@@ -7,6 +7,8 @@
 runScc(
   connection,
   config,
+  analysisId,
+  analysisSettings,
   exposureIds = NULL,
   outcomeIds = NULL,
   removeNullValues = FALSE,

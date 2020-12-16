@@ -205,4 +205,4 @@ select tx.*,
 --- Note: if you add paritioning keys, you must join s on o with those keys, and the SUM window function for accumulated must be partitioned the same way
 
 TRUNCATE TABLE #risk_windows;
-DROP TABLE #risk_windows;FF
+DROP TABLE #risk_windows;

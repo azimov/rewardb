@@ -31,8 +31,11 @@ importResultsFiles <- function(
   resultsSchema,
   exportZipFilePath,
   unzipPath = "rb-import",
-  .checkTables = TRUE)
+  .checkTables = TRUE,
+  .debug = FALSE
+)
 {
+  ParallelLogger::logInfo("Importing results file")
   checkmate::assert(connectionDetails$dbms == "postgresql")
   files <- unzipAndVerify(exportZipFilePath, unzipPath, TRUE)
   meta <- getMetaDt(unzipPath)
@@ -42,6 +45,7 @@ importResultsFiles <- function(
   tryCatch(
     {
       tables <- DatabaseConnector::getTableNames(connection, resultsSchema)
+
       for (csvFile in files) {
         ParallelLogger::logInfo(paste("Uploading file", csvFile))
         tableName <- meta$tableNames[[basename(csvFile)]]
@@ -53,8 +57,7 @@ importResultsFiles <- function(
           ParallelLogger::logWarn(paste("Skipping table", tableName, "not found in schema", tables))
           next
         }
-
-        pgCopy(connectionDetails, csvFile, resultsSchema, tableName)
+        pgCopy(connectionDetails, csvFile, resultsSchema, tableName, .echoCommand = .debug)
       }
     },
     error = ParallelLogger::logError
