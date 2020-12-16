@@ -81,12 +81,11 @@ importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePgCopy =
         snakeName <- SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])
         tableName <- cdmConfig$tables[[snakeName]]
 
-        # TODO: Find a solution to uploading atlas cohort references faster than
-        if (cdmConfig$connectionDetails$dbms == "postgresql" & usePgCopy & snakeName != "atlasOutcomeReference") {
+        if (cdmConfig$connectionDetails$dbms == "postgresql" & usePgCopy) {
           print(paste("Using pgcopy to upload", snakeName, tableName, file))
           pgCopy(connectionDetails = cdmConfig$connectionDetails, csvFileName = file, schema = cdmConfig$referenceSchema, tableName = tableName)
         } else {
-          print(paste("Using db append table", snakeName, tableName, file))
+          print(paste("Using insert table", snakeName, tableName, file))
           data <- read.csv(file)
           DatabaseConnector::insertTable(
             connection = connection,
@@ -94,6 +93,7 @@ importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePgCopy =
             data = data,
             progressBar = TRUE,
             dropTableIfExists = TRUE,
+            useMppBulkLoad = cdmConfig$useMppBulkLoad,
             oracleTempSchema = cdmConfig$oracleTempSchema
           )
         }
