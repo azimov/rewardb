@@ -144,7 +144,7 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
   for (cohortType in outcomeTypes) {
     count <- cohortsToCompute(cohortType$type)
     while (count) {
-      print(paste(count, "Uncomputed cohorts"))
+      ParallelLogger::logInfo(count, " Uncomputed cohorts")
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = cohortType$sql,
@@ -158,16 +158,22 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
     }
   }
 
+  computeAtlasOutcomeCohorts(connection, config)
+}
+
+computeAtlasOutcomeCohorts <- function(connection, config) {
   atlasCohorts <- getUncomputedAtlasCohorts(connection, config)
   if (length(atlasCohorts)) {
     # Generate each cohort
     apply(atlasCohorts, 1, function(cohortReference) {
+      ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
         cdm_database_schema = config$cdmSchema,
         vocabulary_database_schema = config$vocabularySchema,
         target_database_schema = config$resultSchema,
+        results_database_schema = config$resultSchema,
         target_cohort_table = config$tables$outcomeCohort,
         target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
       )

@@ -1,4 +1,4 @@
-buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE) {
+buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE, generatePlSql = TRUE) {
   config <- loadGlobalConfig(configFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   tryCatch({
@@ -36,7 +36,8 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPheno
                           ref = "master",
                           local = FALSE,
                           packageName = "PhenotypeLibrary",
-                          removeExisting = FALSE)
+                          removeExisting = FALSE,
+                          generateSql = generatePlSql)
     }
   },
     error = ParallelLogger::logError

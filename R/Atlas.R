@@ -14,7 +14,8 @@ addPhenotypeLibrary <- function(connection,
                                 ref = "master",
                                 local = FALSE,
                                 packageName = "PhenotypeLibrary",
-                                removeExisting = FALSE) {
+                                removeExisting = FALSE,
+                                generateSql = TRUE) {
   # Go through folders and add each cohort with names and descriptions
   if (local) {
     remotes::install_git(libraryRepo, ref = ref)
@@ -41,8 +42,12 @@ addPhenotypeLibrary <- function(connection,
       cohortDefinition$id <- cohortId
       cohortDefinition$expression <- RJSONIO::fromJSON(jsonDefinition)
 
-      sqlPath <- paste0(stringr::str_split(jsonDefinition, ".json")[[1]][[1]], ".sql")
-      sqlDefinition <- readr::read_file(sqlPath)
+      if (generateSql) {
+        sqlDefinition <- ROhdsiWebApi::getCohortSql(cohortDefinition, config$webApiUrl, generateStats = FALSE)
+      } else {
+        sqlPath <- paste0(stringr::str_split(jsonDefinition, ".json")[[1]][[1]], ".sql")
+        sqlDefinition <- readr::read_file(sqlPath)
+      }
 
       urlRef <- paste(libraryRepo, ref, sep = "@")
       if (removeExisting) {
