@@ -95,7 +95,7 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
 
         # Remove columns we don't want to store on the CDM
         if (camelName %in% names(rewardb::CONST_EXCLUDE_REF_COLS)) {
-          data <- data[, !(names(data) %in% CONST_EXCLUDE_REF_COLS[[camelName]])]
+          data <- data[, !(names(data) %in% rewardb::CONST_EXCLUDE_REF_COLS[[camelName]])]
           print(names(data))
         }
 
