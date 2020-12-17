@@ -38,7 +38,7 @@ test_that("Export/Import reference zip file", {
     expect_true(checkmate::checkFileExists(file))
   }
 
-  importReferenceTables(cdmConfig, zipFilePath, refFolder)
+  importReferenceTables(cdmConfig, zipFilePath)
 
   # Verify the tables existinces
   for (table in rewardb::CONST_REFERENCE_TABLES) {

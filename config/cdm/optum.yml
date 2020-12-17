@@ -2,6 +2,7 @@ sourceId: 10
 database: CDM_Optum_Extended_SES_v1156
 
 exportPath: "export_optum"
+referencePath: "reference_files"
 
 connectionDetails:
   dbms: pdw

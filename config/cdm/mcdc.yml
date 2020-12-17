@@ -2,6 +2,7 @@ sourceId: 12
 database: CDM_IBM_MDCD_v1153
 
 exportPath: "export_mdcd"
+referencePath: "reference_files"
 
 connectionDetails:
   dbms: pdw

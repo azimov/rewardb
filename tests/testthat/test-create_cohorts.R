@@ -6,7 +6,7 @@ cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb"
 cdmConfig <- loadCdmConfig(cdmConfigPath)
 
 # Set up a database with constructed cohorts etc
-buildPgDatabase(configFilePath = configFilePath)
+buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
 cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
@@ -23,7 +23,7 @@ unlink(refFolder)
 DatabaseConnector::renderTranslateExecuteSql(connection,"DROP SCHEMA @schema CASCADE;", schema = cdmConfig$resultSchema)
 DatabaseConnector::renderTranslateExecuteSql(connection,"CREATE SCHEMA @schema", schema = cdmConfig$resultSchema)
 exportReferenceTables(config)
-importReferenceTables(cdmConfig, zipFilePath, refFolder)
+importReferenceTables(cdmConfig, zipFilePath)
 
 test_that("Full data generation on CDM", {
 
@@ -85,7 +85,7 @@ test_that("Full data generation on CDM", {
   insertAtlasCohortRef(connection, config, 100, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
   exportReferenceTables(config)
-  importReferenceTables(cdmConfig, zipFilePath, refFolder)
+  importReferenceTables(cdmConfig, zipFilePath)
 
   uncomputed <- getUncomputedAtlasCohorts(connection, cdmConfig)
   

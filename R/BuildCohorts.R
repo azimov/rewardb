@@ -51,11 +51,10 @@ createCohorts <- function(connection, config, deleteExisting = FALSE) {
 
 }
 
-
 getUncomputedAtlasCohorts <- function(connection, config) {
   # Get only null atlas cohorts
   atlaSql <- "
-  SELECT aor.*
+  SELECT aor.cohort_definition_id
   FROM @reference_schema.@atlas_outcome_reference aor
   LEFT JOIN
     (
@@ -72,7 +71,9 @@ getUncomputedAtlasCohorts <- function(connection, config) {
     outcome_cohort_table = config$tables$outcomeCohort,
     atlas_outcome_reference = config$tables$atlasOutcomeReference
   )
-  return(atlasCohorts)
+
+  fullCohorts <- read.csv(file.path(config$referencePath, "atlas_outcome_reference.csv"))
+  return(fullCohorts[fullCohorts$COHORT_DEFINITION_ID %in% atlasCohorts$COHORT_DEFINITION_ID,])
 }
 
 #' Create outcome cohorts in the CDM - this function can take a very very long time
@@ -158,7 +159,6 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
   }
 
   atlasCohorts <- getUncomputedAtlasCohorts(connection, config)
-
   if (length(atlasCohorts)) {
     # Generate each cohort
     apply(atlasCohorts, 1, function(cohortReference) {

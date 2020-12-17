@@ -9,7 +9,7 @@ config <- loadGlobalConfig(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 test_that("build rewardb postgres db", {
-  buildPgDatabase(configFilePath = configFilePath)
+  buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE))
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT  * FROM @schema.scc_result",

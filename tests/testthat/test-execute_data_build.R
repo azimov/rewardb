@@ -19,7 +19,7 @@ refFolder <- "reference_test_folder"
 unlink(zipFilePath)
 unlink(refFolder)
 exportReferenceTables(config)
-importReferenceTables(cdmConfig, zipFilePath, refFolder)
+importReferenceTables(cdmConfig, zipFilePath)
 
 
 unlink("export")

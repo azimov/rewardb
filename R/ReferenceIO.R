@@ -11,6 +11,9 @@ CONST_REFERENCE_TABLES <- c(
   "analysis_setting"
 )
 
+CONST_EXCLUDE_REF_COLS <- list(
+  "atlasOutcomeReference" = c("SQL_DEFINITION", "DEFINITION")
+)
 
 #' Export Reference tables
 #' @description
@@ -57,8 +60,8 @@ exportReferenceTables <- function(
 #'
 #' @description
 #' Note that this always overwrites the existing reference tables stored in the database
-importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePgCopy = FALSE) {
-  unzipAndVerify(zipFilePath, refFolder, TRUE)
+importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
+  unzipAndVerify(zipFilePath, cdmConfig$referencePath, TRUE)
   connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
 
   tryCatch(
@@ -78,17 +81,24 @@ importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePgCopy =
       analysis_setting = cdmConfig$tables$analysisSetting
     )
 
-    fileList <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
+    fileList <- file.path(cdmConfig$referencePath, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
     for (file in fileList) {
-      snakeName <- SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])
-      tableName <- cdmConfig$tables[[snakeName]]
+      camelName <- SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])
+      tableName <- cdmConfig$tables[[camelName]]
 
       if (cdmConfig$connectionDetails$dbms == "postgresql" & usePgCopy) {
-        print(paste("Using pgcopy to upload", snakeName, tableName, file))
+        print(paste("Using pgcopy to upload", camelName, tableName, file))
         pgCopy(connectionDetails = cdmConfig$connectionDetails, csvFileName = file, schema = cdmConfig$referenceSchema, tableName = tableName)
       } else {
-        print(paste("Using insert table", snakeName, tableName, file))
+        print(paste("Using insert table", camelName, tableName, file))
         data <- read.csv(file)
+
+        # Remove columns we don't want to store on the CDM
+        if (camelName %in% names(rewardb::CONST_EXCLUDE_REF_COLS)) {
+          data <- data[, !(names(data) %in% CONST_EXCLUDE_REF_COLS[[camelName]])]
+          print(names(data))
+        }
+
         DatabaseConnector::insertTable(
           connection = connection,
           tableName = paste(cdmConfig$referenceSchema, tableName, sep = "."),
