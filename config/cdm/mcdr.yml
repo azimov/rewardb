@@ -2,6 +2,7 @@ sourceId: 13
 database: CDM_IBM_MDCR_v1152
 
 exportPath: "export_mdcr"
+referencePath: "reference_files"
 
 connectionDetails:
   dbms: pdw

@@ -8,10 +8,9 @@ config <- loadGlobalConfig(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 # Set up a database with constructed cohorts etc
-buildPgDatabase(configFilePath = configFilePath)
+buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE))
 
 test_that("Phenotype Library From github", {
-  addPhenotypeLibrary(connection, config)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
