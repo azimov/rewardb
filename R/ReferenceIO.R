@@ -11,6 +11,7 @@ CONST_REFERENCE_TABLES <- c(
   "analysis_setting"
 )
 
+
 #' Export Reference tables
 #' @description
 #' Takes created reference tables (cohort definitions) from central rewardb and exports them to a zipped csv file
@@ -34,8 +35,9 @@ exportReferenceTables <- function(
         schema = config$rewardbResultsSchema,
         table = table
       )
+
       file <- file.path(exportPath, paste0(table, ".csv"))
-      write.csv(data, file, na = "", row.names = FALSE)
+      suppressWarnings({write.csv(data, file, na = "", row.names = FALSE, fileEncoding = "ascii")})
       meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
     }
 
@@ -84,9 +86,6 @@ importReferenceTables <- function(cdmConfig, zipFilePath, refFolder, usePgCopy =
       if (cdmConfig$connectionDetails$dbms == "postgresql" & usePgCopy) {
         print(paste("Using pgcopy to upload", snakeName, tableName, file))
         pgCopy(connectionDetails = cdmConfig$connectionDetails, csvFileName = file, schema = cdmConfig$referenceSchema, tableName = tableName)
-      }
-      else if (cdmConfig$connectionDetails$dbms == "redshift" & cdmConfig$useMppBulkLoad) {
-
       } else {
         print(paste("Using insert table", snakeName, tableName, file))
         data <- read.csv(file)

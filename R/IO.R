@@ -113,44 +113,6 @@ pgCopy <- function(connectionDetails,
   writeLines(paste("Uploading data took", signif(delta, 3), attr(delta, "units")))
 }
 
-bulkLoadRedshift <- function(connection, qname, fileName) {
-  start <- Sys.time()
-  R.utils::gzip(filename = fileName, destname = sprintf("%s.gz", fileName))
-  s3Put <- aws.s3::put_object(file = sprintf("%s.gz", fileName),
-                              check_region = FALSE,
-                              headers = list(`x-amz-server-side-encryption` = Sys.getenv("AWS_SSE_TYPE")),
-                              object = paste(Sys.getenv("AWS_OBJECT_KEY"), fileName, sep = "/"),
-                              bucket = Sys.getenv("AWS_BUCKET_NAME"))
-
-  if (!s3Put) {
-    stop("Failed to upload data to AWS S3. Please check your credentials and access.")
-  }
-
-  sql <- SqlRender::renderTranslateSql(sqlFilename = "redshiftCopy.sql",
-                                           packageName = "rewardb",
-                                           dbms = "redshift",
-                                           qname = qname,
-                                           fileName = fileName,
-                                           s3RepoName = Sys.getenv("AWS_BUCKET_NAME"),
-                                           pathToFiles = Sys.getenv("AWS_OBJECT_KEY"),
-                                           awsAccessKey = Sys.getenv("AWS_ACCESS_KEY_ID"),
-                                           awsSecretAccessKey = Sys.getenv("AWS_SECRET_ACCESS_KEY"))
-
-  tryCatch({
-    DatabaseConnector::executeSql(connection = connection, sql = sql, reportOverallTime = FALSE)
-    delta <- Sys.time() - start
-    writeLines(paste("Bulk load to Redshift took", signif(delta, 3), attr(delta, "units")))
-  }, error = function(e) {
-    stop("Error in Redshift bulk upload. Please check stl_load_errors and Redshift/S3 access.")
-  }, finally = {
-    try(file.remove(sprintf("%s.gz", fileName)), silent = TRUE)
-    try(aws.s3::delete_object(object = sprintf("%s.gz", fileName),
-                              bucket = Sys.getenv("AWS_BUCKET_NAME")), silent = TRUE)
-  })
-}
-
-
-
 importVocabularyZip <- function(connectionDetails, vocabularyPath, vocabularySchema = "vocabulary") {
   unzipPath <- tempfile()
   dir.create(unzipPath)
