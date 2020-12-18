@@ -15,8 +15,8 @@ useSecurePassword: True
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
 useMppBulkLoad: True
 
-resultSchema: "scratch_rewardb"
-referenceSchema: "scratch_rewardb"
+resultSchema: "scratch_reward_optum_ses"
+referenceSchema: "scratch_reward_optum_ses"
 cdmSchema: "cdm"
 vocabularySchema: "cdm"
 drugEraSchema: "scratch_reward_optum_ses"
