@@ -1,26 +1,30 @@
 sourceId: 10
 database: CDM_Optum_Extended_SES_v1156
 
-exportPath: "export_optum"
+exportPath: "export_optum_ses"
 referencePath: "reference_files"
 
 connectionDetails:
-  dbms: pdw
-  server: JRDUSAPSCTL01
-  port: 17001
+  extraSettings: "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
+  dbms: redshift
+  server: rhealth-prod-3.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/optum_extended_ses
+  port: 5439
+  user: jgilber2
 
-securePassword: True
+useSecurePassword: True
+passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
+useMppBulkLoad: True
 
-resultSchema: "scratch.dbo"
-referenceSchema: "scratch.dbo"
-cdmSchema: "CDM_Optum_Extended_SES_v1156.dbo"
-vocabularySchema: "Vocabulary_20200525.dbo"
-drugEraSchema: "CDM_Optum_Extended_SES_v1156.reward"
+resultSchema: "scratch_rewardb"
+referenceSchema: "scratch_rewardb"
+cdmSchema: "cdm"
+vocabularySchema: "cdm"
+drugEraSchema: "scratch_reward_optum_ses"
 
 tables:
-  outcomeCohort: "rb_optum_v1156_outcome_cohort"
-  cohort: "rb_optum_v1156_cohort"
-  sccResult: "rb_optum_v1156_scc_result"
+  outcomeCohort: "rb_outcome_cohort"
+  cohort: "rb_cohort"
+  sccResult: "rb_scc_result"
   # Reference table definitions
   cohortDefinition: "rb_cohort_definition"
   outcomeCohortDefinition: "rb_outcome_cohort_definition"

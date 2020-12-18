@@ -2,17 +2,18 @@ sourceId: 11
 database: truven_ccae
 
 exportPath: "export_ccae"
+referencePath: "reference_files"
 
 connectionDetails:
   extraSettings: "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
   dbms: redshift
   server: rhealth-prod-1.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/truven_ccae
   port: 5439
-  user: unset
-  password: unset
+  user: jgilber2
 
 useSecurePassword: True
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
+useMppBulkLoad: True
 
 resultSchema: "scratch_rewardb"
 referenceSchema: "scratch_rewardb"
