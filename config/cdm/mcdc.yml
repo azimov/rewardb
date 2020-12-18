@@ -1,8 +1,8 @@
 sourceId: 12
-database: CDM_IBM_MDCD_v1153
+database: truven_mdcd
 
 exportPath: "export_mcdc"
-referencePath: "reference_files"m
+referencePath: "reference_files"
 
 connectionDetails:
   extraSettings: "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"

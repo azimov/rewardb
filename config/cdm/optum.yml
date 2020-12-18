@@ -1,5 +1,5 @@
 sourceId: 10
-database: CDM_Optum_Extended_SES_v1156
+database: optum_extended_sess
 
 exportPath: "export_optum_ses"
 referencePath: "reference_files"
