@@ -62,7 +62,6 @@ generateSccResults <- function(
     }
 
     if (.runSCC) {
-      # run SCC
       if (!dir.exists(config$exportPath)) {
         dir.create(config$exportPath)
       }
@@ -91,8 +90,9 @@ generateSccResults <- function(
           readr::write_excel_csv(timeOnTreatment, statsFileName, na="")
           tableNames[[basename(statsFileName)]] <- "time_on_treatment"
         }
-        ParallelLogger::logInfo("Exporting results zip")
-        exportZipFile <- paste0("reward-b-scc-results-aid-", analysisId,".zip")
+
+        exportZipFile <- paste0("reward-b-scc-results-aid-", config$database, "-", analysisId,".zip")
+        ParallelLogger::logInfo("Exporting results zip to", exportZipFile)
         exportResults(config, exportZipFile = exportZipFile, tableNames = tableNames, csvPattern = paste0("rb-results-", config$database, "-aid-", analysisId, "*.csv"))
       })
     }
