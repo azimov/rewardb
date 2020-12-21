@@ -24,9 +24,7 @@ dashboardUi  <- function (request) {
           id = "outcomeResultsTabs",
         tabPanel(
           "Detailed results",
-          withSpinner(DT::dataTableOutput("fullResultsTable")),
-            hr(),
-            downloadButton("downloadSubTable", "Download table")
+            metaAnalysisTableUi("metaTable")
           ),
           tabPanel(
             "Forest plot",

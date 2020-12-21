@@ -19,30 +19,12 @@ serverInstance <- function(input, output, session) {
     rm(model)
   })
 
-  niceColumnName <- list(
-    SOURCE_NAME = "Database",
-    CALIBRATED_RR = "Relative Risk *calibrated",
-    CALIBRATED_CI_95 = "CI 95*",
-    CALIBRATED_P_VALUE = "P*",
-    RR = "Relative Risk",
-    CI_95 = "CI 95",
-    P_VALUE = "P",
-    T_AT_RISK = "N Exp",
-    T_PT = "Exposed time (years)",
-    C_CASES = "Unexposed cases",
-    T_CASES = "Exposed cases"
-  )
-
-  niceColumnNameInv <- list()
-
-  for (n in names(niceColumnName)) {
-    niceColumnNameInv[niceColumnName[[n]]] <- n
-  }
   getOutcomeCohortTypes <- reactive({
     cohortTypeMapping <- list("ATLAS defined" = 2, "Inpatient" = 1, "Two diagnosis codes" = 0)
     rs <- foreach(i = input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
     return(rs)
   })
+
   # Query full results, only filter is Risk range parameters
   mainTableRe <- reactive({
     benefit <- input$cutrange1
@@ -71,14 +53,14 @@ serverInstance <- function(input, output, session) {
     return(df)
   })
 
-  df <- model$queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.OUTCOME ORDER BY COHORT_NAME")
+  df <- model$queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.outcome ORDER BY COHORT_NAME")
   updateSelectizeInput(session, "outcomeCohorts", choices = df$COHORT_NAME, server = TRUE)
 
-  df <- model$queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.TARGET ORDER BY COHORT_NAME")
+  df <- model$queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.target ORDER BY COHORT_NAME")
   updateSelectizeInput(session, "targetCohorts", choices = df$COHORT_NAME, server = TRUE)
 
   if (appContext$useExposureControls) {
-    df <- model$queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.EXPOSURE_CLASS ORDER BY EXPOSURE_CLASS_NAME")
+    df <- model$queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.exposure_class ORDER BY EXPOSURE_CLASS_NAME")
     updateSelectizeInput(session, "exposureClass", choices = df$EXPOSURE_CLASS_NAME, server = TRUE)
   }
 
@@ -134,62 +116,10 @@ serverInstance <- function(input, output, session) {
   })
 
   selectedExposureOutcome <- reactive({
-    ids <- input$mainTable_rows_selected
+    ids <- input$mainTable_rows_selected # This links the app components together
     filtered1 <- mainTableRiskHarmFilters()
     filtered2 <- filtered1[ids,]
     return(filtered2)
-  })
-
-  output$treatmentOutcomeStr <- renderText({
-    s <- selectedExposureOutcome()
-    return(paste(s$TARGET_COHORT_NAME, s$TARGET_COHORT_ID, "for", s$OUTCOME_COHORT_NAME, s$OUTCOME_COHORT_ID))
-  })
-
-  output$targetStr <- renderText({
-    s <- selectedExposureOutcome()
-    s$TARGET_COHORT_NAME
-  })
-
-  metaAnalysisTbl <- reactive({
-    s <- selectedExposureOutcome()
-    treatment <- s$TARGET_COHORT_ID
-    outcome <- s$OUTCOME_COHORT_ID
-    if (length(outcome)) {
-      updateTabsetPanel(session, "mainPanel", "Detail")
-      sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRowsGrouped.sql", package = "rewardb"))
-      table <- model$queryDb(sql, treatment = treatment, outcome = outcome)
-      return(table)
-    }
-    return(data.frame())
-  })
-
-  fullResultsTable <- reactive({
-    table3 <- metaAnalysisTbl()
-    if (nrow(table3) >= 1) {
-      table3$RR[table3$RR > 100] <- NA
-      table3$C_PT <- formatC(table3$C_PT, digits = 0, format = "f")
-      table3$T_PT <- formatC(table3$T_PT, digits = 0, format = "f")
-      table3$RR <- formatC(table3$RR, digits = 2, format = "f")
-      table3$LB_95 <- formatC(table3$LB_95, digits = 2, format = "f")
-      table3$UB_95 <- formatC(table3$UB_95, digits = 2, format = "f")
-      table3$P_VALUE <- formatC(table3$P_VALUE, digits = 2, format = "f")
-
-      table3$CALIBRATED_RR <- formatC(table3$CALIBRATED_RR, digits = 2, format = "f")
-      table3$CALIBRATED_LB_95 <- formatC(table3$CALIBRATED_LB_95, digits = 2, format = "f")
-      table3$CALIBRATED_UB_95 <- formatC(table3$CALIBRATED_UB_95, digits = 2, format = "f")
-      table3$CALIBRATED_P_VALUE <- formatC(table3$CALIBRATED_P_VALUE, digits = 2, format = "f")
-
-      for (n in names(niceColumnName)) {
-        colnames(table3)[colnames(table3) == n] <- niceColumnName[n]
-      }
-
-      headers <- names(niceColumnNameInv)
-      table4 <- DT::datatable(
-        table3[, headers], rownames = FALSE, escape = FALSE, options = list(dom = 't'),
-        caption = "* Indicates values after empirical calibration"
-      )
-      return(table4)
-    }
   })
 
   fullDataDownload <- reactive({
@@ -200,8 +130,13 @@ serverInstance <- function(input, output, session) {
     bSelection <- paste0("'", paste0(input$scBenefit, sep = "'"))
     rSelection <- paste0("'", paste0(input$scRisk, sep = "'"))
     df <- model$queryDb(mainTableSql, risk = risk, benefit = benefit,
-                  risk_selection = rSelection, benefit_selection = bSelection, calibrated = calibrated)
+                        risk_selection = rSelection, benefit_selection = bSelection, calibrated = calibrated)
     return(df)
+  })
+
+  output$treatmentOutcomeStr <- renderText({
+    s <- selectedExposureOutcome()
+    return(paste(s$TARGET_COHORT_NAME, s$TARGET_COHORT_ID, "for", s$OUTCOME_COHORT_NAME, s$OUTCOME_COHORT_ID))
   })
 
   output$downloadData <- downloadHandler(
@@ -252,32 +187,7 @@ serverInstance <- function(input, output, session) {
     }
   )
 
-  output$downloadSubTable <- downloadHandler(
-    filename = function() {
-      s <- selectedExposureOutcome()
-      treatment <- s$TARGET_COHORT_ID
-      outcome <- s$OUTCOME_COHORT_ID
-      paste0(appContext$short_name, '-results-', treatment, "-", outcome, '.csv')
-    },
-    content = function(file) {
-      write.csv(metaAnalysisTbl(), file, row.names = FALSE)
-    }
-  )
-
-  output$fullResultsTable <- DT::renderDataTable(
-    expr = {
-      tryCatch(
-        expr = {
-          return(fullResultsTable())
-        },
-        error = function(e) {
-          ParallelLogger::logError(e)
-          return(data.frame())
-        })
-    }
-  )
-
-
+  metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
   calibrationPlotServer("calibrationPlot", model, selectedExposureOutcome)
 
@@ -300,5 +210,5 @@ serverInstance <- function(input, output, session) {
 launchDashboard <- function(appConfigPath, globalConfigPath) {
   e <- environment()
   e$appContext <- loadAppContext(appConfigPath, globalConfigPath)
-  shiny::shinyApp(server = serverInstance, dashboardUi, enableBookmarking = "server")
+  shiny::shinyApp(server = serverInstance, dashboardUi, enableBookmarking = "url")
 }
