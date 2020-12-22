@@ -1,4 +1,4 @@
-buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildCem = TRUE) {
+buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE, generatePlSql = TRUE) {
   config <- loadGlobalConfig(configFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   tryCatch({
@@ -29,8 +29,18 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildCem =
     sql <- SqlRender::readSql(system.file("sql/create", "cemSchema.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(connection, sql)
     addAnalysisSettingsJson(connection, config)
+
+    if (buildPhenotypeLibrary) {
+      addPhenotypeLibrary(connection, config,
+                          libraryRepo = "OHDSI/PhenotypeLibrary",
+                          ref = "master",
+                          local = FALSE,
+                          packageName = "PhenotypeLibrary",
+                          removeExisting = FALSE,
+                          generateSql = generatePlSql)
+    }
   },
-  error = ParallelLogger::logError
+    error = ParallelLogger::logError
   )
   DatabaseConnector::disconnect(connection)
 }

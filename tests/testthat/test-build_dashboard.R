@@ -3,7 +3,7 @@ config <- loadGlobalConfig(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 # Set up a database with constructed cohorts etc
-buildPgDatabase(configFilePath = configFilePath)
+buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
 cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 1, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
@@ -24,7 +24,7 @@ refFolder <- "reference_test_folder"
 unlink(zipFilePath)
 unlink(refFolder)
 exportReferenceTables(config)
-importReferenceTables(cdmConfig, zipFilePath, refFolder)
+importReferenceTables(cdmConfig, zipFilePath)
 generateSccResults(cdmConfigPath)
 importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug=TRUE)
 

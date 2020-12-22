@@ -51,11 +51,10 @@ createCohorts <- function(connection, config, deleteExisting = FALSE) {
 
 }
 
-
 getUncomputedAtlasCohorts <- function(connection, config) {
   # Get only null atlas cohorts
   atlaSql <- "
-  SELECT aor.*
+  SELECT aor.cohort_definition_id
   FROM @reference_schema.@atlas_outcome_reference aor
   LEFT JOIN
     (
@@ -72,7 +71,9 @@ getUncomputedAtlasCohorts <- function(connection, config) {
     outcome_cohort_table = config$tables$outcomeCohort,
     atlas_outcome_reference = config$tables$atlasOutcomeReference
   )
-  return(atlasCohorts)
+
+  fullCohorts <- read.csv(file.path(config$referencePath, "atlas_outcome_reference.csv"))
+  return(fullCohorts[fullCohorts$COHORT_DEFINITION_ID %in% atlasCohorts$COHORT_DEFINITION_ID,])
 }
 
 #' Create outcome cohorts in the CDM - this function can take a very very long time
@@ -143,7 +144,7 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
   for (cohortType in outcomeTypes) {
     count <- cohortsToCompute(cohortType$type)
     while (count) {
-      print(paste(count, "Uncomputed cohorts"))
+      ParallelLogger::logInfo(count, " Uncomputed cohorts")
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = cohortType$sql,
@@ -157,17 +158,22 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
     }
   }
 
-  atlasCohorts <- getUncomputedAtlasCohorts(connection, config)
+  computeAtlasOutcomeCohorts(connection, config)
+}
 
+computeAtlasOutcomeCohorts <- function(connection, config) {
+  atlasCohorts <- getUncomputedAtlasCohorts(connection, config)
   if (length(atlasCohorts)) {
     # Generate each cohort
     apply(atlasCohorts, 1, function(cohortReference) {
+      ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
         cdm_database_schema = config$cdmSchema,
         vocabulary_database_schema = config$vocabularySchema,
         target_database_schema = config$resultSchema,
+        results_database_schema = config$resultSchema,
         target_cohort_table = config$tables$outcomeCohort,
         target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
       )

@@ -9,13 +9,13 @@ config <- loadGlobalConfig(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 # Set up a database with constructed cohorts etc
-rewardb::buildPgDatabase(configFilePath = configFilePath)
+buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
 cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
-rewardb::insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
+insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 conceptSetId <- 11933
 conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
-rewardb::insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
+insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
 cdmConfig <- loadCdmConfig(system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb"))
 
@@ -23,22 +23,15 @@ DatabaseConnector::renderTranslateExecuteSql(connection,"DROP SCHEMA @schema CAS
 DatabaseConnector::renderTranslateExecuteSql(connection,"CREATE SCHEMA @schema", schema = cdmConfig$resultSchema)
 
 zipFilePath <- "rewardb-references.zip"
-refFolder <- "reference_test_folder"
 unlink(zipFilePath)
-unlink(refFolder)
+unlink(cdmConfig$referenceFolder)
 
 test_that("Export/Import reference zip file", {
 
   exportReferenceTables(config)
   expect_true(checkmate::checkFileExists(zipFilePath))
-  unzipAndVerify(zipFilePath, refFolder, TRUE)
 
-  files <- file.path(refFolder, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
-  for (file in files) {
-    expect_true(checkmate::checkFileExists(file))
-  }
-
-  importReferenceTables(cdmConfig, zipFilePath, refFolder)
+  importReferenceTables(cdmConfig, zipFilePath)
 
   # Verify the tables existinces
   for (table in rewardb::CONST_REFERENCE_TABLES) {
@@ -47,6 +40,16 @@ test_that("Export/Import reference zip file", {
     resp <- DatabaseConnector::renderTranslateQuerySql(connection, testSql, schema=cdmConfig$referenceSchema, table=table)
     expect_true(nrow(resp) > 0)
     expect_true(resp$TBL_COUNT[[1]] > 0)
+  }
+
+  for (camelName in names(rewardb::CONST_EXCLUDE_REF_COLS)) {
+    table <- cdmConfig$tables[[camelName]]
+    testSql <- "SELECT count(*) as tbl_count FROM @schema.@table"
+    resp <- DatabaseConnector::renderTranslateQuerySql(connection, testSql, schema=cdmConfig$referenceSchema, table=table)
+
+    for(col in rewardb::CONST_EXCLUDE_REF_COLS[[camelName]]) {
+      expect_false(col %in% names(resp))
+    }
   }
 
 })
@@ -56,7 +59,7 @@ DatabaseConnector::renderTranslateExecuteSql(connection,"CREATE SCHEMA @schema",
 
 test_that("Export/Import reference zip file with pgcopy", {
 
-  importReferenceTables(cdmConfig, zipFilePath, refFolder, usePgCopy = TRUE)
+  importReferenceTables(cdmConfig, zipFilePath, usePgCopy = TRUE)
 
   # Verify the tables existinces
   for (table in rewardb::CONST_REFERENCE_TABLES) {
@@ -68,6 +71,7 @@ test_that("Export/Import reference zip file with pgcopy", {
   }
 
 })
-
+unlink(zipFilePath)
+unlink(cdmConfig$referenceFolder)
 # Check that creation of a CEM sumamry table works
 DatabaseConnector::disconnect(connection)

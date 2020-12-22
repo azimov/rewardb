@@ -1,25 +1,30 @@
 sourceId: 13
-database: CDM_IBM_MDCR_v1152
+database: truven_mdcrs
 
-exportPath: "export_mdcr"
+exportPath: "export_mcdr"
+referencePath: "reference_files"
 
 connectionDetails:
-  dbms: pdw
-  server: JRDUSAPSCTL01
-  port: 17001
+  extraSettings: "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
+  dbms: redshift
+  server: rhealth-prod-1.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/truven_mdcr
+  port: 5439
+  user: jgilber2
 
-securePassword: True
+useSecurePassword: True
+passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
+useMppBulkLoad: True
 
-resultSchema: "scratch.dbo"
-referenceSchema: "scratch.dbo"
-cdmSchema: "CDM_IBM_MDCR_v1152.dbo"
-vocabularySchema: "Vocabulary_20200525.dbo"
-drugEraSchema: "CDM_IBM_MDCR_v1152.reward"
+resultSchema: "scratch_rewardb_mcdc"
+referenceSchema: "scratch_rewardb_mcdc"
+cdmSchema: "cdm"
+vocabularySchema: "cdm"
+drugEraSchema: "scratch_rewardb_mcdc"
 
 tables:
-  outcomeCohort: "rb_mdcr_v1152_outcome_cohort"
-  cohort: "rb_mdcr_v1152_cohort"
-  sccResult: "rb_mdcr_v1152_scc_result"
+  outcomeCohort: "rb_outcome_cohort"
+  cohort: "rb_cohort"
+  sccResult: "rb_scc_result"
   # Reference table definitions
   cohortDefinition: "rb_cohort_definition"
   outcomeCohortDefinition: "rb_outcome_cohort_definition"
@@ -29,3 +34,4 @@ tables:
   customExposure: "rb_custom_exposure"
   customExposureConcept: "rb_custom_exposure_concept"
   analysisSetting: "rb_analysis_setting"
+
