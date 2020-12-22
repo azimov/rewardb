@@ -15,7 +15,7 @@ serverInstance <- function(input, output, session) {
 
   session$onSessionEnded(function() {
     writeLines("Closing connection")
-    model$exit()
+    model$closeConnection()
     rm(model)
   })
 

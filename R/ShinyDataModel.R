@@ -3,31 +3,43 @@
 #' Approach to allow data analysis inside and outside of shiny apps
 #'
 #'
-DbModel <- setRefClass("DbModel", fields = c("appContext", "dbConn"))
+DbModel <- setRefClass("DbModel", fields = c("appContext", "dbConn", "connectionActive"))
 DbModel$methods(
-  initialize = function(appContext) {
+  initialize = function(appContext, initConnection = TRUE) {
+    connectionActive <<- FALSE
     appContext <<- appContext
-    initializeConnection()
+    if (initConnection) {
+      initializeConnection()
+    }
   },
 
   initializeConnection = function() {
     dbConn <<- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+    connectionActive <<- TRUE
   },
 
-  exit = function() {
+  closeConnection = function() {
+    if (!connectionActive) {
+      stop("Connection has not be initialized or has been closed. Call initalizeConnection")
+    }
     DatabaseConnector::disconnect(dbConn)
+    connectionActive <<- FALSE
   },
 
   queryDb = function(query, ...) {
+    if (!connectionActive) {
+      stop("Connection has not be initialized or has been closed. Call initalizeConnection")
+    }
+
     tryCatch({
       df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = appContext$short_name, ...)
       return(df)
     },
-      error = function(e) {
-        ParallelLogger::logError(e)
-        DatabaseConnector::disconnect(dbConn)
-        dbConn <<- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-      })
+    error = function(e) {
+      ParallelLogger::logError(e)
+      closeConnection()
+      initializeConnection()
+    })
   },
   # Will only work with postgres > 9.4
   tableExists = function(tableName) {

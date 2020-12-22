@@ -28,9 +28,37 @@ importReferenceTables(cdmConfig, zipFilePath, refFolder)
 generateSccResults(cdmConfigPath)
 importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug=TRUE)
 
+appContextFile <- system.file("tests", "test.dashboard.yml", package = "rewardb")
+
 test_that("Dashboard creation works", {
   Sys.setenv("REWARD_B_PASSWORD" = "postgres")
-  buildDashboardFromConfig(system.file("tests", "test.dashboard.yml", package = "rewardb"), configFilePath, performCalibration = TRUE)
+  buildDashboardFromConfig(appContextFile, configFilePath, performCalibration = TRUE)
+})
+
+appContext <- loadAppContext(appContextFile, configFilePath)
+test_that("Data model utilitiy queries", {
+  model <- DbModel(appContext)
+  model$queryDb("BROKEN SQL @schema")
+  df <- model$queryDb("SELECT * FROM @schema.result")
+  expect_true(length(df)  > 1)
+  expect_true(model$tableExists("result"))
+  expect_false(model$tableExists("foo_table"))
+  model$closeConnection()
+  expect_error(model$queryDb("SELECT * FROM @schema.result"))
+})
+
+test_that("Model getter functions", {
+  model <- DbModel(appContext)
+
+  df <- model$getExposureControls(c(1))
+  df <- model$getOutcomeControls(c(1))
+  expect_true(length(model$getOutcomeCohortNames()) > 0)
+  expect_true(length(model$getExposureCohortNames()) > 0)
+  expect_true(length(model$getFilteredTableResults()) > 0)
+  expect_true(length(model$getNegativeControls()) > 0)
+  expect_true(length(model$getMappedAssociations()) > 0)
+
+  model$closeConnection()
 })
 
 DatabaseConnector::disconnect(connection)
