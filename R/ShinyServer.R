@@ -26,48 +26,29 @@ serverInstance <- function(input, output, session) {
   })
 
   # Query full results, only filter is Risk range parameters
-  mainTableRe <- reactive({
-    benefit <- input$cutrange1
-    risk <- input$cutrange2
-    pCut <- input$pCut
-    filterByMeta <- input$filterThreshold == "Meta analysis"
-    outcomeCohortTypes <- getOutcomeCohortTypes()
-    mainTableSql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
-    calibrated <- ifelse(input$calibrated, 1, 0)
-    bSelection <- paste0("'", paste0(input$scBenefit, sep = "'"))
-    rSelection <- paste0("'", paste0(input$scRisk, sep = "'"))
-    df <- model$queryDb(
-      mainTableSql,
-      risk = risk,
-      benefit = benefit,
-      p_cut_value = pCut,
-      exclude_indications = input$excludeIndications,
-      filter_outcome_types = length(outcomeCohortTypes) > 0,
-      outcome_types = outcomeCohortTypes,
-      risk_selection = rSelection,
-      benefit_selection = bSelection,
-      calibrated = calibrated,
-      show_exposure_classes = appContext$useExposureControls,
-      filter_by_meta_analysis = filterByMeta
-    )
-    return(df)
+  mainTableReactive <- reactive({
+    model$getFilteredTableResults(benefitThreshold = input$cutrange1,
+                                  riskThreshold = input$cutrange2,
+                                  pValueCut = input$pCut,
+                                  filterByMeta = input$filterThreshold == "Meta analysis",
+                                  outcomeCohortTypes = getOutcomeCohortTypes(),
+                                  excludeIndications = input$excludeIndications,
+                                  calibrated = input$calibrated,
+                                  benefitSelection = input$scBenefit,
+                                  riskSelection = input$scRisk)
   })
 
-  df <- model$queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.outcome ORDER BY COHORT_NAME")
-  updateSelectizeInput(session, "outcomeCohorts", choices = df$COHORT_NAME, server = TRUE)
-
-  df <- model$queryDb("SELECT DISTINCT COHORT_NAME FROM @schema.target ORDER BY COHORT_NAME")
-  updateSelectizeInput(session, "targetCohorts", choices = df$COHORT_NAME, server = TRUE)
+  updateSelectizeInput(session, "outcomeCohorts", choices = model$getOutcomeCohortNames(), server = TRUE)
+  updateSelectizeInput(session, "targetCohorts", choices = model$getExposureCohortNames(), server = TRUE)
 
   if (appContext$useExposureControls) {
-    df <- model$queryDb("SELECT DISTINCT EXPOSURE_CLASS_NAME FROM @schema.exposure_class ORDER BY EXPOSURE_CLASS_NAME")
-    updateSelectizeInput(session, "exposureClass", choices = df$EXPOSURE_CLASS_NAME, server = TRUE)
+    updateSelectizeInput(session, "exposureClass", choices = model$getExposureClassNames(), server = TRUE)
   }
 
   # Subset of results for harm, risk and treatement categories
   # Logic: either select everything or select a user defined subset
   mainTableRiskHarmFilters <- reactive({
-    filtered <- mainTableRe()
+    filtered <- mainTableReactive()
     if (length(input$outcomeCohorts)) {
       filtered <- filtered[filtered$OUTCOME_COHORT_NAME %in% input$outcomeCohorts,]
     }
@@ -123,15 +104,13 @@ serverInstance <- function(input, output, session) {
   })
 
   fullDataDownload <- reactive({
-    benefit <- input$cutrange1
-    risk <- input$cutrange2
-    mainTableSql <- readr::read_file(system.file("sql/queries/", "fullResultsTable.sql", package = "rewardb"))
-    calibrated <- ifelse(input$calibrated, 1, 0)
-    bSelection <- paste0("'", paste0(input$scBenefit, sep = "'"))
-    rSelection <- paste0("'", paste0(input$scRisk, sep = "'"))
-    df <- model$queryDb(mainTableSql, risk = risk, benefit = benefit,
-                        risk_selection = rSelection, benefit_selection = bSelection, calibrated = calibrated)
-    return(df)
+    model$getFilteredTableResults(benefitThreshold = input$cutrange1,
+                                  riskThreshold = input$cutrange2,
+                                  pValueCut = input$pCut,
+                                  filterByMeta = input$filterThreshold == "Meta analysis",
+                                  calibrated = input$calibrated,
+                                  benefitSelection = input$scBenefit,
+                                  riskSelection = input$scRisk)
   })
 
   output$treatmentOutcomeStr <- renderText({
@@ -149,9 +128,7 @@ serverInstance <- function(input, output, session) {
   )
 
   getNegativeControls <- reactive({
-    sql <- readr::read_file(system.file("sql/export/", "negativeControls.sql", package = "rewardb"))
-    df <- model$queryDb(sql)
-    return(df)
+    model$getNegativeControls()
   })
 
   output$downloadControls <- downloadHandler(
@@ -164,9 +141,7 @@ serverInstance <- function(input, output, session) {
   )
 
   getIndications <- reactive({
-    sql <- readr::read_file(system.file("sql/export/", "mappedIndications.sql", package = "rewardb"))
-    df <- model$queryDb(sql)
-    return(df)
+    model$getMappedAssociations()
   })
 
   output$downloadIndications <- downloadHandler(
