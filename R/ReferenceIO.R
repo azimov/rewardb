@@ -23,7 +23,7 @@ exportReferenceTables <- function(
   exportPath = tempdir(),
   exportZipFile = "rewardb-references.zip"
 ) {
-  scipen = getOption("scipen")
+  scipen <- getOption("scipen")
   options(scipen = 999)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   tryCatch(
@@ -57,6 +57,7 @@ exportReferenceTables <- function(
     error = ParallelLogger::logError
   )
   DatabaseConnector::disconnect(connection)
+  options(scipen = scipen)
 }
 
 #'
@@ -121,5 +122,4 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
     }
   )
   DatabaseConnector::disconnect(connection)
-  options(scipen = scipen)
 }

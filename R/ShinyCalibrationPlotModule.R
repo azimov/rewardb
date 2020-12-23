@@ -20,7 +20,7 @@ calibrationPlotUi <- function(id, figureTitle = "Figure.", figureText = CONST_CA
 calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
 
   server <- moduleServer(id, function(input, output, session) {
-    ParallelLogger::logInfo("Initialized calibration plot module for: ", appContext$short_name)
+    ParallelLogger::logInfo("Initialized calibration plot module for: ", model$schemaName)
 
     dataSources <- model$queryDb("SELECT source_id, source_name FROM @schema.data_source;")
 
@@ -30,7 +30,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
     }
 
     getNegativeControlSubset <- function(treatment, outcome) {
-      if (model$appContext$useExposureControls) {
+      if (model$config$useExposureControls) {
         negatives <- model$getExposureControls(outcomeCohortIds = outcome)
       } else {
         otype <- if (getOutcomeType(outcome) == 1) 1 else 0
@@ -129,7 +129,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
         s <- selectedExposureOutcome()
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
-        paste0(model$appContext$short_name, '-calibration-plot-', treatment, "-", outcome, '.png')
+        paste0(model$schemaName, '-calibration-plot-', treatment, "-", outcome, '.png')
       },
       content = function(file) {
         ggplot2::ggsave(file, plot = getCalibrationPlot(), device = "png")

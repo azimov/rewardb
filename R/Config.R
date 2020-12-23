@@ -1,12 +1,12 @@
 #' Gets password from user. Ignored if REWARD_B_PASSWORD system env variable is set (e.g. in .Rprofile)
-getPasswordSecurely <- function(.envVar = "REWARD_B_PASSWORD") {
-    pass <- Sys.getenv(.envVar)
-    if(pass == "") {
-        pass <- askpass::askpass("Please enter the reward b database password")
-        args = list(pass)
-        names(args) = .envVar
+getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the reward database password") {
+    pass <- Sys.getenv(envVar)
+    if (pass == "") {
+        pass <- askpass::askpass(prompt)
+        args <- list(pass)
+        names(args) <- envVar
         do.call(Sys.setenv, args)
-        on.exit(Sys.unsetenv(.envVar))
+        on.exit(Sys.unsetenv(envVar))
     }
     return(pass)
 }
@@ -76,7 +76,7 @@ getTargetCohortIds <- function (appContext, connection) {
 #' @export
 #' @examples
 #' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
-loadAppContext <- function(configPath, globalConfigPath, .env=.GlobalEnv) {
+loadAppContext <- function(configPath, globalConfigPath, .env = .GlobalEnv) {
 
     defaults <- list(
         useExposureControls = FALSE,
@@ -103,6 +103,24 @@ loadGlobalConfig <- function(globalConfigPath) {
     return(config)
 }
 
+#' Loads the report application configuration and creates an application object
+#' @description
+#' By default, loads the database connections in to this object
+#' loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
+#' The idea is to allow shared configuration settings between the web app and any data processing tools
+#' @param globalConfigPath is a yaml file for the application configuratione
+#' @keywords reportAppContext
+#' @export
+#' @examples
+#' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
+loadReportContext <- function(globalConfigPath, .env = .GlobalEnv, exposureId = NULL, outcomeId = NULL) {
+    reportAppContext <- yaml::read_yaml(globalConfigPath)
+    reportAppContext$exposureId = exposureId
+    reportAppContext$outcomeId = outcomeId
+
+    class(reportAppContext) <- append(class(reportAppContext), "rewardb::reportAppContext")
+    .env$reportAppContext <- reportAppContext
+}
 
 loadCdmConfig <- function(cdmConfigPath) {
     defaults <- list(
@@ -121,7 +139,7 @@ loadCdmConfig <- function(cdmConfigPath) {
     config$tables <- .setDefaultOptions(config$tables, defaultTables)
 
     if (config$useSecurePassword) {
-        config$connectionDetails$password <- getPasswordSecurely(.envVar = config$passwordEnvironmentVariable)
+        config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable, prompt = "Enter cdm database password")
     }
     config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
 

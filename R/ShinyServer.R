@@ -3,7 +3,7 @@
 #' @param input shiny input object
 #' @param output shiny output object
 #' @param session
-serverInstance <- function(input, output, session) {
+dashboardInstance <- function(input, output, session) {
   library(shiny, warn.conflicts = FALSE)
   library(shinyWidgets, warn.conflicts = FALSE)
   library(scales, warn.conflicts = FALSE)
@@ -11,12 +11,11 @@ serverInstance <- function(input, output, session) {
   library(foreach, warn.conflicts = FALSE)
   library(dplyr, warn.conflicts = FALSE)
 
-  model <- DbModel(appContext)
+  model <- DashboardDbModel(appContext)
 
   session$onSessionEnded(function() {
     writeLines("Closing connection")
     model$closeConnection()
-    rm(model)
   })
 
   getOutcomeCohortTypes <- reactive({
@@ -177,7 +176,7 @@ serverInstance <- function(input, output, session) {
   }
 }
 
-#' Launch the REWARD-B Shiny app
+#' Launch the REWARD Shiny app dashboard
 #' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
 #' @details
 #' Launches a Shiny app for a given configuration file
@@ -185,5 +184,88 @@ serverInstance <- function(input, output, session) {
 launchDashboard <- function(appConfigPath, globalConfigPath) {
   e <- environment()
   e$appContext <- loadAppContext(appConfigPath, globalConfigPath)
-  shiny::shinyApp(server = serverInstance, dashboardUi, enableBookmarking = "url")
+  shiny::shinyApp(server = dashboardInstance, dashboardUi, enableBookmarking = "url")
+}
+
+#' Requires a server appContext instance to be loaded in environment see scoping of launchDashboard
+#' This can be obtained with rewardb::loadAppContext(...)
+#' @param input shiny input object
+#' @param output shiny output object
+#' @param session
+reportInstance <- function(input, output, session) {
+  library(shiny, warn.conflicts = FALSE)
+  library(shinyWidgets, warn.conflicts = FALSE)
+  library(scales, warn.conflicts = FALSE)
+  library(DT, warn.conflicts = FALSE)
+  library(foreach, warn.conflicts = FALSE)
+  library(dplyr, warn.conflicts = FALSE)
+
+  print("init")
+  model <- ReportDbModel(reportAppContext)
+
+  print("loaded model")
+  session$onSessionEnded(function() {
+    writeLines("Closing database connection")
+    model$closeConnection()
+    rm(model)
+  })
+
+
+  getRequestParams <- reactive({
+    parseQueryString(session$clientData$url_search)
+  })
+
+  getExposureCohort <- reactive({
+    param <- getRequestParams()$exposure_id
+    if (is.null(param)) {
+      param <- reportAppContext$exposureId
+    }
+    df <- model$getExposureCohort(param)
+    return(df)
+  })
+
+  getOutcomeCohort <- reactive({
+    param <- getRequestParams()$outcome_id
+
+    if (is.null(param)) {
+      param <- reportAppContext$outcomeId
+    }
+
+    return(model$getOutcomeCohort(param))
+  })
+
+  selectedExposureOutcome <- reactive({
+    exposureCohort <- getExposureCohort()
+    outcomeCohort <- getOutcomeCohort()
+    if (is.null(exposureCohort) || is.null(outcomeCohort)) {
+      return(NULL)
+    }
+    selected <- list(
+      TARGET_COHORT_ID = exposureCohort$COHORT_DEFINITION_ID,
+      TARGET_COHORT_NAME = exposureCohort$COHORT_DEFINITION_NAME,
+      OUTCOME_COHORT_ID = outcomeCohort$COHORT_DEFINITION_ID,
+      OUTCOME_COHORT_NAME = outcomeCohort$COHORT_DEFINITION_NAME
+    )
+
+    return(selected)
+  })
+
+  output$treatmentOutcomeStr <- renderText({
+    s <- selectedExposureOutcome()
+    print("selected")
+    if (is.null(s)) {
+      return("No cohorts selected")
+    }
+    return(paste("Exposure of", s$TARGET_COHORT_NAME, "for outcome of", s$OUTCOME_COHORT_NAME))
+  })
+
+  print("init modules")
+  # Create sub modules
+  metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
+}
+
+launchReport <- function(globalConfigPath, exposureId = NULL, outcomeId = NULL) {
+  e <- environment()
+  e$reportAppContext <- loadReportContext(globalConfigPath, exposureId = exposureId, outcomeId = outcomeId)
+  shiny::shinyApp(server = reportInstance, ui = reportUi)
 }

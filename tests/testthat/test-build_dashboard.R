@@ -24,7 +24,9 @@ refFolder <- "reference_test_folder"
 unlink(zipFilePath)
 unlink(refFolder)
 exportReferenceTables(config)
+print("import refs")
 importReferenceTables(cdmConfig, zipFilePath)
+print("scc results")
 generateSccResults(cdmConfigPath)
 importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug=TRUE)
 
@@ -37,7 +39,7 @@ test_that("Dashboard creation works", {
 
 appContext <- loadAppContext(appContextFile, configFilePath)
 test_that("Data model utilitiy queries", {
-  model <- DbModel(appContext)
+  model <- DashboardDbModel(appContext)
   model$queryDb("BROKEN SQL @schema")
   df <- model$queryDb("SELECT * FROM @schema.result")
   expect_true(length(df)  > 1)
@@ -48,7 +50,7 @@ test_that("Data model utilitiy queries", {
 })
 
 test_that("Model getter functions", {
-  model <- DbModel(appContext)
+  model <- DashboardDbModel(appContext)
 
   df <- model$getExposureControls(c(1))
   df <- model$getOutcomeControls(c(1))

@@ -1,10 +1,10 @@
 #' Ui for rewardb dashboard
 #' @param request shiny request object
-dashboardUi  <- function (request) {
-  library(shiny, warn.conflicts=FALSE)
-  library(shinyWidgets, warn.conflicts=FALSE)
-  library(shinydashboard, warn.conflicts=FALSE)
-  library(shinycssloaders, warn.conflicts=FALSE)
+dashboardUi <- function(request) {
+  library(shiny, warn.conflicts = FALSE)
+  library(shinyWidgets, warn.conflicts = FALSE)
+  library(shinydashboard, warn.conflicts = FALSE)
+  library(shinycssloaders, warn.conflicts = FALSE)
 
   scBenefitRisk <- c("none", "one", "most", "all")
   # This hides the outcome exporues/result pairing
@@ -17,39 +17,39 @@ dashboardUi  <- function (request) {
   )
 
   rPanel <- conditionalPanel(
-      condition = metaDisplayCondtion,
-      box(
-        HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
-        tabsetPanel(
-          id = "outcomeResultsTabs",
+    condition = metaDisplayCondtion,
+    box(
+      HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
+      tabsetPanel(
+        id = "outcomeResultsTabs",
         tabPanel(
           "Detailed results",
-            metaAnalysisTableUi("metaTable")
-          ),
-          tabPanel(
-            "Forest plot",
-            forestPlotUi("forestPlot")
-          ),
-          tabPanel(
-            "Calibration plot",
-            calibrationPlotUi("calibrationPlot", figureTitle =  "Figure 2.")
-          )
+          metaAnalysisTableUi("metaTable")
         ),
-        width = 12
-      )
+        tabPanel(
+          "Forest plot",
+          forestPlotUi("forestPlot")
+        ),
+        tabPanel(
+          "Calibration plot",
+          calibrationPlotUi("calibrationPlot", figureTitle = "Figure 2.")
+        )
+      ),
+      width = 12
     )
+  )
 
   aboutTab <- fluidRow(
     box(
       p("Mission:"),
       includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
       width = 6,
-      title=paste("Real World Assessment and Research of Drug performance (REWARD)")
+      title = paste("Real World Assessment and Research of Drug performance (REWARD)")
     ),
     box(
       includeHTML(system.file("html", "contact.html", package = "rewardb")),
       width = 6,
-      title=paste("Contact")
+      title = paste("Contact")
     ),
     box(
       p(appContext$description),
@@ -59,7 +59,7 @@ dashboardUi  <- function (request) {
         "Download filtered results as a csv"
       ),
       width = 6,
-      title=paste("About this dashboard -", appContext$name)
+      title = paste("About this dashboard -", appContext$name)
     ),
     box(
       p("Negative controls are used in this study to perform empirical calibration.
@@ -74,7 +74,7 @@ dashboardUi  <- function (request) {
         "Download Indications"
       ),
       width = 6,
-      title=paste("Negative controls and indications")
+      title = paste("Negative controls and indications")
     )
   )
 
@@ -95,8 +95,8 @@ dashboardUi  <- function (request) {
             box(
               selectizeInput("exposureClass", label = "Drug exposure classes:", choices = NULL, multiple = TRUE),
               pickerInput(
-              "outcomeCohortTypes",
-              "Outcome Cohort Types:",
+                "outcomeCohortTypes",
+                "Outcome Cohort Types:",
                 choices = c("ATLAS defined", "Inpatient", "Two diagnosis codes"),
                 selected = c(),
                 options = shinyWidgets::pickerOptions(
@@ -160,3 +160,22 @@ dashboardUi  <- function (request) {
   return(ui)
 }
 
+reportUi <- function(request) {
+
+  library(shiny, warn.conflicts = FALSE)
+  library(shinyWidgets, warn.conflicts = FALSE)
+  library(shinycssloaders, warn.conflicts = FALSE)
+
+  fluidPage(
+    tags$h1(textOutput("treatmentOutcomeStr")),
+    tagList(
+      tags$h2("Datasource Results and Meta-analysis"),
+      metaAnalysisTableUi("metaTable"),
+      tags$h2("Forest plot"),
+      forestPlotUi("forestPlot"),
+      tags$h2("Calibration plot"),
+      calibrationPlotUi("calibrationPlot", figureTitle = "Figure 2.")
+    ),
+    title = "REWARD"
+  )
+}

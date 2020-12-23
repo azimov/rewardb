@@ -35,28 +35,12 @@ forestPlotServer <- function(id, model, selectedExposureOutcome) {
   server <- moduleServer(id, function(input, output, session) {
     forestPlotTable <- reactive({
       s <- selectedExposureOutcome()
-      treatment <- s$TARGET_COHORT_ID
-      outcome <- s$OUTCOME_COHORT_ID
+      exposureId <- s$TARGET_COHORT_ID
+      outcomeId <- s$OUTCOME_COHORT_ID
       if (length(outcome)) {
         updateTabsetPanel(session, "mainPanel", "Detail")
-        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-
         calibOpts <- if (length(input$forestPlotCalibrated)) input$forestPlotCalibrated else c(0, 1)
-
-        table <- model$queryDb(sql, treatment = treatment, outcome = outcome, calibrated = calibOpts)
-        calibratedTable <- table[table$CALIBRATED == 1,]
-        uncalibratedTable <- table[table$CALIBRATED == 0,]
-
-        if (nrow(calibratedTable) & nrow(uncalibratedTable)) {
-          calibratedTable$calibrated <- "Calibrated"
-          uncalibratedTable$calibrated <- "Uncalibrated"
-          uncalibratedTable$SOURCE_NAME <- paste0(uncalibratedTable$SOURCE_NAME, "\n uncalibrated")
-          calibratedTable$SOURCE_NAME <- paste0(calibratedTable$SOURCE_NAME, "\n Calibrated")
-        }
-
-        table <- rbind(uncalibratedTable[order(uncalibratedTable$SOURCE_ID, decreasing = TRUE),],
-                       calibratedTable[order(calibratedTable$SOURCE_ID, decreasing = TRUE),])
-        return(table)
+        return(model$getForestPlotTable(exposureId, outcomeId, calibOpts))
       }
       return(data.frame())
     })
@@ -73,7 +57,7 @@ forestPlotServer <- function(id, model, selectedExposureOutcome) {
         s <- selectedExposureOutcome()
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
-        paste0(appContext$short_name, '-forest-plot-', treatment, "-", outcome, '.png')
+        paste0(model$schemaName, '-forest-plot-', treatment, "-", outcome, '.png')
       },
       content = function(file) {
         df <- forestPlotTable()

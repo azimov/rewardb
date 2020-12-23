@@ -32,12 +32,10 @@ metaAnalysisTableServer <- function(id, model, selectedExposureOutcome) {
 
     metaAnalysisTbl <- reactive({
       s <- selectedExposureOutcome()
-      treatment <- s$TARGET_COHORT_ID
-      outcome <- s$OUTCOME_COHORT_ID
+      exposureId <- s$TARGET_COHORT_ID
+      outcomeId <- s$OUTCOME_COHORT_ID
       if (length(outcome)) {
-        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRowsGrouped.sql", package = "rewardb"))
-        table <- model$queryDb(sql, treatment = treatment, outcome = outcome)
-        return(table)
+        return(model$getMetaAnalysisTable(exposureId, outcomeId))
       }
       return(data.frame())
     })
@@ -86,7 +84,7 @@ metaAnalysisTableServer <- function(id, model, selectedExposureOutcome) {
         s <- selectedExposureOutcome()
         treatment <- s$TARGET_COHORT_ID
         outcome <- s$OUTCOME_COHORT_ID
-        paste0(appContext$short_name, '-results-', treatment, "-", outcome, '.csv')
+        paste0(model$schemaName, '-results-', treatment, "-", outcome, '.csv')
       },
       content = function(file) {
         write.csv(metaAnalysisTbl(), file, row.names = FALSE)
