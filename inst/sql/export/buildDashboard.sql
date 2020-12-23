@@ -1,6 +1,7 @@
 -- Results
 INSERT INTO @schema.result
 (
+    scca.analysis_id,
     source_id,
     target_cohort_id,
     outcome_cohort_id,
@@ -19,6 +20,7 @@ INSERT INTO @schema.result
     calibrated
 )
 SELECT
+  scca.analysis_id,
   scca.source_id,
   scca.target_cohort_id,
   scca.outcome_cohort_id,
@@ -37,6 +39,7 @@ SELECT
   0 as calibrated
   FROM @results_database_schema.scc_result scca
   WHERE scca.rr IS NOT NULL
+  AND scca.analysis_id = 1
   {@target_cohort_ids_length} ? {AND target_cohort_id in (@target_cohort_ids)}
   {@outcome_cohort_ids_length} ? {AND outcome_cohort_id in (@outcome_cohort_ids)};
 
@@ -102,6 +105,7 @@ INSERT INTO @schema.outcome_concept (
    condition_concept_id
 )
 SELECT
+    DISTINCT
     cohort_definition_id as outcome_cohort_id,
     conceptset_id as condition_concept_id
 FROM @results_database_schema.outcome_cohort_definition
@@ -114,6 +118,7 @@ INSERT INTO @schema.outcome_concept (
    condition_concept_id
 )
 SELECT
+    DISTINCT
     cohort_definition_id as outcome_cohort_id,
     concept_id as condition_concept_id
 FROM @results_database_schema.atlas_concept_reference

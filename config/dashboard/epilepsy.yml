@@ -1,0 +1,7 @@
+name: Epilepsy
+short_name: epilepsy
+description: 'epilepsy PL definition exposures'
+outcome_concept_ids: [380378]
+custom_outcome_cohort_ids: [19398]
+target_concept_ids: ~
+useExposureControls: True

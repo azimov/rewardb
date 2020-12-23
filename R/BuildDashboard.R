@@ -124,6 +124,8 @@ computeMetaAnalysis <- function(appContext, connection) {
 buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE) {
   appContext <- loadAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+
+  logger <- .getLogger("dashboardLog.log")
   tryCatch(
     {
       message("Creating schema")
