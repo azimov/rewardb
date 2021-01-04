@@ -1,5 +1,5 @@
 sourceId: 13
-database: truven_mdcrs
+database: truven_mdcr
 
 exportPath: "export_mcdr"
 referencePath: "reference_files"

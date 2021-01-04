@@ -46,6 +46,7 @@ pgCopy <- function(connectionDetails,
                    schema,
                    tableName,
                    sep = ",",
+                   fileEncoding = "UTF-8",
                    .echoCommand = FALSE) {
   startTime <- Sys.time()
 
@@ -80,7 +81,7 @@ pgCopy <- function(connectionDetails,
 
   .checkPsqlExists(command)
 
-  head <- read.csv(file = csvFileName, nrows = 1, sep=sep)
+  head <- read.csv(file = csvFileName, nrows = 1, sep = sep, fileEncoding = fileEncoding)
   headers <- paste(names(head), collapse = ", ")
   headers <- paste0("(", headers, ")")
   tablePath <- paste(schema, tableName, sep = ".")
