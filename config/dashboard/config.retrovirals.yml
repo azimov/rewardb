@@ -5,25 +5,3 @@ outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~
 target_concept_ids: [ 1703069, 1710281, 1704183, 1736971, 35605546, 1710612, 1711246, 1724869, 1781406, 1729323, 1758392, 1724827, 21603159 ]
 useExposureControls: False
-
-connectionDetails:
-  dbms: "postgresql"
-  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
-  port: 5432
-  user: "reward_admin"
-
-resultsDatabase:
-  schema: "scratch.jgilber2"
-  vocabularySchema: "Vocabulary_20200525.dbo"
-  cohortDefinitionTable: "rewardb_cohort_definition_dev"
-  outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
-  asurvResultsTable: "may2020_rewardb_results"
-  cemSchema: "CEM_V2_0_0_20200226.dbo"
-  negativeControlTable: "matrix_summary"
-  atlasCohorts: "rewardb_atlas_cohort_reference"
-  atlasConceptMapping: "rewardb_atlas_concept_reference"
-
-  cdmDataSource:
-    dbms: pdw
-    server: JRDUSAPSCTL01
-    port: 17001

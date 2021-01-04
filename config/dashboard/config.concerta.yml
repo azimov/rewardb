@@ -1,30 +1,8 @@
 name: 'Concerta'
-short_name: concerta_develop
+short_name: concerta_new
 description: 'Concerta'
 outcome_concept_ids: ~
 custom_outcome_cohort_ids: ~
 target_concept_ids: [ 705944, 21604753 ]
 custom_exposure_ids: ~
 useExposureControls: False
-
-connectionDetails:
-  dbms: "postgresql"
-  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
-  port: 5432
-  user: "reward_admin"
-
-resultsDatabase:
-  schema: "scratch.jgilber2"
-  vocabularySchema: "Vocabulary_20200525.dbo"
-  cohortDefinitionTable: "rewardb_cohort_definition_dev"
-  outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
-  asurvResultsTable: "may2020_rewardb_results"
-  cemSchema: "CEM_V2_0_0_20200226.dbo"
-  negativeControlTable: "matrix_summary"
-  atlasCohorts: "rewardb_atlas_cohort_reference"
-  atlasConceptMapping: "rewardb_atlas_concept_reference"
-
-  cdmDataSource:
-    dbms: pdw
-    server: JRDUSAPSCTL01
-    port: 17001

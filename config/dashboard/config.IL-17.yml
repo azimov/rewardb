@@ -7,24 +7,3 @@ target_concept_ids: [45892883, 1592513, 35603563]
 custom_exposure_ids: [11721]
 useExposureControls: False
 
-connectionDetails:
-  dbms: "postgresql"
-  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
-  port: 5432
-  user: "reward_admin"
-
-resultsDatabase:
-  schema: "scratch.jgilber2"
-  vocabularySchema: "Vocabulary_20200525.dbo"
-  cohortDefinitionTable: "rewardb_cohort_definition_dev"
-  outcomeCohortDefinitionTable: "rewardb_outcome_cohort_definition_dev"
-  asurvResultsTable: "rewardb_results_copy"
-  cemSchema: "CEM_V2_0_0_20200226.dbo"
-  negativeControlTable: "matrix_summary"
-  atlasCohorts: "rewardb_atlas_cohort_reference"
-  atlasConceptMapping: "rewardb_atlas_concept_reference"
-
-  cdmDataSource:
-    dbms: pdw
-    server: JRDUSAPSCTL01
-    port: 17001
