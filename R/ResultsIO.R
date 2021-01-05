@@ -31,7 +31,7 @@ importResultsFiles <- function(
   resultsSchema,
   exportZipFilePath,
   unzipPath = "rb-import",
-  .checkTables = TRUE,
+  .checkTables = FALSE,
   .debug = FALSE
 )
 {
@@ -57,7 +57,7 @@ importResultsFiles <- function(
           ParallelLogger::logWarn(paste("Skipping table", tableName, "not found in schema", tables))
           next
         }
-        pgCopy(connectionDetails, csvFile, resultsSchema, tableName, .echoCommand = .debug)
+        pgCopy(connectionDetails, csvFile, resultsSchema, tableName, fileEncoding = "UTF-8-BOM", .echoCommand = .debug)
       }
     },
     error = ParallelLogger::logError

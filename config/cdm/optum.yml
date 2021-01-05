@@ -1,5 +1,5 @@
 sourceId: 10
-database: optum_extended_sess
+database: optum_extended_ses
 
 exportPath: "export_optum_ses"
 referencePath: "reference_files"

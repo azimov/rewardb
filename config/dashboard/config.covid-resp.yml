@@ -4,25 +4,5 @@ description: 'Dashboard for COVID-19 respiratory disease outcomes'
 outcome_concept_ids: [255848, 319049, 4266367, 312437] # These will be multiplied by 100
 custom_outcome_cohort_ids: ~ # These will not be multiplied by 100
 target_concept_ids: ~
-development_db: false
-connectionDetails:
-  dbms: "postgresql"
-  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
-  port: 5432
-  user: "reward_admin"
+useExposureControls: True
 
-resultsDatabase:
-  schema: "scratch.dbo"
-  vocabularySchema: "Vocabulary_20200525.dbo"
-  cohortDefinitionTable: "homer_cohort_definition_May2020"
-  outcomeCohortDefinitionTable: "homer_outcome_cohort_definition_May2020"
-  asurvResultsTable: "homer_AllbyAll_results_May2020"
-  cemSchema: "CEM_V2_0_0_20200226.dbo"
-  negativeControlTable: "matrix_summary"
-  atlasCohorts: "rewardb_atlas_cohort_reference"
-  atlasConceptMapping: "rewardb_atlas_concept_reference"
-
-  cdmDataSource:
-    dbms: pdw
-    server: JRDUSAPSCTL01
-    port: 17001

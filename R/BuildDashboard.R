@@ -39,8 +39,8 @@ addCemEvidence <- function(appContext, connection) {
     schema = appContext$globalConfig$rewardbResultsSchema,
     cemSchema = appContext$globalConfig$cemSchema,
     vocabularySchema = appContext$globalConfig$vocabularySchema,
-    targetCohortIds = getOutcomeCohortIds(appContext, connection),
-    outcomeCohortIds = getTargetCohortIds(appContext, connection)
+    targetCohortIds = getTargetCohortIds(appContext, connection),
+    outcomeCohortIds = getOutcomeCohortIds(appContext, connection)
   )
 
   ParallelLogger::logInfo(paste("Found", nrow(evidenceConcepts), "mappings"))
@@ -109,6 +109,7 @@ computeMetaAnalysis <- function(appContext, connection) {
   results$STUDY_DESIGN <- "scc"
   results$CALIBRATED <- 0
   csvFileName <- paste0(appContext$short_name, "-meta-analysis.csv")
+  results <- do.call(data.frame,lapply(results, function(x) replace(x, is.infinite(x),NA)))
   write.csv(results, csvFileName, , na = "", row.names = FALSE)
   pgCopy(connectionDetails = appContext$connectionDetails, csvFileName, appContext$short_name, "result")
   unlink(csvFileName)
@@ -130,10 +131,10 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
     {
       message("Creating schema")
       createDashSchema(appContext, connection)
-      message("Adding negative controls from CEM")
-      addCemEvidence(appContext, connection)
       message("Running meta analysis")
       computeMetaAnalysis(appContext, connection)
+      message("Adding negative controls from CEM")
+      addCemEvidence(appContext, connection)
 
       if (performCalibration) {
         .removeCalibratedResults(appContext, connection)

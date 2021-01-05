@@ -81,13 +81,13 @@ generateSccResults <- function(
         sccSummary <- runScc(connection, config, analysisId, analysisSettings)
         dataFileName <- file.path(config$exportPath, paste0("rb-results-", config$database, "-aid-", analysisId, ".csv"))
         ParallelLogger::logInfo(paste("Writing file", dataFileName))
-        readr::write_excel_csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na="")
+        suppressWarnings({write.csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na = "", row.names = FALSE, fileEncoding = "ascii")})
         tableNames[[basename(dataFileName)]] <- "scc_result"
 
         if (.generateCohortStats) {
           timeOnTreatment <- getAverageTimeOnTreatment(connection, config, analysisSettings, analysisId = analysisId)
           statsFileName <- file.path(config$exportPath, paste0("rb-results-", config$database, "-aid-", analysisId, "-time_on_treatment_stats", ".csv"))
-          readr::write_excel_csv(timeOnTreatment, statsFileName, na="")
+          suppressWarnings({write.csv(timeOnTreatment, statsFileName, na = "", row.names = FALSE, fileEncoding = "ascii")})
           tableNames[[basename(statsFileName)]] <- "time_on_treatment"
         }
 
