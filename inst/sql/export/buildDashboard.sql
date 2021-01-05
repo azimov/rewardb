@@ -102,6 +102,7 @@ INSERT INTO @schema.outcome_concept (
    condition_concept_id
 )
 SELECT
+    DISTINCT
     cohort_definition_id as outcome_cohort_id,
     conceptset_id as condition_concept_id
 FROM @results_database_schema.outcome_cohort_definition
@@ -114,6 +115,7 @@ INSERT INTO @schema.outcome_concept (
    condition_concept_id
 )
 SELECT
+    DISTINCT
     cohort_definition_id as outcome_cohort_id,
     concept_id as condition_concept_id
 FROM @results_database_schema.atlas_concept_reference
