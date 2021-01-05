@@ -58,7 +58,7 @@ getTargetCohortIds <- function (appContext, connection) {
       connection,
       sql,
       reference_schema = appContext$globalConfig$rewardbResultsSchema,
-      concept_ids = if (length(appContext$outcome_concept_ids)) appContext$outcome_concept_ids else "NULL",
+      concept_ids = if (length(appContext$target_concept_ids)) appContext$target_concept_ids else "NULL",
       custom_exposure_ids = if (length(appContext$custom_exposure_ids)) appContext$custom_exposure_ids else "NULL",
     )
     return(result$ID)
