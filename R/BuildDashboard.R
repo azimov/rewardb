@@ -45,12 +45,12 @@ addCemEvidence <- function(appContext, connection) {
 
   ParallelLogger::logInfo(paste("Found", nrow(evidenceConcepts), "mappings"))
   negatives <- evidenceConcepts[evidenceConcepts$EVIDENCE == 0,]
-  positives <- evidenceConcepts[evidenceConcepts$EVIDENCE == 0,]
+  positives <- evidenceConcepts[evidenceConcepts$EVIDENCE == 1,]
   if (nrow(negatives) == 0 | nrow(positives) == 0) {
     ParallelLogger::logWarn("Zero control/indication references found. Likely due to a cohort mapping problem")
   } else {
-    DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".negative_control"), negatives)
-    DatabaseConnector::insertTable(appContext$connection, paste0(appContext$short_name, ".positive_indication"), positives)
+    pgCopyDataFrame(appContext$connectionDetails, negatives[c("OUTCOME_COHORT_ID", "TARGET_COHORT_ID")], appContext$short_name, "negative_control")
+    pgCopyDataFrame(appContext$connectionDetails, positives[c("OUTCOME_COHORT_ID", "TARGET_COHORT_ID")], appContext$short_name, "positive_indication")
   }
 }
 
@@ -95,7 +95,7 @@ computeMetaAnalysis <- function(appContext, connection) {
   fullResults <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT * FROM @schema.result WHERE source_id != -99;",
-    schema=appContext$short_name
+    schema = appContext$short_name
   )
 
   # For each distinct pair: (target, outcome) get all data sources
@@ -104,15 +104,11 @@ computeMetaAnalysis <- function(appContext, connection) {
   # Calibrate meta analysis results
   results <- fullResults %>%
     group_by(TARGET_COHORT_ID, OUTCOME_COHORT_ID) %>%
-    group_modify(~ metaAnalysis(.x))
+    group_modify(~metaAnalysis(.x))
 
   results$STUDY_DESIGN <- "scc"
   results$CALIBRATED <- 0
-  csvFileName <- paste0(appContext$short_name, "-meta-analysis.csv")
-  results <- do.call(data.frame,lapply(results, function(x) replace(x, is.infinite(x),NA)))
-  write.csv(results, csvFileName, , na = "", row.names = FALSE)
-  pgCopy(connectionDetails = appContext$connectionDetails, csvFileName, appContext$short_name, "result")
-  unlink(csvFileName)
+  pgCopyDataFrame(connectionDetails = appContext$connectionDetails, results, appContext$short_name, "result")
 }
 
 
@@ -126,25 +122,25 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
   appContext <- loadAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   tryCatch(
-    {
-      message("Creating schema")
-      createDashSchema(appContext, connection)
-      message("Running meta analysis")
-      computeMetaAnalysis(appContext, connection)
-      message("Adding negative controls from CEM")
-      addCemEvidence(appContext, connection)
+  {
+    message("Creating schema")
+    createDashSchema(appContext, connection)
+    message("Running meta analysis")
+    computeMetaAnalysis(appContext, connection)
+    message("Adding negative controls from CEM")
+    addCemEvidence(appContext, connection)
 
-      if (performCalibration) {
-        .removeCalibratedResults(appContext, connection)
-        if (appContext$useExposureControls) {
-          message("Calibrating outcomes")
-          calibrateOutcomes(appContext, connection)
-        } else {
-          message("Calibrating targets")
-          calibrateTargets(appContext, connection)
-        }
+    if (performCalibration) {
+      .removeCalibratedResults(appContext, connection)
+      if (appContext$useExposureControls) {
+        message("Calibrating outcomes")
+        calibrateOutcomes(appContext, connection)
+      } else {
+        message("Calibrating targets")
+        calibrateTargets(appContext, connection)
       }
-    },
+    }
+  },
     error = ParallelLogger::logError
   )
   DatabaseConnector::disconnect(connection)

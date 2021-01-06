@@ -41,6 +41,18 @@ unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   }
 }
 
+
+pgCopyDataFrame <- function(connectionDetails, data, schema, tableName, .echoCommand = FALSE) {
+  csvFileName = tempfile(fileext = "csv")
+  dt <- do.call(data.frame, lapply(data, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
+  scipen = getOption("scipen")
+  options(scipen = 999)
+  write.csv(dt, file = csvFileName, na = "", row.names = FALSE, fileEncoding = "UTF-8")
+  options(scipen = scipen)
+  pgCopy(connectionDetails = connectionDetails, csvFileName = csvFileName, schema = schema, tableName = tableName, .echoCommand = .echoCommand)
+  unlink(csvFileName)
+}
+
 pgCopy <- function(connectionDetails,
                    csvFileName,
                    schema,
@@ -101,7 +113,7 @@ pgCopy <- function(connectionDetails,
                        "FROM", filePathStr,
                        paste0("DELIMITER '", sep, "' CSV HEADER QUOTE E'\b' NULL AS '' ;\""))
 
-  if(.echoCommand) {
+  if (.echoCommand) {
     print(copyCommand)
   }
 
