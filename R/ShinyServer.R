@@ -165,15 +165,14 @@ dashboardInstance <- function(input, output, session) {
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
   calibrationPlotServer("calibrationPlot", model, selectedExposureOutcome)
 
-  if (model$tableExists("time_on_treatment")) {
-    timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
-    tabPanelTimeOnTreatment <- tabPanel("Time on treatment", timeOnTreatmentUi("timeOnTreatment"))
-    shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeOnTreatment)
+  timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
+  tabPanelTimeOnTreatment <- tabPanel("Time on treatment", timeOnTreatmentUi("timeOnTreatment"))
+  shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeOnTreatment)
 
-    timeToOutcomeServer("timeToOutcome", model, selectedExposureOutcome)
-    tabPanelTimeToOutcome <- tabPanel("Time to outcome", timeToOutcomeUi("timeToOutcome"))
-    shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeToOutcome)
-  }
+  timeToOutcomeServer("timeToOutcome", model, selectedExposureOutcome)
+  tabPanelTimeToOutcome <- tabPanel("Time to outcome", timeToOutcomeUi("timeToOutcome"))
+  shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeToOutcome)
+
 }
 
 #' Launch the REWARD Shiny app dashboard

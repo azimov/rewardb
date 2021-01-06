@@ -37,7 +37,7 @@ forestPlotServer <- function(id, model, selectedExposureOutcome) {
       s <- selectedExposureOutcome()
       exposureId <- s$TARGET_COHORT_ID
       outcomeId <- s$OUTCOME_COHORT_ID
-      if (length(outcome)) {
+      if (length(outcomeId)) {
         updateTabsetPanel(session, "mainPanel", "Detail")
         calibOpts <- if (length(input$forestPlotCalibrated)) input$forestPlotCalibrated else c(0, 1)
         return(model$getForestPlotTable(exposureId, outcomeId, calibOpts))

@@ -39,11 +39,11 @@ DbModel$methods(
       df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = schemaName, warnOnMissingParameters = FALSE, ...)
       return(df)
     },
-    error = function(e) {
-      ParallelLogger::logError(e)
-      closeConnection()
-      initializeConnection()
-    })
+      error = function(e) {
+        ParallelLogger::logError(e)
+        closeConnection()
+        initializeConnection()
+      })
   },
   # Will only work with postgres > 9.4
   tableExists = function(tableName, schema = NULL) {
@@ -51,7 +51,7 @@ DbModel$methods(
     return(!is.na(queryDb("SELECT to_regclass('@schema.@table');", table = tableName, schema = schema))[[1]])
   },
 
-  getFirst = function (query, ...) {
+  getFirst = function(query, ...) {
     df <- queryDb(query, ...)
 
     if (length(df) == 0) {
@@ -60,6 +60,49 @@ DbModel$methods(
 
     row <- df[1,]
     return(row)
+  },
+
+  getTimeToOutcomeStats = function(treatment, outcome) {
+    queryDb("
+          SELECT
+            ds.source_name,
+            round(mean_time_to_outcome, 3) as mean,
+            round(sd_time_to_outcome, 3) as sd,
+            min_time_to_outcome as min,
+            p10_time_to_outcome as p10,
+            p25_time_to_outcome as p25,
+            median_time_to_outcome as median,
+            p75_time_to_outcome as p75,
+            p90_time_to_outcome as p90,
+            max_time_to_outcome as max
+
+          FROM @schema.time_on_treatment tts
+          LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
+          WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",
+            treatment = treatment,
+            outcome = outcome
+    )
+  },
+
+  getTimeOnTreatmentStats = function(treatment, outcome) {
+    queryDb("
+      SELECT
+        ds.source_name,
+        round(mean_tx_time, 3) as mean,
+        round(sd_tx_time, 3) as sd,
+        min_tx_time as min,
+        p10_tx_time as p10,
+        p25_tx_time as p25,
+        median_tx_time as median,
+        p75_tx_time as p75,
+        p90_tx_time as p90,
+        max_tx_time as max
+      FROM @schema.time_on_treatment tts
+      LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
+      WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",
+            treatment = treatment,
+            outcome = outcome
+    )
   }
 )
 
@@ -71,12 +114,34 @@ DashboardDbModel$methods(
     setSchemaName(config$short_name)
   },
 
-  getExposureControls = function(outcomeIds) {
-    return(rewardb::getExposureControls(config, dbConn, outcomeIds))
+  getExposureControls = function(outcomeIds, minCohortSize = 10) {
+    sql <- "
+      SELECT r.*, o.type_id as outcome_type
+      FROM @schema.result r
+      INNER JOIN @schema.negative_control nc ON (
+        r.target_cohort_id = nc.target_cohort_id AND nc.outcome_cohort_id = r.outcome_cohort_id
+      )
+      INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
+      WHERE r.OUTCOME_COHORT_ID IN (@outcome_cohort_ids)
+      AND r.calibrated = 0
+      AND T_CASES >= @min_cohort_size
+    "
+    return(queryDb(sql, outcome_cohort_ids = outcomeIds, min_cohort_size = minCohortSize))
   },
 
-  getOutcomeControls = function(targetIds) {
-    return(rewardb::getOutcomeControls(config, dbConn, targetIds))
+  getOutcomeControls = function(targetIds, minCohortSize = 10) {
+    sql <- "
+      SELECT r.*, o.type_id as outcome_type
+      FROM @schema.result r
+      INNER JOIN @schema.negative_control nc ON (
+        r.target_cohort_id = nc.target_cohort_id AND nc.outcome_cohort_id = r.outcome_cohort_id
+      )
+      INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
+      AND r.calibrated = 0
+      AND T_CASES >= @min_cohort_size
+      AND r.target_cohort_id IN (@target_cohort_ids)
+    "
+    return(queryDb(sql, min_cohort_size = minCohortSize, target_cohort_ids = targetIds))
   },
 
   getOutcomeCohortNames = function() {
@@ -139,12 +204,12 @@ DashboardDbModel$methods(
 
   getMetaAnalysisTable = function(exposureId, outcomeId) {
     sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRowsGrouped.sql", package = "rewardb"))
-    return(model$queryDb(sql, treatment = exposureId, outcome = outcomeId))
+    return(queryDb(sql, treatment = exposureId, outcome = outcomeId))
   },
 
   getForestPlotTable = function(exposureId, outcomeId, calibrated) {
     sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-    table <- model$queryDb(sql, treatment = exposureId, outcome = outcomeId, calibrated = calibrated)
+    table <- queryDb(sql, treatment = exposureId, outcome = outcomeId, calibrated = calibrated)
     calibratedTable <- table[table$CALIBRATED == 1,]
     uncalibratedTable <- table[table$CALIBRATED == 0,]
 
@@ -158,6 +223,20 @@ DashboardDbModel$methods(
     table <- rbind(uncalibratedTable[order(uncalibratedTable$SOURCE_ID, decreasing = TRUE),],
                    calibratedTable[order(calibratedTable$SOURCE_ID, decreasing = TRUE),])
     return(table)
+  },
+
+  getTimeOnTreatmentStats = function(...) {
+    setSchemaName(config$globalConfig$rewardbResultsSchema)
+    dt <- callSuper(...)
+    setSchemaName(config$short_name)
+    return(dt)
+  },
+
+  getTimeToOutcomeStats = function(...) {
+    setSchemaName(config$globalConfig$rewardbResultsSchema)
+    dt <- callSuper(...)
+    setSchemaName(config$short_name)
+    return(dt)
   }
 )
 
@@ -199,6 +278,6 @@ ReportDbModel$methods(
       AND r.analysis_id = @analysis_id
       ORDER BY r.SOURCE_ID
     "
-    return(model$queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId))
+    return(queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId))
   }
 )
