@@ -43,6 +43,12 @@ unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
 
 
 pgCopyDataFrame <- function(connectionDetails, data, schema, tableName, .echoCommand = FALSE) {
+
+  if (!length(data)) {
+    warning("Cannot upload empty data frame")
+    return(NULL)
+  }
+
   csvFileName = tempfile(fileext = "csv")
   dt <- do.call(data.frame, lapply(data, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
   scipen = getOption("scipen")

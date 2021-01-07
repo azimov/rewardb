@@ -136,11 +136,12 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
       .removeCalibratedResults(appContext, connection)
       if (appContext$useExposureControls) {
         message("Calibrating outcomes")
-        calibrateOutcomes(appContext, connection)
+        calibratedData <- getCalibratedOutcomes(appContext, connection)
       } else {
         message("Calibrating targets")
-        calibrateTargets(appContext, connection)
+        calibratedData <- getCalibratedTargets(appContext, connection)
       }
+      pgCopyDataFrame(appContext$connectionDetails, calibratedData, appContext$short_name, "result")
     }
   },
     error = ParallelLogger::logError

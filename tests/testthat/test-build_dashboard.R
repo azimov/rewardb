@@ -40,7 +40,6 @@ test_that("Dashboard creation works", {
 appContext <- loadAppContext(appContextFile, configFilePath)
 test_that("Data model utilitiy queries", {
   model <- DashboardDbModel(appContext)
-  model$queryDb("BROKEN SQL @schema")
   df <- model$queryDb("SELECT * FROM @schema.result")
   expect_true(length(df)  > 1)
   expect_true(model$tableExists("result"))

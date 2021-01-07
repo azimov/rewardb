@@ -105,12 +105,12 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
     type0 = list(
       type = 0,
       countSql = SqlRender::readSql(system.file("sql/cohorts", "countType0OutcomeCohorts.sql", package = "rewardb")),
-      sql = sql <- SqlRender::readSql(system.file("sql/cohorts", "createType0OutcomeCohorts.sql", package = "rewardb"))
+      sql = SqlRender::readSql(system.file("sql/cohorts", "createType0OutcomeCohorts.sql", package = "rewardb"))
     ),
     type1 = list(
       type = 1,
       countSql = SqlRender::readSql(system.file("sql/cohorts", "countType1OutcomeCohorts.sql", package = "rewardb")),
-      sql = sql <- SqlRender::readSql(system.file("sql/cohorts", "createType1OutcomeCohorts.sql", package = "rewardb"))
+      sql = SqlRender::readSql(system.file("sql/cohorts", "createType1OutcomeCohorts.sql", package = "rewardb"))
     )
   )
 

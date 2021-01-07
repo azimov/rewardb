@@ -1,7 +1,7 @@
 -- Results
 INSERT INTO @schema.result
 (
-    scca.analysis_id,
+    analysis_id,
     source_id,
     target_cohort_id,
     outcome_cohort_id,
