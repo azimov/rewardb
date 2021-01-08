@@ -48,7 +48,7 @@ forestPlotServer <- function(id, model, selectedExposureOutcome) {
     output$forestPlot <- plotly::renderPlotly({
       df <- forestPlotTable()
       if (nrow(df)) {
-        return(plotly::ggplotly(rewardb::forestPlot(df)))
+        return(plotly::ggplotly(forestPlot(df)))
       }
     })
 
