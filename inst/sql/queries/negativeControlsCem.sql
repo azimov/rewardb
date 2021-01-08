@@ -44,12 +44,12 @@ SELECT o.outcome_cohort_id, t.target_cohort_id, max(evi.evidence_exists) as evid
     GROUP BY o.outcome_cohort_id, t.target_cohort_id
 UNION
 (
--- Roll up any descendent conditions
+-- Roll up any descendant conditions
 SELECT o.outcome_cohort_id, t.target_cohort_id, max(evi.evidence_exists) as evidence
     FROM @cem_schema.@summary_table evi
     INNER JOIN target_cohort_concept t ON t.target_concept_id = evi.ingredient_concept_id
-    INNER JOIN @vocab_schema.concept_ancestor ca ON ca.ancestor_concept_id = evi.condition_concept_id
-    INNER JOIN outcome_cohort_concept o ON o.outcome_concept_id = ca.descendant_concept_id
+    INNER JOIN @vocab_schema.concept_ancestor ca ON ca.descendant_concept_id = evi.condition_concept_id
+    INNER JOIN outcome_cohort_concept o ON o.outcome_concept_id = ca.ancestor_concept_id
     WHERE t.is_atc_4 = 0
     GROUP BY o.outcome_cohort_id, t.target_cohort_id
 )

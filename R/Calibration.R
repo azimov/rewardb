@@ -84,8 +84,7 @@ getUncalibratedExposures <- function(appContext) {
       AND o.type_id != 2 -- ATLAS cohorts excluded
   "
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
-  positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, outcome_cohort_ids = outcomeCohortIds,
-                                                          schema = appContext$short_name)
+  positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, schema = appContext$short_name)
   DatabaseConnector::disconnect(dbConn)
 
   return(positives)

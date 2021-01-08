@@ -1,7 +1,9 @@
 name: Epilepsy
 short_name: epilepsy
-description: 'epilepsy PL definition exposures'
-outcome_concept_ids: [380378]
-custom_outcome_cohort_ids: [19398]
+description: 'Epilepsy Phenotype Library definition exposures'
+outcome_concept_ids: [ 380378 ]
+custom_outcome_cohort_ids: [
+    380378001, 380378002, 380378003, 380378004, 380378005, 380378006, 380378007, 380378008, 380378009, 380378010
+]
 target_concept_ids: ~
 useExposureControls: True

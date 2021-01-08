@@ -8,6 +8,7 @@ connectionDetails:
   server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
   port: 5432
   user: "reward_admin"
+  password: "p87rhW#Vs2fF"
 
 rewardbResultsSchema: "rewardb_2020_Nov_12"
 vocabularySchema: "vocabulary"
