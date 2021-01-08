@@ -42,12 +42,12 @@ dashboardUi <- function(request) {
   aboutTab <- fluidRow(
     box(
       p("Mission:"),
-      includeHTML(system.file("html", "about_rewardb.html", package = "rewardb")),
+      includeHTML(system.file("static_html", "about_rewardb.html", package = "rewardb")),
       width = 6,
       title = paste("Real World Assessment and Research of Drug performance (REWARD)")
     ),
     box(
-      includeHTML(system.file("html", "contact.html", package = "rewardb")),
+      includeHTML(system.file("static_html", "contact.html", package = "rewardb")),
       width = 6,
       title = paste("Contact")
     ),
