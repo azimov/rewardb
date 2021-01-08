@@ -4,7 +4,7 @@
 \alias{getUncalibratedExposures}
 \title{get exposures that are not calibrated}
 \usage{
-getUncalibratedExposures(appContext, outcomeCohortIds)
+getUncalibratedExposures(appContext)
 }
 \arguments{
 \item{appContext}{rewardb app context}

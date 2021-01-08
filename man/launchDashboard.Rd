@@ -2,7 +2,7 @@
 % Please edit documentation in R/ShinyServer.R
 \name{launchDashboard}
 \alias{launchDashboard}
-\title{Launch the REWARD-B Shiny app}
+\title{Launch the REWARD Shiny app dashboard}
 \usage{
 launchDashboard(appConfigPath, globalConfigPath)
 }
@@ -10,7 +10,7 @@ launchDashboard(appConfigPath, globalConfigPath)
 \item{appConfigPath}{path to configuration file. This is loaded in to the local environment with the appContext variable}
 }
 \description{
-Launch the REWARD-B Shiny app
+Launch the REWARD Shiny app dashboard
 }
 \details{
 Launches a Shiny app for a given configuration file

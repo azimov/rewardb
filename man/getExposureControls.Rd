@@ -4,21 +4,16 @@
 \alias{getExposureControls}
 \title{Returns a set of specified negative controls for input outcome cohorts}
 \usage{
-getExposureControls(
-  appContext,
-  connection,
-  outcomeCohortIds,
-  minCohortSize = 10
-)
+getExposureControls(appContext, connection, minCohortSize = 10)
 }
 \arguments{
 \item{appContext}{rewardb app context}
 
 \item{connection}{DatabaseConnector connection to postgres rewardb instance}
 
-\item{outcomeCohortIds}{cohorts to get negative controls for}
-
 \item{minCohortSize}{smaller cohorts are not generally used for calibration as rr values tend to be extremes}
+
+\item{outcomeCohortIds}{cohorts to get negative controls for}
 }
 \value{
 data.frame of negative control exposures for specified outcomes

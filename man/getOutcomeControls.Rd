@@ -7,8 +7,9 @@
 getOutcomeControls(
   appContext,
   connection,
-  minCohortSize = 10,
-  targetIds = NULL
+  targetIds = NULL,
+  outcomeTypes = c(0, 1),
+  minCohortSize = 10
 )
 }
 \arguments{

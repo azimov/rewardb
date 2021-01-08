@@ -1,7 +1,6 @@
 #' Create a forest plot
 #' @param table data.frame with columns RR, LB_95, UB_95
 #' @return ggplot plot
-#'@export
 forestPlot <- function(table) {
   table$SOURCE_ID <- as.character(table$SOURCE_ID)
   label <- paste0("IRR= ", round(table$`RR` * 1, 2),
@@ -29,7 +28,6 @@ forestPlot <- function(table) {
 
 #' Peform meta analysis on a dataframe of elements and return row (e.g. to be appended with rbind
 #' @param table expected data.frame containing fielsds: T_AT_RISK, T_PT, T_CASES, C_AT_RISK, C_PT, C_CASES, IRR
-#'@export
 getMetaAnalysisData <- function(table) {
   table$I2 <- NA
   results <- meta::metainc(

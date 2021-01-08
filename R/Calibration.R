@@ -193,7 +193,6 @@ getCalibratedGenericTargets <- function(appContext, connection) {
 #' Compute the calibrated results for cohort targets
 #' Requires negative control cohorts to be set
 #' @param appContext takes a rewardb application context
-#' @export
 getCalibratedTargets <- function(appContext, connection) {
   return(rbind(getCalibratedAtlasTargets(appContext, connection), getCalibratedGenericTargets(appContext, connection)))
 }
@@ -201,7 +200,6 @@ getCalibratedTargets <- function(appContext, connection) {
 #' Compute the calibrated results for cohort outcomes
 #' Requires negative control cohorts to be set
 #' @param appContext takes a rewardb application context
-#' @export
 getCalibratedOutcomes <- function(appContext, connection) {
   # get negative control data rows
   controlExposures <- getExposureControls(appContext, connection)
