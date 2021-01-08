@@ -7,7 +7,7 @@ metaAnalysisTableUi <- function(id) {
 }
 
 metaAnalysisTableServer <- function(id, model, selectedExposureOutcome) {
-
+  library(shiny)
   niceColumnName <- list(
     SOURCE_NAME = "Database",
     CALIBRATED_RR = "Relative Risk *calibrated",
