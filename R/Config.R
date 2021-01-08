@@ -6,7 +6,6 @@ getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the 
         args <- list(pass)
         names(args) <- envVar
         do.call(Sys.setenv, args)
-        on.exit(Sys.unsetenv(envVar))
     }
     return(pass)
 }
