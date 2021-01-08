@@ -173,7 +173,6 @@ computeAtlasOutcomeCohorts <- function(connection, config) {
         cdm_database_schema = config$cdmSchema,
         vocabulary_database_schema = config$vocabularySchema,
         target_database_schema = config$resultSchema,
-        results_database_schema = config$resultSchema,
         target_cohort_table = config$tables$outcomeCohort,
         target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
       )

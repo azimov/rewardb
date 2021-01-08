@@ -128,7 +128,7 @@ INSERT INTO @schema.target_exposure_class (
     target_cohort_id,
     exposure_class_id
 )
-SELECT
+SELECT DISTINCT
     t.cohort_definition_id as target_cohort_id,
     c.concept_id as exposure_class_id
 FROM @vocabulary_schema.concept_ancestor ca
