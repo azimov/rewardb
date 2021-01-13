@@ -10,8 +10,45 @@ dashboardUi <- function(request) {
   # This hides the outcome exporues/result pairing
   metaDisplayCondtion <- "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0"
 
+  filterBox <- box(
+    box(
+      selectizeInput("targetCohorts", label = "Drug exposures:", choices = NULL, multiple = TRUE),
+      selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = TRUE)
+    ),
+    box(
+      selectizeInput("exposureClass", label = "Drug exposure classes:", choices = NULL, multiple = TRUE),
+      pickerInput(
+        "outcomeCohortTypes",
+        "Outcome Cohort Types:",
+        choices = c("ATLAS defined", "Inpatient", "Two diagnosis codes"),
+        selected = c(),
+        options = shinyWidgets::pickerOptions(
+          actionsBox = TRUE,
+          noneSelectedText = "Filter by subset"
+        ),
+        multiple = TRUE
+      ),
+      checkboxInput("excludeIndications", "Exclude any mapped associations", TRUE),
+      p("Mapped assocations includes drug label indications and contra-indications, spontaneous reports, and MESH literature searches."),
+      width = 6
+    ),
+    width = 12,
+    title = "Filter Cohorts",
+    collapsible = TRUE
+  )
+
   mainResults <- box(
+    box(
+      selectInput("mainTablePageSize", "Show", choices = c(5, 10, 20, 100), selected = 10, width = 80),
+      width = 3,
+    ),
+    box(
+      textInput("mainTableFilterText", "Filter", ""),
+      width = 3
+    ),
     withSpinner(DT::dataTableOutput("mainTable")),
+    textOutput("mainTableCount"),
+    numericInput("mainTablePage", "Page", 1, min = 1, width = 50),
     downloadButton("downloadFullTable", "Download"),
     width = 12
   )
@@ -87,32 +124,7 @@ dashboardUi <- function(request) {
       tabItem(
         tabName = "results",
         fluidRow(
-          box(
-            box(
-              selectizeInput("targetCohorts", label = "Drug exposures:", choices = NULL, multiple = TRUE),
-              selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = TRUE)
-            ),
-            box(
-              selectizeInput("exposureClass", label = "Drug exposure classes:", choices = NULL, multiple = TRUE),
-              pickerInput(
-                "outcomeCohortTypes",
-                "Outcome Cohort Types:",
-                choices = c("ATLAS defined", "Inpatient", "Two diagnosis codes"),
-                selected = c(),
-                options = shinyWidgets::pickerOptions(
-                  actionsBox = TRUE,
-                  noneSelectedText = "Filter by subset"
-                ),
-                multiple = TRUE
-              ),
-              checkboxInput("excludeIndications", "Exclude any mapped associations", TRUE),
-              p("Mapped assocations includes drug label indications and contra-indications, spontaneous reports, and MESH literature searches."),
-              width = 6
-            ),
-            width = 12,
-            title = "Filter Cohorts",
-            collapsible = TRUE
-          ),
+          filterBox,
           mainResults,
           rPanel
         )

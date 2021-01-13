@@ -39,12 +39,22 @@ DbModel$methods(
       df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = schemaName, warnOnMissingParameters = FALSE, ...)
       return(df)
     },
-      error = function(e) {
-        ParallelLogger::logError(e)
-        closeConnection()
-        initializeConnection()
-      })
+    error = function(e) {
+      ParallelLogger::logError(e)
+      closeConnection()
+      initializeConnection()
+    })
   },
+
+  countQuery = function(query, ..., render = TRUE) {
+    if (render) {
+      query <- SqlRender::render(query, ...)
+    }
+
+    count <- queryDb("SELECT count(*) FROM (@sub_query) AS cnt", sub_query = query)
+    return(count$CNT)
+  },
+
   # Will only work with postgres > 9.4
   tableExists = function(tableName, schema = NULL) {
     schema <- ifelse(is.null(schema), schemaName, schema)
@@ -159,7 +169,7 @@ DashboardDbModel$methods(
     return(result$EXPOSURE_CLASS_NAME)
   },
 
-  getFilteredTableResults = function(benefitThreshold = 0.5,
+  getFilteredTableResultsQuery = function(benefitThreshold = 0.5,
                                      riskThreshold = 2.0,
                                      pValueCut = 0.05,
                                      filterByMeta = FALSE,
@@ -167,13 +177,19 @@ DashboardDbModel$methods(
                                      calibrated = TRUE,
                                      excludeIndications = TRUE,
                                      benefitSelection = c('all', 'most'),
-                                     riskSelection = c('none', 'one')) {
+                                     riskSelection = c('none', 'one'),
+                                     targetCohortNames = NULL,
+                                     outcomeCohortNames = NULL,
+                                     exposureClasses = NULL,
+                                     textSearch = NULL,
+                                     limit = NULL,
+                                     offset = NULL) {
     calibrated <- ifelse(calibrated, 1, 0)
     benefitSelection <- paste0("'", paste0(benefitSelection, sep = "'"))
     riskSelection <- paste0("'", paste0(riskSelection, sep = "'"))
 
     sql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
-    df <- queryDb(
+    query <- SqlRender::render(
       sql,
       risk = riskThreshold,
       benefit = benefitThreshold,
@@ -185,9 +201,22 @@ DashboardDbModel$methods(
       benefit_selection = benefitSelection,
       calibrated = calibrated,
       show_exposure_classes = config$useExposureControls,
-      filter_by_meta_analysis = filterByMeta
+      filter_by_meta_analysis = filterByMeta,
+      outcome_cohort_names = outcomeCohortNames,
+      target_cohort_names = targetCohortNames,
+      exposure_classes = exposureClasses,
+      limit = limit,
+      offset = offset
     )
-    return(df)
+    return(query)
+  },
+
+  getFilteredTableResults = function(...) {
+    queryDb(getFilteredTableResultsQuery(...))
+  },
+
+  getFilteredTableResultsCount = function(...) {
+    countQuery(getFilteredTableResultsQuery(...), render = FALSE)
   },
 
   getNegativeControls = function() {

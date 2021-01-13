@@ -1,3 +1,6 @@
+{DEFAULT @limit = ''}
+{DEFAULT @offset = ''}
+
 WITH benefit_t AS(
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS THRESH_COUNT
     FROM @schema.result
@@ -69,7 +72,11 @@ FROM @schema.result fr
     INNER JOIN @schema.exposure_class ec ON ec.exposure_class_id = tec.exposure_class_id
     }
     WHERE fr.calibrated = @calibrated
-    {@exclude_indications == TRUE} ? {AND pi.outcome_cohort_id IS NULL}
+
+    {@exclude_indications} ? {AND pi.outcome_cohort_id IS NULL}
+    {@outcome_cohort_names != ''} ? {AND o.COHORT_NAME IN (@outcome_cohort_names)}
+    {@target_cohort_names != ''} ? {AND t.COHORT_NAME IN (@target_cohort_names)}
+    {@show_exposure_classes && @exposure_classes != ''} ? {ec.EXPOSURE_CLASS_NAME IN (@exposure_classes)}
 
     {@filter_by_meta_analysis} ? {
        AND mr.RR <= @benefit AND mr.P_VALUE < @p_cut_value
@@ -91,3 +98,4 @@ FROM @schema.result fr
         ELSE 0
     END
     {@filter_outcome_types} ? {AND o.type_id IN (@outcome_types)}
+    {@limit != ''} ? {LIMIT @limit {@offset != ''} ? {OFFSET @offset} }
