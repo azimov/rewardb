@@ -206,7 +206,6 @@ reportInstance <- function(input, output, session) {
   session$onSessionEnded(function() {
     writeLines("Closing database connection")
     model$closeConnection()
-    rm(model)
   })
 
 
@@ -261,6 +260,7 @@ reportInstance <- function(input, output, session) {
   print("init modules")
   # Create sub modules
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
+  forestPlotServer("forestPlot", model, selectedExposureOutcome)
 }
 
 launchReport <- function(globalConfigPath, exposureId = NULL, outcomeId = NULL) {

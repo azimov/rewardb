@@ -278,6 +278,14 @@ ReportDbModel$methods(
       AND r.analysis_id = @analysis_id
       ORDER BY r.SOURCE_ID
     "
-    return(queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId))
+    data <- queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId)
+    return(data)
+  },
+
+  getForestPlotTable = function(exposureId, outcomeId, calibrated) {
+    sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+    table <- queryDb(sql, treatment = exposureId, outcome = outcomeId, calibrated = 0, result = 'scc_result', use_calibration = FALSE)
+    table <- table[table$CALIBRATED == 0,]
+    return(table)
   }
 )
