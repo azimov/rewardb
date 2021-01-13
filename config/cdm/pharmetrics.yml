@@ -1,0 +1,36 @@
+sourceId: 14
+database: iqvia_pharmetrics_plus
+
+exportPath: "export_pharmetrics"
+referencePath: "reference_files"
+
+connectionDetails:
+  extraSettings: "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
+  dbms: redshift
+  server: rhealth-prod-4.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/iqvia_pharmetrics_plus
+  port: 5439
+  user: jgilber2
+
+useSecurePassword: True
+passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
+useMppBulkLoad: True
+
+resultSchema: "scratch_reward_pharmetrics"
+referenceSchema: "scratch_reward_pharmetrics"
+cdmSchema: "cdm"
+vocabularySchema: "cdm"
+drugEraSchema: "scratch_reward_pharmetrics"
+
+tables:
+  outcomeCohort: "rb_outcome_cohort"
+  cohort: "rb_cohort"
+  sccResult: "rb_scc_result"
+  # Reference table definitions
+  cohortDefinition: "rb_cohort_definition"
+  outcomeCohortDefinition: "rb_outcome_cohort_definition"
+  conceptSetDefinition: "rb_concept_set_definition"
+  atlasOutcomeReference: "rb_atlas_outcome_reference"
+  atlasConceptReference: "rb_atlas_concept_reference"
+  customExposure: "rb_custom_exposure"
+  customExposureConcept: "rb_custom_exposure_concept"
+  analysisSetting: "rb_analysis_setting"
