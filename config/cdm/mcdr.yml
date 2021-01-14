@@ -1,5 +1,6 @@
 sourceId: 13
 database: truven_mdcr
+name: "IBM MDCR"
 
 exportPath: "export_mcdr"
 referencePath: "reference_files"

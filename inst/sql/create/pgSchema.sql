@@ -19,7 +19,8 @@ CREATE TABLE @schema.scc_result (
   lb_95 NUMERIC,
   ub_95 NUMERIC,
   p_value NUMERIC,
-  I2 NUMERIC
+  I2 NUMERIC,
+  PRIMARY KEY (source_id, analysis_id, outcome_cohort_id, target_cohort_id)
 );
 
 CREATE TABLE @schema.time_on_treatment (
@@ -44,7 +45,8 @@ CREATE TABLE @schema.time_on_treatment (
     median_tx_time NUMERIC,
     p75_tx_time NUMERIC,
     p90_tx_time NUMERIC,
-    max_tx_time NUMERIC
+    max_tx_time NUMERIC,
+    PRIMARY KEY (source_id, analysis_id, outcome_cohort_id, target_cohort_id)
 );
 
 

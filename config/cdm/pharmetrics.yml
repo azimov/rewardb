@@ -1,14 +1,14 @@
-sourceId: 11
-database: truven_ccae
-name: "Optum SES"
+sourceId: 14
+database: iqvia_pharmetrics_plus
+name: "PharMetrics"
 
-exportPath: "export_ccae"
+exportPath: "export_pharmetrics"
 referencePath: "reference_files"
 
 connectionDetails:
   extraSettings: "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
   dbms: redshift
-  server: rhealth-prod-1.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/truven_ccae
+  server: rhealth-prod-4.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/iqvia_pharmetrics_plus
   port: 5439
   user: jgilber2
 
@@ -16,11 +16,11 @@ useSecurePassword: True
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
 useMppBulkLoad: True
 
-resultSchema: "scratch_rewardb"
-referenceSchema: "scratch_rewardb"
+resultSchema: "scratch_reward_pharmetrics"
+referenceSchema: "scratch_reward_pharmetrics"
 cdmSchema: "cdm"
 vocabularySchema: "cdm"
-drugEraSchema: "scratch_rewardb"
+drugEraSchema: "scratch_reward_pharmetrics"
 
 tables:
   outcomeCohort: "rb_outcome_cohort"
