@@ -40,15 +40,11 @@ dashboardUi <- function(request) {
   mainResults <- box(
     box(
       selectInput("mainTablePageSize", "Show", choices = c(5, 10, 20, 100), selected = 10, width = 80),
-      width = 3,
-    ),
-    box(
-      textInput("mainTableFilterText", "Filter", ""),
-      width = 3
+      numericInput("mainTablePage", "Page", 1, min = 1, width = 50),
+      textOutput("mainTableCount"),
+      width = 12,
     ),
     withSpinner(DT::dataTableOutput("mainTable")),
-    textOutput("mainTableCount"),
-    numericInput("mainTablePage", "Page", 1, min = 1, width = 50),
     downloadButton("downloadFullTable", "Download"),
     width = 12
   )

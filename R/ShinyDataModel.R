@@ -51,8 +51,8 @@ DbModel$methods(
       query <- SqlRender::render(query, ...)
     }
 
-    count <- queryDb("SELECT count(*) FROM (@sub_query) AS cnt", sub_query = query)
-    return(count$CNT)
+    res <- queryDb("SELECT count(*) as CNT FROM (@sub_query) AS qur", sub_query = query)
+    return(res$CNT)
   },
 
   # Will only work with postgres > 9.4
@@ -181,7 +181,6 @@ DashboardDbModel$methods(
                                      targetCohortNames = NULL,
                                      outcomeCohortNames = NULL,
                                      exposureClasses = NULL,
-                                     textSearch = NULL,
                                      limit = NULL,
                                      offset = NULL) {
     calibrated <- ifelse(calibrated, 1, 0)

@@ -42,6 +42,9 @@ test_that("Data model utilitiy queries", {
   model <- DashboardDbModel(appContext)
   df <- model$queryDb("SELECT * FROM @schema.result")
   expect_true(length(df)  > 1)
+
+  count <- model$countQuery("SELECT * FROM @schema.result")
+  expect_true(length(df) == count)
   expect_true(model$tableExists("result"))
   expect_false(model$tableExists("foo_table"))
   model$closeConnection()

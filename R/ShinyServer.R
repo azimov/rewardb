@@ -58,8 +58,11 @@ dashboardInstance <- function(input, output, session) {
     res <- do.call(model$getFilteredTableResultsCount, params)
     return(res)
   })
+
   output$mainTableCount <- renderText({
-    getMainTableCount()
+    res <- getMainTableCount()
+    str <- paste(res, "Results")
+    return(str)
   })
 
   updateSelectizeInput(session, "outcomeCohorts", choices = model$getOutcomeCohortNames(), server = TRUE)
