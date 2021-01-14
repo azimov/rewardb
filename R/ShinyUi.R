@@ -41,11 +41,13 @@ dashboardUi <- function(request) {
     box(
       selectInput("mainTablePageSize", "Show", choices = c(5, 10, 20, 100), selected = 10, width = 80),
       numericInput("mainTablePage", "Page", 1, min = 1, width = 50),
-      textOutput("mainTableCount"),
+      textOutput("mainTableNumPages"),
       width = 12,
     ),
     withSpinner(DT::dataTableOutput("mainTable")),
+    hr(),
     downloadButton("downloadFullTable", "Download"),
+    textOutput("mainTableCount"),
     width = 12
   )
 

@@ -59,9 +59,16 @@ dashboardInstance <- function(input, output, session) {
     return(res)
   })
 
+  output$mainTableNumPages <- renderText({
+    recordCount <- getMainTableCount()
+    numPages <- ceiling(recordCount/as.integer(input$mainTablePageSize))
+    return(paste("Page", input$mainTablePage, "of", numPages))
+  })
+
   output$mainTableCount <- renderText({
     res <- getMainTableCount()
-    str <- paste(res, "Results")
+    offset <- max(input$mainTablePage - 1, 0) * as.integer(input$mainTablePageSize)
+    str <- paste("Displaying", offset, "to", offset + input$mainTablePageSize, "of",  res, "results")
     return(str)
   })
 
@@ -101,7 +108,7 @@ dashboardInstance <- function(input, output, session) {
         colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
       }
       table <- DT::datatable(
-        df, selection = "single", options = list(dom = 't', pageLength = input$mainTablePageSize),
+        df, selection = "single", options = list(dom = 't', pageLength = input$mainTablePageSize, ordering=F),
         rownames = FALSE
       )
       return(table)
