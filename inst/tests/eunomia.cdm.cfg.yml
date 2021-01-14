@@ -1,5 +1,6 @@
 sourceId: 0
 database: eunomia
+name: eunomia
 
 exportPath: "export"
 referencePath: "reference_files"

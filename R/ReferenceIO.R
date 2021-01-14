@@ -115,11 +115,29 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
     }
 
   },
-
-    error = function(err) {
+  error = function(err) {
       ParallelLogger::logError(err)
       return(NULL)
     }
   )
   DatabaseConnector::disconnect(connection)
+}
+
+registerCdm <- function(connection, globalConfig, cdmConfig) {
+  # Check if CDM ID is in table
+  # Check if source key is a match
+  # Add it to the list
+  sql <- "SELECT count(*) as cnt FROM @schema.data_source WHERE source_id = @source_id"
+  res <- DatabaseConnector::renderTranslateQuerySql(connection, sql, schema = globalConfig$rewardbResultsSchema, source_id = cdmConfig$sourceId)
+
+  if (res$CNT[[1]] == 0) {
+    sql <- "insert into @schema.data_source (source_id, source_key, source_name)
+              values (@source_id, '@source_key', '@source_name');"
+    DatabaseConnector::renderTranslateExecuteSql(connection,
+                                                 sql,
+                                                 schema = globalConfig$rewardbResultsSchema,
+                                                 source_id = cdmConfig$sourceId,
+                                                 source_name = cdmConfig$name,
+                                                 source_key = cdmConfig$database)
+  }
 }

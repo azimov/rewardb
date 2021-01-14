@@ -19,6 +19,8 @@ insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort"
 
 cdmConfig <- loadCdmConfig(system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb"))
 
+registerCdm(connection, globalConfig, cdmConfig)
+
 DatabaseConnector::renderTranslateExecuteSql(connection,"DROP SCHEMA @schema CASCADE;", schema = cdmConfig$resultSchema)
 DatabaseConnector::renderTranslateExecuteSql(connection,"CREATE SCHEMA @schema", schema = cdmConfig$resultSchema)
 
