@@ -39,11 +39,11 @@ DbModel$methods(
       df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = schemaName, warnOnMissingParameters = FALSE, ...)
       return(df)
     },
-    error = function(e) {
-      ParallelLogger::logError(e)
-      closeConnection()
-      initializeConnection()
-    })
+      error = function(e) {
+        ParallelLogger::logError(e)
+        closeConnection()
+        initializeConnection()
+      })
   },
 
   countQuery = function(query, ..., render = TRUE) {
@@ -170,19 +170,21 @@ DashboardDbModel$methods(
   },
 
   getFilteredTableResultsQuery = function(benefitThreshold = 0.5,
-                                     riskThreshold = 2.0,
-                                     pValueCut = 0.05,
-                                     filterByMeta = FALSE,
-                                     outcomeCohortTypes = c(0, 1, 2),
-                                     calibrated = TRUE,
-                                     excludeIndications = TRUE,
-                                     benefitSelection = c('all', 'most'),
-                                     riskSelection = c('none', 'one'),
-                                     targetCohortNames = NULL,
-                                     outcomeCohortNames = NULL,
-                                     exposureClasses = NULL,
-                                     limit = NULL,
-                                     offset = NULL) {
+                                          riskThreshold = 2.0,
+                                          pValueCut = 0.05,
+                                          filterByMeta = FALSE,
+                                          outcomeCohortTypes = c(0, 1, 2),
+                                          calibrated = TRUE,
+                                          excludeIndications = TRUE,
+                                          benefitSelection = c('all', 'most'),
+                                          riskSelection = c('none', 'one'),
+                                          targetCohortNames = NULL,
+                                          outcomeCohortNames = NULL,
+                                          exposureClasses = NULL,
+                                          orderByCol = NULL,
+                                          ascending = NULL,
+                                          limit = NULL,
+                                          offset = NULL) {
     calibrated <- ifelse(calibrated, 1, 0)
     benefitSelection <- paste0("'", paste0(benefitSelection, sep = "'"))
     riskSelection <- paste0("'", paste0(riskSelection, sep = "'"))
@@ -204,6 +206,8 @@ DashboardDbModel$methods(
       outcome_cohort_names = outcomeCohortNames,
       target_cohort_names = targetCohortNames,
       exposure_classes = exposureClasses,
+      order_by = orderByCol,
+      ascending = ascending,
       limit = limit,
       offset = offset
     )

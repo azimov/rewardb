@@ -38,16 +38,45 @@ dashboardUi <- function(request) {
   )
 
   mainResults <- box(
-    box(
-      selectInput("mainTablePageSize", "Show", choices = c(5, 10, 20, 100), selected = 10, width = 80),
-      numericInput("mainTablePage", "Page", 1, min = 1, width = 50),
-      textOutput("mainTableNumPages"),
-      width = 12,
+    fluidRow(
+      column(2,
+             uiOutput("mainTablePage")
+      ),
+      column(6,
+             selectInput("mainTableSortBy",
+                         "Sort by column",
+                         choices = list(
+                           "Outcome id" = "OUTCOME_COHORT_ID",
+                           "Exposure id" = "TARGET_COHORT_ID",
+                           "Exposure name" = "TARGET_COHORT_NAME",
+                           "Outcome name" = "OUTCOME_COHORT_NAME",
+                           "I-squared" = "I2",
+                           "IRR" = "META_RR",
+                           "Sources with scc risk" = "RISK_COUNT",
+                           "Sources with scc benefit" = "BENEFIT_COUNT"
+                         )
+             )
+      ),
+      column(2,
+             radioButtons("mainTableOrderAscending", "", c("Ascending" = "ASC", "Descending" = "DESC"))
+      ),
+      column(2,
+             selectInput("mainTablePageSize", "Show per page", choices = c(5, 10, 15, 20, 25, 50, 100), selected = 10)
+      )
     ),
     withSpinner(DT::dataTableOutput("mainTable")),
     hr(),
+    fluidRow(
+      column(4,
+             textOutput("mainTableCount")
+      ),
+      column(6),
+      column(2,
+             textOutput("mainTableNumPages")
+      )
+    ),
+    hr(),
     downloadButton("downloadFullTable", "Download"),
-    textOutput("mainTableCount"),
     width = 12
   )
 

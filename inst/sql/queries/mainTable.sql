@@ -1,5 +1,7 @@
 {DEFAULT @limit = ''}
 {DEFAULT @offset = ''}
+{DEFAULT @order_by = ''}
+{DEFAULT @ascending = 'ASC'}
 
 WITH benefit_t AS(
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS THRESH_COUNT
@@ -98,4 +100,5 @@ FROM @schema.result fr
         ELSE 0
     END
     {@filter_outcome_types} ? {AND o.type_id IN (@outcome_types)}
+    {@order_by != ''} ? {ORDER BY @order_by @ascending}
     {@limit != ''} ? {LIMIT @limit {@offset != ''} ? {OFFSET @offset} }
