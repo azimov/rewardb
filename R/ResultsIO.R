@@ -59,7 +59,7 @@ importResultsFiles <- function(
         }
         data <- read.csv(csvFile)
         data$analysis_id <- as.integer(data$analysis_id)
-        write.csv(data, na = "", row.names = FALSE, fileEncoding = "ascii")
+        write.csv(data, csvFile, na = "", row.names = FALSE, fileEncoding = "ascii")
         pgCopy(connectionDetails, csvFile, resultsSchema, tableName, fileEncoding = "UTF-8-BOM", .echoCommand = .debug)
       }
     },
