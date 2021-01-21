@@ -13,7 +13,7 @@ getAverageTimeOnTreatment <- function(connection, config, analysisOptions = list
 
   results <- do.call(getSccStats, c(args, analysisOptions))
   results$source_id <- config$sourceId
-  results$analysis_id <- analysisId
+  results$analysis_id <- as.integer(analysisId)
   colnames(results)[colnames(results) == "EXPOSURE_ID"] <- "TARGET_COHORT_ID"
   colnames(results)[colnames(results) == "OUTCOME_ID"] <- "OUTCOME_COHORT_ID"
 

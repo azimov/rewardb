@@ -87,7 +87,7 @@ runScc <- function(
   }
 
   sccSummary$source_id <- config$sourceId
-  sccSummary$analysis_id <- analysisId
+  sccSummary$analysis_id <- as.integer(analysisId)
   sccSummary$c_at_risk <- sccSummary$numPersons
 
   sccSummary <- dplyr::rename(sccSummary, rewardb::SCC_RESULT_COL_NAMES)
