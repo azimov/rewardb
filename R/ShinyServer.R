@@ -16,7 +16,6 @@ dashboardInstance <- function(input, output, session) {
   library(dplyr, warn.conflicts = FALSE)
 
   model <- DashboardDbModel(appContext)
-
   session$onSessionEnded(function() {
     writeLines("Closing connection")
     model$closeConnection()

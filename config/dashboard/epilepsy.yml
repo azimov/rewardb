@@ -1,5 +1,5 @@
 name: Epilepsy
-short_name: epilepsy
+short_name: epilepsy_jan_2021
 description: 'Epilepsy Phenotype Library definition exposures'
 outcome_concept_ids: [ 380378 ]
 custom_outcome_cohort_ids: [

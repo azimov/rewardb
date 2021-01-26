@@ -188,7 +188,8 @@ DashboardDbModel$methods(
     calibrated <- ifelse(calibrated, 1, 0)
     benefitSelection <- paste0("'", paste0(benefitSelection, sep = "'"))
     riskSelection <- paste0("'", paste0(riskSelection, sep = "'"))
-
+    filterOutcomes <- length(outcomeCohortTypes) > 0
+    
     sql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
     query <- SqlRender::render(
       sql,
@@ -196,7 +197,7 @@ DashboardDbModel$methods(
       benefit = benefitThreshold,
       p_cut_value = pValueCut,
       exclude_indications = excludeIndications,
-      filter_outcome_types = length(outcomeCohortTypes) > 0,
+      filter_outcome_types = filterOutcomes,
       outcome_types = outcomeCohortTypes,
       risk_selection = riskSelection,
       benefit_selection = benefitSelection,
@@ -215,11 +216,13 @@ DashboardDbModel$methods(
   },
 
   getFilteredTableResults = function(...) {
-    queryDb(getFilteredTableResultsQuery(...))
+    sql <- getFilteredTableResultsQuery(...)
+    queryDb(sql)
   },
 
   getFilteredTableResultsCount = function(...) {
-    countQuery(getFilteredTableResultsQuery(...), render = FALSE)
+    sql <- getFilteredTableResultsQuery(...)
+    countQuery(sql, render = FALSE)
   },
 
   getNegativeControls = function() {

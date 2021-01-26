@@ -2,6 +2,8 @@
 {DEFAULT @offset = ''}
 {DEFAULT @order_by = ''}
 {DEFAULT @ascending = 'ASC'}
+{DEFAULT @db_total_count = 4}
+{DEFAULT @db_most_count = 2}
 
 WITH benefit_t AS(
     SELECT TARGET_COHORT_ID, OUTCOME_COHORT_ID, COUNT(DISTINCT(SOURCE_ID)) AS THRESH_COUNT
@@ -24,22 +26,24 @@ risk_t AS (
 )
 
 SELECT
-    DISTINCT fr.TARGET_COHORT_ID, t.COHORT_NAME as TARGET_COHORT_NAME,
-    fr.OUTCOME_COHORT_ID, o.COHORT_NAME AS OUTCOME_COHORT_NAME,
+    fr.TARGET_COHORT_ID,
+    t.COHORT_NAME as TARGET_COHORT_NAME,
+    fr.OUTCOME_COHORT_ID,
+    o.COHORT_NAME AS OUTCOME_COHORT_NAME,
     CASE
         WHEN risk_t.THRESH_COUNT IS NULL THEN 'none'
         WHEN risk_t.THRESH_COUNT = 1 THEN 'one'
-        WHEN risk_t.THRESH_COUNT >= 4 THEN 'all'
-        WHEN risk_t.THRESH_COUNT > 1 THEN 'most'
+        WHEN risk_t.THRESH_COUNT >= @db_total_count THEN 'all'
+        WHEN risk_t.THRESH_COUNT >= @db_most_count THEN 'most'
     END AS risk_count,
     CASE
         WHEN benefit_t.THRESH_COUNT IS NULL THEN 'none'
         WHEN benefit_t.THRESH_COUNT = 1 THEN 'one'
-        WHEN benefit_t.THRESH_COUNT >= 4 THEN 'all'
-        WHEN benefit_t.THRESH_COUNT > 1 THEN 'most'
+        WHEN benefit_t.THRESH_COUNT >= @db_total_count THEN 'all'
+        WHEN benefit_t.THRESH_COUNT >= @db_most_count THEN 'most'
     END AS benefit_count,
     mr2.I2 as I2,
-    {@show_exposure_classes}?{ec.EXPOSURE_CLASS_NAME as ECN,}
+    {@show_exposure_classes}?{STRING_AGG(distinct ec.EXPOSURE_CLASS_NAME, ';') as ECN,}
     ROUND(mr.RR, 2) as meta_RR
 FROM @schema.result fr
     
@@ -78,7 +82,7 @@ FROM @schema.result fr
     {@exclude_indications} ? {AND pi.outcome_cohort_id IS NULL}
     {@outcome_cohort_names != ''} ? {AND o.COHORT_NAME IN (@outcome_cohort_names)}
     {@target_cohort_names != ''} ? {AND t.COHORT_NAME IN (@target_cohort_names)}
-    {@show_exposure_classes && @exposure_classes != ''} ? {ec.EXPOSURE_CLASS_NAME IN (@exposure_classes)}
+    {@show_exposure_classes & @exposure_classes != ''} ? {AND ec.EXPOSURE_CLASS_NAME IN (@exposure_classes)}
 
     {@filter_by_meta_analysis} ? {
        AND mr.RR <= @benefit AND mr.P_VALUE < @p_cut_value
@@ -86,8 +90,8 @@ FROM @schema.result fr
     AND 1 = CASE
         WHEN benefit_t.THRESH_COUNT IS NULL AND 'none' IN (@benefit_selection) THEN 1
         WHEN benefit_t.THRESH_COUNT = 1 AND 'one' in (@benefit_selection) THEN 1
-        WHEN benefit_t.THRESH_COUNT >= 4 AND 'all' in (@benefit_selection) THEN 1
-        WHEN benefit_t.THRESH_COUNT > 1 AND 'most' in (@benefit_selection) THEN 1
+        WHEN benefit_t.THRESH_COUNT >= @db_total_count AND 'all' in (@benefit_selection) THEN 1
+        WHEN benefit_t.THRESH_COUNT >= @db_most_count AND 'most' in (@benefit_selection) THEN 1
         ELSE 0
     END
     }
@@ -95,10 +99,12 @@ FROM @schema.result fr
     AND 1 = CASE
         WHEN risk_t.THRESH_COUNT IS NULL AND 'none' IN (@risk_selection) THEN 1
         WHEN risk_t.THRESH_COUNT = 1 AND 'one' in (@risk_selection) THEN 1
-        WHEN risk_t.THRESH_COUNT >= 4 AND 'all' in (@risk_selection) THEN 1
-        WHEN risk_t.THRESH_COUNT > 1 AND 'most' in (@risk_selection) THEN 1
+        WHEN risk_t.THRESH_COUNT >= @db_total_count AND 'all' in (@risk_selection) THEN 1
+        WHEN risk_t.THRESH_COUNT >= @db_most_count AND 'most' in (@risk_selection) THEN 1
         ELSE 0
     END
     {@filter_outcome_types} ? {AND o.type_id IN (@outcome_types)}
+
+    GROUP BY fr.target_cohort_id, fr.outcome_cohort_id, t.COHORT_NAME, o.COHORT_NAME, risk_t.THRESH_COUNT, benefit_t.THRESH_COUNT, mr2.I2, mr.RR
     {@order_by != ''} ? {ORDER BY @order_by @ascending}
     {@limit != ''} ? {LIMIT @limit {@offset != ''} ? {OFFSET @offset} }
