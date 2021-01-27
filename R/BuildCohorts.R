@@ -142,7 +142,7 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
   for (cohortType in outcomeTypes) {
     count <- cohortsToCompute(cohortType$type)
     while (count) {
-      ParallelLogger::logInfo(count, " Uncomputed cohorts")
+      ParallelLogger::logInfo(count, " Uncomputed cohorts of type", cohortType)
       DatabaseConnector::renderTranslateExecuteSql(
         connection,
         sql = cohortType$sql,
