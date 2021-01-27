@@ -80,8 +80,8 @@ FROM @schema.result fr
     WHERE fr.calibrated = @calibrated
 
     {@exclude_indications} ? {AND pi.outcome_cohort_id IS NULL}
-    {@outcome_cohort_names != ''} ? {AND o.COHORT_NAME IN (@outcome_cohort_names)}
-    {@target_cohort_names != ''} ? {AND t.COHORT_NAME IN (@target_cohort_names)}
+    {@outcome_cohort_name_length} ? {AND o.COHORT_NAME IN (@outcome_cohort_names)}
+    {@target_cohort_name_length} ? {AND t.COHORT_NAME IN (@target_cohort_names)}
     {@show_exposure_classes & @exposure_classes != ''} ? {AND ec.EXPOSURE_CLASS_NAME IN (@exposure_classes)}
 
     {@filter_by_meta_analysis} ? {

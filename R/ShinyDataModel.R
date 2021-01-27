@@ -189,7 +189,7 @@ DashboardDbModel$methods(
     benefitSelection <- paste0("'", paste0(benefitSelection, sep = "'"))
     riskSelection <- paste0("'", paste0(riskSelection, sep = "'"))
     filterOutcomes <- length(outcomeCohortTypes) > 0
-    
+
     sql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
     query <- SqlRender::render(
       sql,
@@ -204,7 +204,9 @@ DashboardDbModel$methods(
       calibrated = calibrated,
       show_exposure_classes = config$useExposureControls,
       filter_by_meta_analysis = filterByMeta,
+      outcome_cohort_name_length = length(outcomeCohortNames) > 0,
       outcome_cohort_names = outcomeCohortNames,
+      target_cohort_name_length = length(targetCohortNames) > 0,
       target_cohort_names = targetCohortNames,
       exposure_classes = exposureClasses,
       order_by = orderByCol,
