@@ -1,3 +1,4 @@
+--incident outcomes - requiring inpatient visit
 insert into @cohort_database_schema.@outcome_cohort_table
 (
   cohort_definition_id

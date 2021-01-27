@@ -82,24 +82,16 @@ getUncomputedAtlasCohorts <- function(connection, config) {
 #' @param dataSources dataSources to run cohort on
 createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
 
-  sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohortTable.sql", package = "rewardb"))
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection,
-    sql = sql,
-    cohort_database_schema = config$resultSchema,
-    outcome_cohort_table = config$tables$outcomeCohort,
-    delete_existing = deleteExisting
-  )
-
+  ParallelLogger::logInfo("Creating concept ancestor grouping and table")
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createOutcomeCohorts.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql = sql,
     cdm_database_schema = config$cdmSchema,
     cohort_database_schema = config$resultSchema,
-    outcome_cohort_table = config$tables$outcomeCohort
+    outcome_cohort_table = config$tables$outcomeCohort,
+    delete_existing = deleteExisting
   )
-
 
   outcomeTypes <- list(
     type0 = list(
