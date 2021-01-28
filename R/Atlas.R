@@ -161,7 +161,7 @@ insertAtlasCohortRef <- function(
 
     DatabaseConnector::dbAppendTable(connection, tableName, results)
   } else {
-    print(paste("COHORT", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))
+    ParallelLogger::logDebug(paste("COHORT", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))
   }
 }
 
@@ -266,7 +266,7 @@ insertCustomExposureRef <- function(
     tableName <- paste0(config$rewardbResultsSchema, ".custom_exposure_concept")
     DatabaseConnector::dbAppendTable(connection, tableName, results)
   } else {
-    print(paste("Concept set", conceptSetId, "Already in database, use removeAtlasCohort to clear entry references"))
+    ParallelLogger::logDebug(paste("Concept set", conceptSetId, "Already in database, use removeAtlasCohort to clear entry references"))
   }
 }
 
@@ -289,4 +289,42 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
     concept_set_id = conceptSetId,
     atlas_url = webApiUrl
   )
+}
+
+
+sccOneOffAtlasCohort <- function(cdmConfig, zipFilePath, configId) {
+  exportIdFolder <- paste("export-", configId)
+  dir.create(exportIdFolder)
+  importAtlasCohortReferencesZip(cdmConfig, zipFilePath, exportIdFolder)
+
+  connection <- connect(cdmConfig$connection)
+  # Create the cohort
+  atlasCohorts <- read.csv(file.path(exportIdFolder, "atlas_outcome_reference.csv"))
+
+  if (length(atlasCohorts)) {
+    # Generate each cohort
+    apply(atlasCohorts, 1, function(cohortReference) {
+      ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection,
+        sql = "DELETE FROM @target_database_schema.@target_cohort_table WHERE cohort_definition_id = @cohort_definition_id",
+        target_database_schema = cdmConfig$resultSchema,
+        target_cohort_table = cdmConfig$tables$outcomeCohort,
+        cohort_definition_id = cohortReference["COHORT_DEFINITION_ID"]
+      )
+
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection,
+        sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
+        cdm_database_schema = cdmConfig$cdmSchema,
+        vocabulary_database_schema = cdmConfig$vocabularySchema,
+        target_database_schema = cdmConfig$resultSchema,
+        target_cohort_table = cdmConfig$tables$outcomeCohort,
+        target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
+      )
+    })
+  }
+
+  oneOffSccResults(cdmConfig, configId, atlasCohorts$COHORT_DEFINITION_ID, .getDbId = FALSE)
+
 }

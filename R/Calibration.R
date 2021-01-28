@@ -205,7 +205,7 @@ getCalibratedOutcomes <- function(appContext, connection) {
   controlExposures <- getExposureControls(appContext, connection)
   # get positives
   positives <- getUncalibratedExposures(appContext)
-  print(paste("calibrating", nrow(positives), "exposures"))
+  ParallelLogger::logDebug(paste("calibrating", nrow(positives), "exposures"))
   library(dplyr)
 
   # Get all exposures for a given outcome, source and outcome type
@@ -221,7 +221,7 @@ getCalibratedOutcomes <- function(appContext, connection) {
   # get negative control data rows -- type 0 outcomes only
   positives <- getUncalibratedAtlasCohorts(appContext)
 
-  print(paste("calibrating", nrow(positives), "exposures"))
+  ParallelLogger::logDebug(paste("calibrating", nrow(positives), "exposures"))
   # Get all outcomes for a given target, source for outcome type 0
   # Compute calibrated results
   atlasResultSet <- positives %>%

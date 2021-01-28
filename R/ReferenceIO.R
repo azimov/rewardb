@@ -6,8 +6,6 @@ CONST_REFERENCE_TABLES <- c(
   "atlas_concept_reference",
   "custom_exposure",
   "custom_exposure_concept",
-  "concept_set_definition",
-  "outcome_cohort_definition",
   "analysis_setting"
 )
 
@@ -42,7 +40,7 @@ exportReferenceTables <- function(
       )
 
       file <- file.path(exportPath, paste0(table, ".csv"))
-      suppressWarnings({write.csv(data, file, na = "", row.names = FALSE, fileEncoding = "ascii")})
+      suppressWarnings({ write.csv(data, file, na = "", row.names = FALSE, fileEncoding = "ascii") })
       meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
     }
 
@@ -90,16 +88,16 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
       tableName <- cdmConfig$tables[[camelName]]
 
       if (cdmConfig$connectionDetails$dbms == "postgresql" & usePgCopy) {
-        print(paste("Using pgcopy to upload", camelName, tableName, file))
+        ParallelLogger::logDebug(paste("Using pgcopy to upload", camelName, tableName, file))
         pgCopy(connectionDetails = cdmConfig$connectionDetails, csvFileName = file, schema = cdmConfig$referenceSchema, tableName = tableName)
       } else {
-        print(paste("Using insert table", camelName, tableName, file))
+        ParallelLogger::logDebug(paste("Using insert table", camelName, tableName, file))
         data <- read.csv(file)
 
         # Remove columns we don't want to store on the CDM
         if (camelName %in% names(rewardb::CONST_EXCLUDE_REF_COLS)) {
           data <- data[, !(names(data) %in% rewardb::CONST_EXCLUDE_REF_COLS[[camelName]])]
-          print(names(data))
+          ParallelLogger::logDebug(names(data))
         }
 
         DatabaseConnector::insertTable(
@@ -115,7 +113,7 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
     }
 
   },
-  error = function(err) {
+    error = function(err) {
       ParallelLogger::logError(err)
       return(NULL)
     }
@@ -140,4 +138,118 @@ registerCdm <- function(connection, globalConfig, cdmConfig) {
                                                  source_name = cdmConfig$name,
                                                  source_key = cdmConfig$database)
   }
+}
+
+#' Exports atlas cohort references to a zip file for import in to an already existing db
+#' #TODO
+#' @param connection DatabaseConnector::connection to postgres
+#' @param config rewardb global config
+#' @param atlasIds ids to atlas cohort to pull down
+exportAtlasCohortRef <- function(
+  config,
+  atlasIds,
+  exportZipFile,
+  atlasUrl = NULL,
+  exportPath = tempdir()
+) {
+  scipen <- getOption("scipen")
+  options(scipen = 999)
+  connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
+  tryCatch(
+  {
+    # Get the cohort definition ids for these atlas cohorts
+    sql <- "
+      SELECT cohort_definition_id FROM @schema.atlas_outcome_reference
+      WHERE atlas_id IN (@atlas_ids)
+      {@atlas_url != ''} ? {AND atlas_url = '@atlas_url'}
+    "
+    cohortDefinitionIds <- renderTranslateQuerySql(connection,
+                                                   sql,
+                                                   schema = config$rewardbResultsSchema,
+                                                   atlas_ids = atlasIds,
+                                                   atlas_url = atlasUrl)$COHORT_DEFINITION_ID
+
+
+    # Collect all files and make a hash
+    meta <- list(atlasIds = atlasIds, cohortDefinitionIds = cohortDefinitionIds)
+    meta$hashList <- list()
+
+    outputTables <- c(
+      "outcome_cohort_definition" = "SELECT * FROM @schema.outcome_cohort_definition WHERE cohort_definition_id IN (@cohort_definition_ids)",
+      "atlas_outcome_reference" = "SELECT * FROM @schema.atlas_outcome_reference WHERE cohort_definition_id IN (@cohort_definition_ids)",
+      "atlas_concept_reference" = "SELECT * FROM @schema.atlas_concept_reference WHERE cohort_definition_id IN (@cohort_definition_ids)"
+    )
+
+    meta$tableNames <- names(outputTables)
+
+    for (table in names(outputTables)) {
+      data <- DatabaseConnector::renderTranslateQuerySql(
+        connection,
+        outputTables[[table]],
+        schema = config$rewardbResultsSchema,
+        cohort_definition_ids = cohortDefinitionIds
+      )
+
+      file <- file.path(exportPath, paste0(table, ".csv"))
+      suppressWarnings({ write.csv(data, file, na = "", row.names = FALSE, fileEncoding = "ascii") })
+      meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
+    }
+
+    metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
+    jsonlite::write_json(meta, metaDataFilename)
+
+    exportFiles <- file.path(exportPath, paste0(names(outputTables), ".csv"))
+    zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)
+
+    ParallelLogger::logInfo(paste("Created export zipfile", exportZipFile))
+  },
+    error = ParallelLogger::logError
+  )
+  DatabaseConnector::disconnect(connection)
+  options(scipen = scipen)
+}
+
+importAtlasCohortReferencesZip <- function(cdmConfig, zipFilePath, exportPath) {
+  unzipAndVerify(zipFilePath, exportPath, TRUE)
+  connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
+
+  tryCatch(
+  {
+
+    inputTables <- c(
+      "outcome_cohort_definition",
+      "atlas_outcome_reference",
+      "atlas_concept_reference"
+    )
+    fileList <- file.path(exportPath, paste0(inputTables, ".csv"))
+    for (file in fileList) {
+      camelName <- SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])
+      tableName <- cdmConfig$tables[[camelName]]
+
+      ParallelLogger::logDebug(paste("Using insert table", camelName, tableName, file))
+      data <- read.csv(file)
+
+      # Remove columns we don't want to store on the CDM
+      if (camelName %in% names(rewardb::CONST_EXCLUDE_REF_COLS)) {
+        data <- data[, !(names(data) %in% rewardb::CONST_EXCLUDE_REF_COLS[[camelName]])]
+      }
+
+      insertTable(
+        connection = connection,
+        tableName = paste(cdmConfig$referenceSchema, tableName, sep = "."),
+        data = data,
+        progressBar = TRUE,
+        dropTableIfExists = TRUE,
+        useMppBulkLoad = cdmConfig$useMppBulkLoad,
+        oracleTempSchema = cdmConfig$oracleTempSchema
+      )
+    }
+
+  },
+    error = function(err) {
+      ParallelLogger::logError(err)
+      return(NULL)
+    }
+  )
+  DatabaseConnector::disconnect(connection)
 }

@@ -5,7 +5,8 @@ exportResults <- function(
   csvPattern = "*.csv",
   tableNames = list(),
   cdmVersion = NULL,
-  databaseId = NULL
+  databaseId = NULL,
+  exportPath = NULL
 ) {
   # Collect all files and make a hash
   meta <- list()
@@ -14,13 +15,17 @@ exportResults <- function(
   meta$cdmVersion <- cdmVersion
   meta$databaseId <- databaseId
 
-  exportFiles <- Sys.glob(file.path(config$exportPath, csvPattern))
+  if (is.null(exportPath)) {
+    exportPath <- config$exportPath
+  }
+
+  exportFiles <- Sys.glob(file.path(exportPath, csvPattern))
 
   for (file in exportFiles) {
     meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
   }
 
-  metaDataFilename <- file.path(config$exportPath, rewardb::CONST_META_FILE_NAME)
+  metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
   jsonlite::write_json(meta, metaDataFilename)
 
   zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)
