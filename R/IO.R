@@ -120,7 +120,7 @@ pgCopy <- function(connectionDetails,
                        paste0("DELIMITER '", sep, "' CSV HEADER QUOTE E'\b' NULL AS '' ;\""))
 
   if (.echoCommand) {
-    print(copyCommand)
+    ParallelLogger::logDebug(copyCommand)
   }
 
   result <- base::system(copyCommand)

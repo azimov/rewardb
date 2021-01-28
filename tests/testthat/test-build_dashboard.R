@@ -27,7 +27,7 @@ exportReferenceTables(config)
 print("import refs")
 importReferenceTables(cdmConfig, zipFilePath)
 print("scc results")
-generateSccResults(cdmConfigPath)
+generateSccResults(cdmConfigPath, .getDbId = FALSE)
 importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug=TRUE)
 
 appContextFile <- system.file("tests", "test.dashboard.yml", package = "rewardb")

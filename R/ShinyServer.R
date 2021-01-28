@@ -236,10 +236,10 @@ reportInstance <- function(input, output, session) {
   library(foreach, warn.conflicts = FALSE)
   library(dplyr, warn.conflicts = FALSE)
 
-  print("init")
+  ParallelLogger::logDebug("init")
   model <- ReportDbModel(reportAppContext)
 
-  print("loaded model")
+  ParallelLogger::logDebug("loaded model")
   session$onSessionEnded(function() {
     writeLines("Closing database connection")
     model$closeConnection()
@@ -287,14 +287,14 @@ reportInstance <- function(input, output, session) {
 
   output$treatmentOutcomeStr <- renderText({
     s <- selectedExposureOutcome()
-    print("selected")
+    ParallelLogger::logDebug("selected")
     if (is.null(s)) {
       return("No cohorts selected")
     }
     return(paste("Exposure of", s$TARGET_COHORT_NAME, "for outcome of", s$OUTCOME_COHORT_NAME))
   })
 
-  print("init modules")
+  ParallelLogger::logDebug("init modules")
   # Create sub modules
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)

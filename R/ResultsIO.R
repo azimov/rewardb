@@ -1,13 +1,18 @@
+#' Generic function that creates a zip file of csvs that will be imported in to the reward postgres instance
 exportResults <- function(
   config,
   exportZipFile = "rewardb-export.zip",
   csvPattern = "*.csv",
-  tableNames = list()
+  tableNames = list(),
+  cdmVersion = NULL,
+  databaseId = NULL
 ) {
   # Collect all files and make a hash
   meta <- list()
   meta$hashList <- list()
   meta$tableNames <- tableNames
+  meta$cdmVersion <- cdmVersion
+  meta$databaseId <- databaseId
 
   exportFiles <- Sys.glob(file.path(config$exportPath, csvPattern))
 
@@ -68,5 +73,5 @@ importResultsFiles <- function(
 
 importResultsZip <- function(resultsZipPath, configFilePath="config/global-cfg.yml", unzipPath = "rb-import") {
   config <- loadGlobalConfig(configFilePath)
-  rewardb::importResultsFiles(config$connectionDetails, config$rewardbResultsSchema, resultsZipPath, unzipPath = unzipPath)
+  importResultsFiles(config$connectionDetails, config$rewardbResultsSchema, resultsZipPath, unzipPath = unzipPath)
 }

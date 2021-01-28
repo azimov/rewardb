@@ -4,6 +4,9 @@ connection <- DatabaseConnector::connect(connectionDetails = config$connectionDe
 
 # Set up a database with constructed cohorts etc
 buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
+# Add some extra scc settings
+addAnalysisSettingsJson(connection, config, settingsFilePath = system.file("tests", "testSCCSettings.json", package = "rewardb"))
+
 cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
@@ -35,7 +38,7 @@ test_that("Full data generation and export", {
   )
   expect_true(qdf$CNT[[1]] == 1)
 
-  generateSccResults(cdmConfigPath)
+  generateSccResults(cdmConfigPath, .getDbId = FALSE)
   importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug = TRUE)
   importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-2.zip", .debug = TRUE)
 
