@@ -227,7 +227,6 @@ getCalibratedOutcomes <- function(appContext, connection) {
   atlasResultSet <- positives %>%
     group_by(SOURCE_ID, OUTCOME_COHORT_ID) %>%
     group_modify(~computeCalibratedRows(.x, controlExposures[
-      controlExposures$OUTCOME_TYPE == 0 &
       controlExposures$OUTCOME_COHORT_ID == .x$OUTCOME_COHORT_ID[1] &
         controlExposures$SOURCE_ID == .x$SOURCE_ID[1],
     ], idCol = "TARGET_COHORT_ID"), .keep = TRUE)
