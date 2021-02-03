@@ -3,14 +3,17 @@ CONST_REFERENCE_TABLES <- c(
   "cohort_definition",
   "outcome_cohort_definition",
   "atlas_outcome_reference",
-  "atlas_concept_reference",
+  "atlas_outcome_concept",
+  "atlas_exposure_reference",
+  "atlas_exposure_concept",
   "custom_exposure",
   "custom_exposure_concept",
   "analysis_setting"
 )
 
 CONST_EXCLUDE_REF_COLS <- list(
-  "atlasOutcomeReference" = c("SQL_DEFINITION", "DEFINITION")
+  "atlasOutcomeReference" = c("SQL_DEFINITION", "DEFINITION"),
+  "atlasExposureReference" = c("SQL_DEFINITION", "DEFINITION")
 )
 
 #' Export Reference tables
@@ -76,7 +79,9 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
       cohort_definition = cdmConfig$tables$cohortDefinition,
       outcome_cohort_definition = cdmConfig$tables$outcomeCohortDefinition,
       atlas_outcome_reference = cdmConfig$tables$atlasOutcomeReference,
-      atlas_concept_reference = cdmConfig$tables$atlasConceptReference,
+      atlas_outcome_concept = cdmConfig$tables$atlasOutcomeConcept,
+      atlas_exposure_reference = cdmConfig$tables$atlasExposureReference,
+      atlas_exposure_concept = cdmConfig$tables$atlasExposureConcept,
       custom_exposure = cdmConfig$tables$customExposure,
       custom_exposure_concept = cdmConfig$tables$customExposureConcept,
       analysis_setting = cdmConfig$tables$analysisSetting
@@ -177,7 +182,7 @@ exportAtlasCohortRef <- function(
     outputTables <- c(
       "outcome_cohort_definition" = "SELECT * FROM @schema.outcome_cohort_definition WHERE cohort_definition_id IN (@cohort_definition_ids)",
       "atlas_outcome_reference" = "SELECT * FROM @schema.atlas_outcome_reference WHERE cohort_definition_id IN (@cohort_definition_ids)",
-      "atlas_concept_reference" = "SELECT * FROM @schema.atlas_concept_reference WHERE cohort_definition_id IN (@cohort_definition_ids)"
+      "atlas_outcome_concept" = "SELECT * FROM @schema.atlas_outcome_concept WHERE cohort_definition_id IN (@cohort_definition_ids)"
     )
 
     meta$tableNames <- names(outputTables)
@@ -219,7 +224,7 @@ importAtlasCohortReferencesZip <- function(cdmConfig, zipFilePath, exportPath) {
     inputTables <- c(
       "outcome_cohort_definition",
       "atlas_outcome_reference",
-      "atlas_concept_reference"
+      "atlas_outcome_concept"
     )
     fileList <- file.path(exportPath, paste0(inputTables, ".csv"))
     for (file in fileList) {

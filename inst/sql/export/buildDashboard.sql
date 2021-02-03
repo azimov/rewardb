@@ -121,7 +121,7 @@ SELECT
     DISTINCT
     cohort_definition_id as outcome_cohort_id,
     concept_id as condition_concept_id
-FROM @results_database_schema.atlas_concept_reference
+FROM @results_database_schema.atlas_outcome_concept
 {@outcome_cohort_ids_length} ? {WHERE cohort_definition_id in (@outcome_cohort_ids)};
 
 INSERT INTO @schema.target_exposure_class (

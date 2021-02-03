@@ -14,7 +14,7 @@ WITH outcome_cohort_concept AS (
     UNION
 
     SELECT COHORT_DEFINITION_ID as outcome_cohort_id, CONCEPT_ID as outcome_concept_id
-    FROM @schema.atlas_concept_reference
+    FROM @schema.atlas_outcome_concept
     {@outcome_cohort_ids != ''} ? {WHERE cohort_definition_id IN (@outcome_cohort_ids)}
 ),
 

@@ -10,11 +10,11 @@ buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
 cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
+insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
 
 conceptSetId <- 11933
 conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
 insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
-
 
 zipFilePath <- "rewardb-references.zip"
 refFolder <- "reference_test_folder"
@@ -53,6 +53,30 @@ test_that("Full data generation on CDM", {
   # Should only run the cohorts once!
   expect_true(initialCount == reCount)
 
+  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
+  sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
+  insertAtlasCohortRef(connection, config, 9999, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
+  exportReferenceTables(config)
+  importReferenceTables(cdmConfig, zipFilePath)
+
+  uncomputed <- getUncomputedAtlasCohorts(connection, cdmConfig, exposureCohorts = TRUE)
+
+  expect_true(9999 %in% uncomputed$ATLAS_ID)
+  expect_true(nrow(uncomputed) > 0)
+
+  createCohorts(connection, cdmConfig)
+
+    qdf <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    "SELECT count(*) as cohort_count FROM @schema.@cohort_table",
+    schema = cdmConfig$resultSchema,
+    cohort_table = cdmConfig$tables$cohort
+  )
+  reCount2 <- qdf$COHORT_COUNT[[1]]
+  # Should only run the cohorts once!
+  expect_true(reCount2 > reCount)
+
+
   print("Checking outcome cohorts")
   createOutcomeCohorts(connection, cdmConfig)
 
@@ -87,7 +111,7 @@ test_that("Full data generation on CDM", {
   exportReferenceTables(config)
   importReferenceTables(cdmConfig, zipFilePath)
 
-  uncomputed <- getUncomputedAtlasCohorts(connection, cdmConfig)
+  uncomputed <- getUncomputedAtlasCohorts(connection, cdmConfig, exposureCohorts = FALSE)
   
   expect_true(100 %in% uncomputed$ATLAS_ID)
   expect_true(nrow(uncomputed) > 0)
@@ -103,6 +127,7 @@ test_that("Full data generation on CDM", {
   reCount2 <- qdf$COHORT_COUNT[[1]]
   # Should only run the cohorts once!
   expect_true(initialCount < reCount2)
+
 })
 
 DatabaseConnector::disconnect(connection)

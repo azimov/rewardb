@@ -49,17 +49,34 @@ createCohorts <- function(connection, config, deleteExisting = FALSE) {
     do.call(DatabaseConnector::renderTranslateExecuteSql, customExposureOptions)
   }
 
+  computeAtlasCohorts(connection, config, exposureCohorts = TRUE)
 }
 
-getUncomputedAtlasCohorts <- function(connection, config) {
+#'
+#' @description
+#' Get cohorts that haven't been computed and return their references from file on disk
+#' SQL and JSON references are not stored in the CDM database's scratch schema
+#'
+getUncomputedAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
+
+  if (exposureCohorts) {
+    cohortTable <- config$tables$cohort
+    referenceTable <- config$tables$atlasExposureReference
+    definitionsFile <- "atlas_exposure_reference.csv"
+  } else {
+    cohortTable <- config$tables$outcomeCohort
+    referenceTable <- config$tables$atlasOutcomeReference
+    definitionsFile <- "atlas_outcome_reference.csv"
+  }
+
   # Get only null atlas cohorts
   atlaSql <- "
   SELECT aor.cohort_definition_id
-  FROM @reference_schema.@atlas_outcome_reference aor
+  FROM @reference_schema.@atlas_reference aor
   LEFT JOIN
     (
       SELECT DISTINCT cohort_definition_id
-      FROM @result_schema.@outcome_cohort_table
+      FROM @result_schema.@cohort_table
     ) oct on oct.cohort_definition_id = aor.cohort_definition_id
   WHERE oct.cohort_definition_id IS NULL
   "
@@ -68,11 +85,11 @@ getUncomputedAtlasCohorts <- function(connection, config) {
     atlaSql,
     reference_schema = config$referenceSchema,
     result_schema = config$resultSchema,
-    outcome_cohort_table = config$tables$outcomeCohort,
-    atlas_outcome_reference = config$tables$atlasOutcomeReference
+    cohort_table = cohortTable,
+    atlas_reference = referenceTable
   )
 
-  fullCohorts <- read.csv(file.path(config$referencePath, "atlas_outcome_reference.csv"))
+  fullCohorts <- read.csv(file.path(config$referencePath, definitionsFile))
   return(fullCohorts[fullCohorts$COHORT_DEFINITION_ID %in% atlasCohorts$COHORT_DEFINITION_ID,])
 }
 
@@ -148,11 +165,17 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
     }
   }
 
-  computeAtlasOutcomeCohorts(connection, config)
+  computeAtlasCohorts(connection, config)
 }
 
-computeAtlasOutcomeCohorts <- function(connection, config) {
-  atlasCohorts <- getUncomputedAtlasCohorts(connection, config)
+computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
+  atlasCohorts <- getUncomputedAtlasCohorts(connection, config, exposureCohorts = exposureCohorts)
+  if (exposureCohorts) {
+    cohortTable <- config$tables$cohort
+  } else {
+    cohortTable <- config$tables$outcomeCohort
+  }
+
   if (length(atlasCohorts)) {
     # Generate each cohort
     apply(atlasCohorts, 1, function(cohortReference) {
@@ -163,7 +186,7 @@ computeAtlasOutcomeCohorts <- function(connection, config) {
         cdm_database_schema = config$cdmSchema,
         vocabulary_database_schema = config$vocabularySchema,
         target_database_schema = config$resultSchema,
-        target_cohort_table = config$tables$outcomeCohort,
+        target_cohort_table = cohortTable,
         target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
       )
     })

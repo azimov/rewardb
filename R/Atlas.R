@@ -37,8 +37,8 @@ addPhenotypeLibrary <- function(connection,
 
       cohortId <- stringr::str_split(basename(jsonDefinition), ".json")[[1]][[1]]
 
-      cohortDefinition$name <- description[description$cohortId == cohortId, ]$cohortName[[1]]
-      cohortDefinition$description <- description[description$cohortId == cohortId, ]$logicDescription[[1]]
+      cohortDefinition$name <- description[description$cohortId == cohortId,]$cohortName[[1]]
+      cohortDefinition$description <- description[description$cohortId == cohortId,]$logicDescription[[1]]
       cohortDefinition$id <- cohortId
       cohortDefinition$expression <- RJSONIO::fromJSON(jsonDefinition)
 
@@ -58,11 +58,11 @@ addPhenotypeLibrary <- function(connection,
                            webApiUrl = urlRef,
                            cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
     },
-    error = function (error) {
-      ParallelLogger::logError("Failed to add ", jsonDefinition)
-      ParallelLogger::logError(error)
-      failures <- append(failures, jsonDefinition)
-    })
+      error = function(error) {
+        ParallelLogger::logError("Failed to add ", jsonDefinition)
+        ParallelLogger::logError(error)
+        failures <- append(failures, jsonDefinition)
+      })
   }
 
   if (length(failures)) {
@@ -82,23 +82,41 @@ insertAtlasCohortRef <- function(
   atlasId,
   webApiUrl = NULL,
   cohortDefinition = NULL,
-  sqlDefinition = NULL
+  sqlDefinition = NULL,
+  exposure = FALSE
 ) {
-
   if (is.null(webApiUrl)) {
     webApiUrl <- config$webApiUrl
   }
 
+  if (exposure) {
+    cohortTable <- "cohort_definition"
+    referenceTable <- "atlas_exposure_reference"
+    conceptTable <- "atlas_exposure_concept"
+    insertSql <- "INSERT INTO @schema.@cohort_table
+                            (cohort_definition_name, short_name, drug_conceptset_id, atc_flg, target_cohort, subgroup_cohort)
+                                     values ('@name', '@name', 99999999, -1, 0, 0) RETURNING cohort_definition_id"
+  } else {
+    cohortTable <- "outcome_cohort_definition"
+    referenceTable <- "atlas_outcome_reference"
+    conceptTable <- "atlas_outcome_concept"
+    insertSql <- "INSERT INTO @schema.@cohort_table
+                            (cohort_definition_name, short_name, conceptset_id, outcome_type)
+                                     values ('@name', '@name', 99999999, 2) RETURNING cohort_definition_id"
+  }
+
+
   ParallelLogger::logInfo(paste("Checking if cohort already exists", atlasId))
   count <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT COUNT(*) FROM @schema.atlas_outcome_reference
+    "SELECT COUNT(*) FROM @schema.@reference_table
         WHERE atlas_id = @atlas_id
         AND atlas_url = '@atlas_url'
         ",
     schema = config$rewardbResultsSchema,
     atlas_id = atlasId,
-    atlas_url = webApiUrl
+    atlas_url = webApiUrl,
+    reference_table = referenceTable
   )
 
   if (count == 0) {
@@ -116,11 +134,10 @@ insertAtlasCohortRef <- function(
     # Create reference and Get last insert as referent ID from sequence
     newEntry <- DatabaseConnector::renderTranslateQuerySql(
       connection,
-      sql = "INSERT INTO @schema.outcome_cohort_definition
-                            (cohort_definition_name, short_name, CONCEPTSET_ID, outcome_type)
-                                     values ('@name', '@name', 99999999, 2) RETURNING cohort_definition_id",
+      sql = insertSql,
       schema = config$rewardbResultsSchema,
-      name = gsub("'", "''", cohortDefinition$name)
+      name = gsub("'", "''", cohortDefinition$name),
+      cohort_table = cohortTable
     )
 
     cohortDefinitionId <- newEntry$COHORT_DEFINITION_ID[[1]]
@@ -130,7 +147,7 @@ insertAtlasCohortRef <- function(
 
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
-      sql = "INSERT INTO @schema.atlas_outcome_reference
+      sql = "INSERT INTO @schema.@reference_table
                             (cohort_definition_id, ATLAS_ID, atlas_url, definition, sql_definition)
                                      values (@cohort_definition_id, @atlas_id, '@atlas_url', '@definition', '@sql_definition')",
       schema = config$rewardbResultsSchema,
@@ -139,6 +156,7 @@ insertAtlasCohortRef <- function(
       atlas_url = gsub("'", "''", webApiUrl),
       definition = encodedFormDescription,
       sql_definition = encodedFormSql,
+      reference_table = referenceTable
     )
 
     ParallelLogger::logInfo(paste("inserting concept reference", atlasId))
@@ -147,18 +165,17 @@ insertAtlasCohortRef <- function(
       for (item in conceptSet$expression$items) {
         if (item$concept$DOMAIN_ID == "Condition") {
           results <- rbind(results, data.frame(
-            COHORT_DEFINITION_ID = cohortDefinitionId,
-            CONCEPT_ID = item$concept$CONCEPT_ID,
-            IS_EXCLUDED = as.integer(item$isExcluded),
-            INCLUDE_MAPPED = as.integer(item$includeMapped),
-            include_descendants = as.integer(item$includeDescendants)
-          )
+              COHORT_DEFINITION_ID = cohortDefinitionId,
+              CONCEPT_ID = item$concept$CONCEPT_ID,
+              IS_EXCLUDED = as.integer(item$isExcluded),
+              INCLUDE_MAPPED = as.integer(item$includeMapped),
+              include_descendants = as.integer(item$includeDescendants)
+            )
           )
         }
       }
     }
-    tableName <- paste0(config$rewardbResultsSchema, ".atlas_concept_reference")
-
+    tableName <- paste(config$rewardbResultsSchema, conceptTable, sep = ".")
     DatabaseConnector::dbAppendTable(connection, tableName, results)
   } else {
     ParallelLogger::logDebug(paste("COHORT", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))
@@ -170,19 +187,29 @@ insertAtlasCohortRef <- function(
 #' @param config rewardb global config
 #' @param atlasIds ids to remove from db
 #' @param dataSources specified data sources to remove entry from
-removeAtlasCohort <- function(connection, config, atlasId, webApiUrl = NULL) {
+removeAtlasCohort <- function(connection, config, atlasId, webApiUrl = NULL, exposure = FALSE) {
   if (is.null(webApiUrl)) {
     webApiUrl <- config$webApiUrl
   }
 
+  if (exposure) {
+    cohortTable <- "cohort_definition"
+    referenceTable <- "atlas_exposure_reference"
+  } else {
+    cohortTable <- "outcome_cohort_definition"
+    referenceTable <- "atlas_outcome_reference"
+  }
+
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
-    "DELETE FROM @schema.outcome_cohort_definition WHERE cohort_definition_id
-            IN ( SELECT cohort_definition_id FROM @schema.atlas_outcome_reference
+    "DELETE FROM @schema.@cohort_table WHERE cohort_definition_id
+            IN ( SELECT cohort_definition_id FROM @schema.@reference_table
             WHERE atlas_id = @atlas_id AND atlas_url = '@atlas_url');",
     schema = config$rewardbResultsSchema,
     atlas_id = atlasId,
-    atlas_url = webApiUrl
+    atlas_url = webApiUrl,
+    cohort_table = cohortTable,
+    reference_table = referenceTable
   )
 }
 

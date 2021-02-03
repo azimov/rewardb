@@ -2,9 +2,13 @@
 {DEFAULT @cohort_definition = 'cohort_definition'}
 {DEFAULT @outcome_cohort_definition = 'outcome_cohort_definition'}
 {DEFAULT @atlas_outcome_reference = 'atlas_outcome_reference'}
-{DEFAULT @atlas_concept_reference = 'atlas_concept_reference'}
+{DEFAULT @atlas_outcome_concept = 'atlas_outcome_concept'}
 {DEFAULT @custom_exposure = 'custom_exposure'}
 {DEFAULT @custom_exposure_concept = 'custom_exposure_concept'}
+
+{DEFAULT @atlas_exposure_reference = 'atlas_exposure_reference'}
+{DEFAULT @atlas_exposure_concept = 'atlas_exposure_concept'}
+
 {DEFAULT @analysis_setting = 'analysis_setting'}
 {DEFAULT @include_constraints = ''}
 
@@ -20,8 +24,8 @@ IF OBJECT_ID('@schema.@outcome_cohort_definition', 'U') IS NOT NULL
 IF OBJECT_ID('@schema.@atlas_outcome_reference', 'U') IS NOT NULL
 	DROP TABLE @schema.@atlas_outcome_reference CASCADE;
 
-IF OBJECT_ID('@schema.@atlas_concept_reference', 'U') IS NOT NULL
-	DROP TABLE @schema.@atlas_concept_reference CASCADE;
+IF OBJECT_ID('@schema.@atlas_outcome_concept', 'U') IS NOT NULL
+	DROP TABLE @schema.@atlas_outcome_concept CASCADE;
 
 IF OBJECT_ID('@schema.@custom_exposure', 'U') IS NOT NULL
 	DROP TABLE @schema.@custom_exposure CASCADE;
@@ -31,6 +35,12 @@ IF OBJECT_ID('@schema.@custom_exposure_concept', 'U') IS NOT NULL
 
 IF OBJECT_ID('@schema.@analysis_setting', 'U') IS NOT NULL
 	DROP TABLE @schema.@analysis_setting CASCADE;
+
+IF OBJECT_ID('@schema.@atlas_exposure_reference', 'U') IS NOT NULL
+	DROP TABLE @schema.@atlas_exposure_reference CASCADE;
+
+IF OBJECT_ID('@schema.@atlas_exposure_concept', 'U') IS NOT NULL
+	DROP TABLE @schema.@atlas_exposure_concept CASCADE;
 
 /* CONCEPT SET TABLE */
 create table @schema.@concept_set_definition
@@ -84,7 +94,7 @@ CREATE TABLE @schema.@atlas_outcome_reference (
 
 );
 
-CREATE TABLE @schema.@atlas_concept_reference (
+CREATE TABLE @schema.@atlas_outcome_concept (
     COHORT_DEFINITION_ID INT,
     CONCEPT_ID BIGINT,
     INCLUDE_DESCENDANTS INT,
@@ -95,6 +105,36 @@ CREATE TABLE @schema.@atlas_concept_reference (
     ,CONSTRAINT cohort_def
       FOREIGN KEY(COHORT_DEFINITION_ID)
 	    REFERENCES @schema.@outcome_cohort_definition(COHORT_DEFINITION_ID)
+	        ON DELETE CASCADE
+    }
+);
+
+CREATE TABLE @schema.@atlas_exposure_reference (
+    COHORT_DEFINITION_ID BIGINT,
+    ATLAS_ID BIGINT,
+    sql_definition text,
+    DEFINITION text, -- Stores sql used to generate the cohort
+    atlas_url varchar(1000) -- Base atlas url used to pull cohort
+    {@include_constraints != ''} ? {
+    ,CONSTRAINT cohort_def
+      FOREIGN KEY(COHORT_DEFINITION_ID)
+	    REFERENCES @schema.@cohort_definition(COHORT_DEFINITION_ID)
+	        ON DELETE CASCADE
+	}
+
+);
+
+CREATE TABLE @schema.@atlas_exposure_concept (
+    COHORT_DEFINITION_ID INT,
+    CONCEPT_ID BIGINT,
+    INCLUDE_DESCENDANTS INT,
+    IS_EXCLUDED INT,
+    INCLUDE_MAPPED INT
+
+    {@include_constraints != ''} ? {
+    ,CONSTRAINT cohort_def
+      FOREIGN KEY(COHORT_DEFINITION_ID)
+	    REFERENCES @schema.@cohort_definition(COHORT_DEFINITION_ID)
 	        ON DELETE CASCADE
     }
 );
