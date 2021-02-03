@@ -87,6 +87,21 @@ INSERT INTO @schema.target_concept (
  {@target_cohort_ids_length} ? {WHERE cohort_definition_id in (@target_cohort_ids)}
 ;
 
+INSERT INTO @schema.target_concept (
+    target_cohort_id,
+    concept_id,
+    is_excluded,
+    include_descendants
+)
+SELECT
+    DISTINCT
+    cohort_definition_id as target_cohort_id,
+    concept_id,
+    is_excluded,
+    include_descendants
+FROM @results_database_schema.atlas_exposure_concept
+{@target_cohort_ids_length} ? {WHERE cohort_definition_id in (@target_cohort_ids)};
+
 INSERT INTO @schema.outcome (
     outcome_cohort_id,
     type_id,

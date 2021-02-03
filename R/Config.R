@@ -44,7 +44,7 @@ getOutcomeCohortIds <- function (appContext, connection) {
 }
 
 getTargetCohortIds <- function (appContext, connection) {
-    if (!length(appContext$target_concept_ids) & !length(appContext$custom_exposure_ids)) {
+    if (!length(appContext$target_concept_ids) & !length(appContext$custom_exposure_ids) & !length(appContext$atlas_exposure_ids)) {
         return(NULL)
     }
 
@@ -52,6 +52,8 @@ getTargetCohortIds <- function (appContext, connection) {
     SELECT cohort_definition_id AS ID FROM @reference_schema.cohort_definition WHERE drug_conceptset_id IN (@concept_ids)
     UNION
     SELECT cohort_definition_id AS ID FROM @reference_schema.custom_exposure WHERE concept_set_id IN (@custom_exposure_ids)
+    UNION
+    SELECT cohort_definition_id AS ID FROM @reference_schema.atlas_exposure_reference WHERE atlas_id IN (@atlas_exposure_ids)
     "
     result <- DatabaseConnector::renderTranslateQuerySql(
       connection,
@@ -59,6 +61,7 @@ getTargetCohortIds <- function (appContext, connection) {
       reference_schema = appContext$globalConfig$rewardbResultsSchema,
       concept_ids = if (length(appContext$target_concept_ids)) appContext$target_concept_ids else "NULL",
       custom_exposure_ids = if (length(appContext$custom_exposure_ids)) appContext$custom_exposure_ids else "NULL",
+      atlas_exposure_ids = if (length(appContext$atlas_exposure_ids)) appContext$atlas_exposure_ids else "NULL",
     )
     return(result$ID)
 }

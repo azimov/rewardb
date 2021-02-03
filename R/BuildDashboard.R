@@ -122,7 +122,7 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
   appContext <- loadAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
 
-  logger <- .getLogger("dashboardLog.log")
+  logger <- .getLogger(paste0(appContext$short_name, "DashboardCreation.log"))
   tryCatch(
   {
     message("Creating schema")
