@@ -13,7 +13,10 @@ buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
 cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
-insertAtlasCohortRef(connection, config, 99999, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
+
+cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasExposureCohort19321.json", package = "rewardb"))
+sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort19321.sql", package = "rewardb"))
+insertAtlasCohortRef(connection, config, 19321, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
 
 conceptSetId <- 11933
 conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
