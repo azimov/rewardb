@@ -163,7 +163,7 @@ insertAtlasCohortRef <- function(
     results <- data.frame()
     for (conceptSet in cohortDefinition$expression$ConceptSets) {
       for (item in conceptSet$expression$items) {
-        if (item$concept$DOMAIN_ID == "Condition") {
+        if ((!exposure & item$concept$DOMAIN_ID == "Condition") | (exposure & item$concept$DOMAIN_ID == "Drug")) {
           results <- rbind(results, data.frame(
               COHORT_DEFINITION_ID = cohortDefinitionId,
               CONCEPT_ID = item$concept$CONCEPT_ID,
@@ -175,8 +175,13 @@ insertAtlasCohortRef <- function(
         }
       }
     }
-    tableName <- paste(config$rewardbResultsSchema, conceptTable, sep = ".")
-    DatabaseConnector::dbAppendTable(connection, tableName, results)
+    if (length(results)) {
+      tableName <- paste(config$rewardbResultsSchema, conceptTable, sep = ".")
+      DatabaseConnector::dbAppendTable(connection, tableName, results)
+    } else {
+      warning("No Condition (outcome cohort) or Drug (exposure) domain references, automated negative control selection will fail for this cohort")
+    }
+    
   } else {
     ParallelLogger::logDebug(paste("COHORT", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))
   }

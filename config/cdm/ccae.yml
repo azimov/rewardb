@@ -1,6 +1,6 @@
 sourceId: 11
 database: truven_ccae
-name: "Optum SES"
+name: "IBM CCAE"
 
 exportPath: "export_ccae"
 referencePath: "reference_files"

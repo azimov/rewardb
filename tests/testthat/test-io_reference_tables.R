@@ -15,7 +15,7 @@ sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", p
 insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
 cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasExposureCohort19321.json", package = "rewardb"))
-sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort19321.sql", package = "rewardb"))
+sqlDefinition <- readr::read_file(system.file("tests", "atlasExposureCohort19321.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 19321, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
 
 conceptSetId <- 11933

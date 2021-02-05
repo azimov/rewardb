@@ -105,7 +105,7 @@ generateSccResults <- function(
                       exportZipFile = exportZipFile,
                       tableNames = tableNames,
                       csvPattern = paste0("rb-results-", config$database, "-aid-", analysisId, "*.csv"),
-                      cdmVerison = cdmVersion,
+                      cdmVersion = cdmVersion,
                       databaseId = dbId)
       })
     }
@@ -119,12 +119,13 @@ generateSccResults <- function(
 oneOffSccResults <- function(
   config,
   configId,
-  outcomeCohortIds,
+  outcomeCohortIds = NULL,
   targetCohortIds = NULL,
   .generateCohortStats = TRUE,
   .getDbId = TRUE,
   logFileName = "rbDataBuild.log"
 ) {
+
   logger <- .getLogger(logFileName)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   cdmVersion <- getCdmVersion(connection, config)
@@ -163,7 +164,7 @@ oneOffSccResults <- function(
           tableNames[[basename(statsFileName)]] <- "time_on_treatment"
         }
 
-        exportZipFile <- paste0(configId, "-oneoff-reward-scc-results-aid-", config$database, "-", analysisId, ".zip")
+        exportZipFile <- paste0(configId, "-reward-scc-results-aid-", config$database, "-", analysisId, ".zip")
         ParallelLogger::logInfo("Exporting results zip to ", exportZipFile)
         exportResults(config,
                       exportZipFile = exportZipFile,
