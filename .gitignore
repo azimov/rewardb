@@ -15,3 +15,8 @@ rbDataBuild.log
 /tests/testthat/export/
 /tests/testthat/rb-import/
 /tests/testthat/rewardb-export.zip
+/renv/activate.R
+/tests/testthat/test.log
+/tests/testthat/dashboardLog.log
+/tests/testthat/reference_files/*.csv
+/tests/testthat/export-*.zip
