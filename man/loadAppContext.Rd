@@ -2,14 +2,16 @@
 % Please edit documentation in R/Config.R
 \name{loadAppContext}
 \alias{loadAppContext}
-\title{Loads the application configuration and creates an application object}
+\title{Loads Application Context}
 \usage{
 loadAppContext(configPath, globalConfigPath, .env = .GlobalEnv)
 }
 \arguments{
 \item{configPath}{is a yaml file for the application configuration}
 
-\item{create}{the database connections for this app - defaults to true}
+\item{globalConfigPath}{path to global yaml}
+
+\item{.env}{environment to load variable in to}
 }
 \description{
 By default, loads the database connections in to this object

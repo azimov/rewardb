@@ -2,13 +2,17 @@
 % Please edit documentation in R/Config.R
 \name{.setDefaultOptions}
 \alias{.setDefaultOptions}
-\title{Sets the default options to the app context.
-Will be more widely used in future iterations}
+\title{Set default list option}
 \usage{
 .setDefaultOptions(config, defaults)
 }
 \arguments{
 \item{config}{list of configuration options}
+
+\item{defaults}{list of default values to check and set if null}
+}
+\value{
+updated list
 }
 \description{
 Sets the default options to the app context.

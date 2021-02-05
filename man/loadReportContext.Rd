@@ -2,7 +2,7 @@
 % Please edit documentation in R/Config.R
 \name{loadReportContext}
 \alias{loadReportContext}
-\title{Loads the report application configuration and creates an application object}
+\title{Load report application context}
 \usage{
 loadReportContext(
   globalConfigPath,
@@ -13,6 +13,12 @@ loadReportContext(
 }
 \arguments{
 \item{globalConfigPath}{is a yaml file for the application configuratione}
+
+\item{.env}{environment to load variable in to}
+
+\item{exposureId}{exposure cohort id}
+
+\item{outcomeId}{outcome cohort id}
 }
 \description{
 By default, loads the database connections in to this object

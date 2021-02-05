@@ -1,4 +1,10 @@
+#' @title
+#' Get password securely
+#' @description
 #' Gets password from user. Ignored if REWARD_B_PASSWORD system env variable is set (e.g. in .Rprofile)
+#' @param envVar environment variable to store password in
+#' @param promt text prompt when loading askpass prompt
+#' @returns string from prompt or environment variable
 getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the reward database password") {
     pass <- Sys.getenv(envVar)
     if (pass == "") {
@@ -10,9 +16,14 @@ getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the 
     return(pass)
 }
 
+#' @title
+#' Set default list option
+#' @description
 #' Sets the default options to the app context.
 #' Will be more widely used in future iterations
 #' @param config list of configuration options
+#' @param defaults list of default values to check and set if null
+#' @returns updated list
 .setDefaultOptions <- function (config, defaults) {
     for(n in names(defaults)) {
       if(is.null(config[[n]])) {
@@ -23,6 +34,13 @@ getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the 
     return(config)
 }
 
+#' @title
+#' getOutcomeCohortIds
+#' @description
+#' Get cohorts used on dashboard
+#' @param appContext application context
+#' @param defaults list of default values to check and set if null
+#' @returns updated list
 getOutcomeCohortIds <- function (appContext, connection) {
     if (!length(appContext$outcome_concept_ids) & !length(appContext$custom_outcome_cohort_ids)) {
         return(NULL)
@@ -43,6 +61,13 @@ getOutcomeCohortIds <- function (appContext, connection) {
     return(result$ID)
 }
 
+#' @title
+#' getTargetCohortIds
+#' @description
+#' Get cohorts used on dashboard
+#' @param appContext application context
+#' @param defaults list of default values to check and set if null
+#' @returns updated list
 getTargetCohortIds <- function (appContext, connection) {
     if (!length(appContext$target_concept_ids) & !length(appContext$custom_exposure_ids) & !length(appContext$atlas_exposure_ids)) {
         return(NULL)
@@ -67,13 +92,15 @@ getTargetCohortIds <- function (appContext, connection) {
 }
 
 
-#' Loads the application configuration and creates an application object
+#' @title
+#' Loads Application Context
 #' @description
 #' By default, loads the database connections in to this object
 #' loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
 #' The idea is to allow shared configuration settings between the web app and any data processing tools
 #' @param configPath is a yaml file for the application configuration
-#' @param create the database connections for this app - defaults to true
+#' @param globalConfigPath path to global yaml
+#' @param .env environment to load variable in to
 #' @keywords appContext
 #' @export
 #' @examples
@@ -105,12 +132,16 @@ loadGlobalConfig <- function(globalConfigPath) {
     return(config)
 }
 
-#' Loads the report application configuration and creates an application object
+#' @title
+#' Load report application context
 #' @description
 #' By default, loads the database connections in to this object
 #' loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
 #' The idea is to allow shared configuration settings between the web app and any data processing tools
 #' @param globalConfigPath is a yaml file for the application configuratione
+#' @param .env environment to load variable in to
+#' @param exposureId exposure cohort id
+#' @param outcomeId outcome cohort id
 #' @keywords reportAppContext
 #' @export
 #' @examples
@@ -124,6 +155,13 @@ loadReportContext <- function(globalConfigPath, .env = .GlobalEnv, exposureId = 
     .env$reportAppContext <- reportAppContext
 }
 
+#' @title
+#' load cdm config object
+#' @description
+#' Loads config and prompt user for db password
+#' Password can be set in envrionment variable passwordEnvironmentVariable of yaml file
+#' @param cdmConfigPath cdmConfigPath
+#' @export
 loadCdmConfig <- function(cdmConfigPath) {
     defaults <- list(
         passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",
