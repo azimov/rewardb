@@ -22,11 +22,21 @@
 #' getCdmVersion
 #' @description
 #' Get the cdm version used (e.g. 5.3.1)
+#' @returns
+#' String containing version number or Unknown
 #' @param connection DatabaseConnector connection
 #' @param config reward cdmConfig loaded with cdmConfig
-getCdmVersion <- function(connection, config) {
+getCdmVersion <- function(cdmConfig) {
+  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
   sql <- "SELECT cdm_version FROM @cdm_schema.cdm_source"
-  DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = config$cdmSchema)[[1]]
+  version <- "Unknown"
+  tryCatch({
+    version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema)[[1]]
+  },
+  error = ParallelLogger::logError
+  )
+  DatabaseConnector::disconnect(connection)
+  return(version)
 }
 
 #' getCdmVersion
@@ -69,7 +79,7 @@ getZippedSccResults <- function(
   .generateCohortStats = TRUE
 ) {
 
-  cdmVersion <- getCdmVersion(connection, config)
+  cdmVersion <- getCdmVersion(config)
   dbId <- getDatabaseId(config)
 
   if (!dir.exists(configId)) {
