@@ -108,12 +108,12 @@ WITH treatment_times as (
             SELECT subject_id AS person_id,
                 ot.@outcome_id AS outcome_id,
                 ot.@outcome_start_date AS outcome_date,
-                ROW_NUMBER() OVER (PARTITION BY ot.@outcome_person_id, ot.@outcome_id  ORDER BY ot.@outcome_start_date) AS rn1
+                {@first_outcome_only} ? {,ROW_NUMBER() OVER (PARTITION BY ot.@outcome_person_id, ot.@outcome_id ORDER BY ot.@outcome_start_date) AS rn1}
             FROM
                 @outcome_database_schema.@outcome_table ot
             {@outcome_ids != ''} ? { WHERE ot.@outcome_id IN (@outcome_ids) }
         ) raw_outcomes
-  	    WHERE rn1 = 1
+  	    {@first_outcome_only} ? {	WHERE rn1 = 1}
     ) outcomes
     ON risk_windows.person_id = outcomes.person_id
 ),
