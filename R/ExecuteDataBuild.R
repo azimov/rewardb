@@ -96,7 +96,7 @@ getZippedSccResults <- function(
       tableNames[[basename(dataFileName)]] <- "scc_result"
 
       if (.generateCohortStats) {
-        timeOnTreatment <- getAverageTimeOnTreatment(connection, config, analysisSettings, analysisId = analysisId, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
+        timeOnTreatment <- getAverageTimeOnTreatment(config, analysisSettings, analysisId = analysisId, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
         statsFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, "-time_on_treatment_stats", ".csv"))
         suppressWarnings({ write.csv(timeOnTreatment, statsFileName, na = "", row.names = FALSE, fileEncoding = "ascii") })
         tableNames[[basename(statsFileName)]] <- "time_on_treatment"

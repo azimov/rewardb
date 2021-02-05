@@ -1,7 +1,7 @@
 # Compute the average time on treatement for cohort pairs
-getAverageTimeOnTreatment <- function(connection, config, analysisOptions = list(), analysisId = NULL, targetCohortIds = NULL, outcomeCohortIds = NULL) {
+getAverageTimeOnTreatment <- function(config, analysisOptions = list(), analysisId = NULL, targetCohortIds = NULL, outcomeCohortIds = NULL) {
   args <- list(
-    connection = connection,
+    connectionDetails = config$connectionDetails,
     cdmDatabaseSchema = config$cdmSchema,
     outcomeDatabaseSchema = config$resultSchema,
     exposureDatabaseSchema = config$resultSchema,
@@ -11,7 +11,7 @@ getAverageTimeOnTreatment <- function(connection, config, analysisOptions = list
     outcomeTable = config$tables$outcomeCohort
   )
 
-  results <- do.call(getSccStats, c(args, analysisOptions))
+  results <- do.call(getSelfControlledCohortExposureStats, c(args, analysisOptions))
   results$source_id <- config$sourceId
   results$analysis_id <- as.integer(analysisId)
   colnames(results)[colnames(results) == "EXPOSURE_ID"] <- "TARGET_COHORT_ID"
@@ -20,36 +20,128 @@ getAverageTimeOnTreatment <- function(connection, config, analysisOptions = list
   return(results)
 }
 
+#' @title
+#' Get Self-Controlled cohort stats
+#' @description
+#' Generate time to outcome and time on treatment statistics.
+#' Takes the same parameters as the self-controlled cohort call
+#'
+#' @param connectionDetails                An R object of type \code{connectionDetails} created using
+#'                                         the function \code{createConnectionDetails} in the
+#'                                         \code{DatabaseConnector} package.
+#' @param cdmDatabaseSchema                Name of database schema that contains the OMOP CDM and
+#'                                         vocabulary.
+#' @param cdmVersion                       Define the OMOP CDM version used: currently support "4" and
+#'                                         "5".
+#' @param oracleTempSchema                 For Oracle only: the name of the database schema where you
+#'                                         want all temporary tables to be managed. Requires
+#'                                         create/insert permissions to this database.
+#' @param exposureIds                      A vector containing the drug_concept_ids or
+#'                                         cohort_definition_ids of the exposures of interest. If empty,
+#'                                         all exposures in the exposure table will be included.
+#' @param outcomeIds                       The condition_concept_ids or cohort_definition_ids of the
+#'                                         outcomes of interest. If empty, all the outcomes in the
+#'                                         outcome table will be included.
+#' @param exposureDatabaseSchema           The name of the database schema that is the location where
+#'                                         the exposure data used to define the exposure cohorts is
+#'                                         available. If exposureTable = DRUG_ERA,
+#'                                         exposureDatabaseSchema is not used by assumed to be
+#'                                         cdmSchema.  Requires read permissions to this database.
+#' @param exposureTable                    The tablename that contains the exposure cohorts.  If
+#'                                         exposureTable <> DRUG_ERA, then expectation is exposureTable
+#'                                         has format of COHORT table: cohort_concept_id, SUBJECT_ID,
+#'                                         COHORT_START_DATE, COHORT_END_DATE.
+#' @param outcomeDatabaseSchema            The name of the database schema that is the location where
+#'                                         the data used to define the outcome cohorts is available. If
+#'                                         exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
+#'                                         used by assumed to be cdmSchema.  Requires read permissions
+#'                                         to this database.
+#' @param outcomeTable                     The tablename that contains the outcome cohorts.  If
+#'                                         outcomeTable <> CONDITION_OCCURRENCE, then expectation is
+#'                                         outcomeTable has format of COHORT table:
+#'                                         COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+#'                                         COHORT_END_DATE.
+#' @param firstExposureOnly                If TRUE, only use first occurrence of each drug concept idgetSccStats
+#'                                         for each person
+#' @param firstOutcomeOnly                 If TRUE, only use first occurrence of each condition concept
+#'                                         id for each person.
+#' @param minAge                           Integer for minimum allowable age.
+#' @param maxAge                           Integer for maximum allowable age.
+#' @param studyStartDate                   Date for minimum allowable data for index exposure. Date
+#'                                         format is 'yyyymmdd'.
+#' @param studyEndDate                     Date for maximum allowable data for index exposure. Date
+#'                                         format is 'yyyymmdd'.
+#' @param addLengthOfExposureExposed       If TRUE, use the duration from drugEraStart -> drugEraEnd as
+#'                                         part of timeAtRisk.
+#' @param riskWindowStartExposed           Integer of days to add to drugEraStart for start of
+#'                                         timeAtRisk (0 to include index date, 1 to start the day
+#'                                         after).
+#' @param riskWindowEndExposed             Additional window to add to end of exposure period (if
+#'                                         addLengthOfExposureExposed = TRUE, then add to exposure end
+#'                                         date, else add to exposure start date).
+#' @param addLengthOfExposureUnexposed     If TRUE, use the duration from exposure start -> exposure
+#'                                         end as part of timeAtRisk looking back before exposure
+#'                                         start.
+#' @param riskWindowEndUnexposed           Integer of days to add to exposure start for end of
+#'                                         timeAtRisk (0 to include index date, -1 to end the day
+#'                                         before).
+#' @param riskWindowStartUnexposed         Additional window to add to start of exposure period (if
+#'                                         addLengthOfExposureUnexposed = TRUE, then add to exposure
+#'                                         end date, else add to exposure start date).
+#' @param hasFullTimeAtRisk                If TRUE, restrict to people who have full time-at-risk
+#'                                         exposed and unexposed.
+#' @param washoutPeriod                    Integer to define required time observed before exposure
+#'                                         start.
+#' @param followupPeriod                   Integer to define required time observed after exposure
+#'                                         start.
+#' @param computeThreads                   Number of parallel threads for computing IRRs with exact
+#'                                         confidence intervals.
+#'
+#' @return
+#' A data frame  containing the results of the analysis.
+#' @examples
+#' \dontrun{
+#' connectionDetails <- createConnectionDetails(dbms = "sql server",
+#'                                              server = "RNDUSRDHIT07.jnj.com")
+#' sccResult <- getSelfControlledCohortExposureStats(connectionDetails,
+#'                                      cdmDatabaseSchema = "cdm_truven_mdcr.dbo",
+#'                                      exposureIds = c(767410, 1314924, 907879),
+#'                                      outcomeIds = 444382,
+#'                                      outcomeTable = "condition_era")
+#' }
+#' @export
+getSelfControlledCohortExposureStats <- function(connectionDetails,
+                                                 cdmDatabaseSchema,
+                                                 exposureIds,
+                                                 outcomeIds,
+                                                 outcomeDatabaseSchema,
+                                                 exposureDatabaseSchema,
+                                                 outcomeTable = "condition_era",
+                                                 exposureTable = "drug_era",
+                                                 oracleTempSchema = NULL,
+                                                 firstExposureOnly = TRUE,
+                                                 firstOutcomeOnly = TRUE,
+                                                 minAge = "",
+                                                 maxAge = "",
+                                                 studyStartDate = "",
+                                                 studyEndDate = "",
+                                                 addLengthOfExposureExposed = TRUE,
+                                                 riskWindowStartExposed = 1,
+                                                 riskWindowEndExposed = 1,
+                                                 addLengthOfExposureUnexposed = TRUE,
+                                                 riskWindowEndUnexposed = -1,
+                                                 riskWindowStartUnexposed = -1,
+                                                 hasFullTimeAtRisk = TRUE,
+                                                 washoutPeriod = 0,
+                                                 followupPeriod = 0) {
 
-getSccStats <- function(connection,
-                        cdmDatabaseSchema,
-                        exposureIds,
-                        outcomeIds,
-                        outcomeDatabaseSchema,
-                        exposureDatabaseSchema,
-                        outcomeTable = "condition_era",
-                        exposureTable = "drug_era",
-                        oracleTempSchema = NULL,
-                        firstExposureOnly = TRUE,
-                        firstOutcomeOnly = TRUE,
-                        minAge = "",
-                        maxAge = "",
-                        studyStartDate = "",
-                        studyEndDate = "",
-                        addLengthOfExposureExposed = TRUE,
-                        riskWindowStartExposed = 1,
-                        riskWindowEndExposed = 1,
-                        addLengthOfExposureUnexposed = TRUE,
-                        riskWindowEndUnexposed = -1,
-                        riskWindowStartUnexposed = -1,
-                        hasFullTimeAtRisk = TRUE,
-                        washoutPeriod = 0,
-                        followupPeriod = 0) {
+
   if (riskWindowEndExposed < riskWindowStartExposed && !addLengthOfExposureExposed)
     stop("Risk window end (exposed) should be on or after risk window start")
   if (riskWindowEndUnexposed < riskWindowStartUnexposed && !addLengthOfExposureUnexposed)
     stop("Risk window end (unexposed) should be on or after risk window start")
 
+  start <- Sys.time()
   exposureTable <- tolower(exposureTable)
   outcomeTable <- tolower(outcomeTable)
   if (exposureTable == "drug_era") {
@@ -85,10 +177,26 @@ getSccStats <- function(connection,
     outcomePersonId <- "subject_id"
   }
 
+  # Check if connection already open:
+  if (is.null(connectionDetails$conn)) {
+    conn <- DatabaseConnector::connect(connectionDetails)
+  } else {
+    conn <- connectionDetails$conn
+  }
+
   ParallelLogger::logInfo("Retrieving stats from database")
+
+  if (length(outcomeIds)) {
+    DatabaseConnector::insertTable(conn, "tempdb..#scc_outcome_ids", data.frame(outcome_id = outcomeIds))
+  }
+
+  if (length(exposureIds)) {
+    DatabaseConnector::insertTable(conn, "tempdb..#scc_exposure_ids", data.frame(exposure_id = exposureIds))
+  }
+
   sql <- SqlRender::readSql(system.file("sql/sql_server", "averageTimeOnTreatment.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
-                                                   connection = connection,
+                                                   connection = conn,
                                                    sql = sql,
                                                    oracleTempSchema = oracleTempSchema,
                                                    cdm_database_schema = cdmDatabaseSchema,
@@ -121,8 +229,15 @@ getSccStats <- function(connection,
                                                    washout_window = washoutPeriod,
                                                    followup_window = followupPeriod)
 
-  results <- DatabaseConnector::renderTranslateQuerySql(connection = connection, "SELECT * FROM #results;")
-  DatabaseConnector::renderTranslateExecuteSql(connection = connection, "TRUNCATE TABLE #results; DROP TABLE #results;")
+  results <- DatabaseConnector::renderTranslateQuerySql(connection = conn, "SELECT * FROM #results;")
+  DatabaseConnector::renderTranslateExecuteSql(connection = conn, "TRUNCATE TABLE #results; DROP TABLE #results;")
+
+  if (is.null(connectionDetails$conn)) {
+    DatabaseConnector::disconnect(conn)
+  }
+
+  delta <- Sys.time() - start
+  ParallelLogger::logInfo(paste("Computing SCC statistics took", signif(delta, 3), attr(delta, "units")))
 
   return(results)
 }
