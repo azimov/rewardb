@@ -1,3 +1,9 @@
+#' @title
+#' Create Dashboard Schema
+#' @description
+#' Creates postgres db dashboard schema for study
+#' @param appContext application context loaded from yaml
+#' @param connection DatabaseConnector connection
 createDashSchema <- function(appContext, connection) {
   DatabaseConnector::executeSql(connection, paste("DROP SCHEMA IF EXISTS", appContext$short_name, "CASCADE;"))
   DatabaseConnector::executeSql(connection, paste("CREATE SCHEMA ", appContext$short_name))
@@ -28,10 +34,12 @@ createDashSchema <- function(appContext, connection) {
   )
 }
 
-#'
-#' ing a CEM source finds any evidence related to conditions and exposures
+#' @title
+#' Add CEM based associations
+#' @description
 #' This is used for the automated construction of negative control sets and the indication labels
-#' @param appContext rewardb app context
+#' @param appContext application context loaded from yaml
+#' @param connection DatabaseConnector connection to cdm
 addCemEvidence <- function(appContext, connection) {
   library(dplyr)
   evidenceConcepts <- getStudyControls(
@@ -54,6 +62,10 @@ addCemEvidence <- function(appContext, connection) {
   }
 }
 
+#' @title
+#' meta analysis
+#' @description
+#' compute meta-analysis across data sources provided in table
 #' Perform meta-analysis on data sources
 #' @param table data.frame
 #' @return data.frame - results of meta analysis
@@ -88,8 +100,12 @@ metaAnalysis <- function(table) {
   return(row)
 }
 
-#' Runs and saves metanalayis on data
-#' @param appContext
+#' @title
+#' compute meta analysis
+#' @description
+#' Runs and saves metanalayis on data, uploads back to db
+#' @param appContext application context loaded from yaml
+#' @param connection DatabaseConnector connection to cdm
 computeMetaAnalysis <- function(appContext, connection) {
   library(dplyr, warn.conflicts = FALSE)
   fullResults <- DatabaseConnector::renderTranslateQuerySql(
@@ -111,11 +127,14 @@ computeMetaAnalysis <- function(appContext, connection) {
   pgCopyDataFrame(connectionDetails = appContext$connectionDetails, results, appContext$short_name, "result")
 }
 
-
+#' @title
+#' Build dashboard from config file
+#' @description
 #' Builds a rewardb dashboard for all exposures for subset outcomes or all outcomes for subset exposures
 #' Requires the rewardb results to be generated already.
 #' This exports the data to a db backend and allows the config file to be used to run the shiny dashboard
 #' @param filePath - path to a yaml configuration file used
+#' @param globalConfigPath path to global reward config containing postgres db connection details
 #' @param performCalibration - use empirical calibration package to compute adjusted p values, effect estimates and confidence intervals
 #' @export
 buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE) {

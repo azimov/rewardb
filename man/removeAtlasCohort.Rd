@@ -2,14 +2,22 @@
 % Please edit documentation in R/Atlas.R
 \name{removeAtlasCohort}
 \alias{removeAtlasCohort}
-\title{Removes atlas entries from the cdm store}
+\title{Insert atlas cohort ref to postgres db}
 \usage{
-removeAtlasCohort(connection, config, atlasId, webApiUrl = NULL)
+removeAtlasCohort(
+  connection,
+  config,
+  atlasId,
+  webApiUrl = NULL,
+  exposure = FALSE
+)
 }
 \arguments{
 \item{connection}{DatabaseConnector::connection to cdm}
 
 \item{config}{rewardb global config}
+
+\item{exposure}{is an exposure cohort or not}
 
 \item{atlasIds}{ids to remove from db}
 

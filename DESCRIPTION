@@ -1,9 +1,10 @@
 Package: rewardb
 Title: REWARD-B
-Version: 0.0.1
+Version: 0.1.0
+Encoding: UTF-8
 Authors@R: person("James", "Gilbert", email = "jgilber2@its.jnj.com",
                   role = c("aut", "cre"))
-Description: Package for REal-World Assessment and Research of Drug Benefits (REWARD-B) from observational health data
+Description: Package for REal-World Assessment and Research of Drug Performance from observational health data
 Depends: R (>= 3.5.0)
 License: Copyright Janssen Research & Development 2020 all rights reserved
 Imports:
@@ -26,4 +27,4 @@ Suggests:
     foreach,
     meta,
     testthat
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.0

@@ -1,3 +1,4 @@
+#' @title
 #' Build postgres schema
 #' @description
 #' Build the reward database schema for postgres instance from scratch
@@ -6,6 +7,7 @@
 #' @param configFilePath path to global reward config
 #' @param buildPhenotypeLibrary optionally add the entire phenotype library github R package
 #' @param generatePlSql If building the phenotype library, generate the SQL from the github defintion or not (if false this assumes the git defintion works)
+#' @export
 buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE, generatePlSql = TRUE) {
   config <- loadGlobalConfig(configFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)

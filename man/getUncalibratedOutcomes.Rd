@@ -2,15 +2,16 @@
 % Please edit documentation in R/Calibration.R
 \name{getUncalibratedOutcomes}
 \alias{getUncalibratedOutcomes}
-\title{get outcomes that are not calibrated
-param appContext rewardb app context}
+\title{Get uncalibrated outcomes}
 \usage{
 getUncalibratedOutcomes(appContext)
+}
+\arguments{
+\item{appContext}{rewardb app context}
 }
 \value{
 data.frame of uncalibrated results from databases
 }
 \description{
 get outcomes that are not calibrated
-param appContext rewardb app context
 }

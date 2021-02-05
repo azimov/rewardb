@@ -1,4 +1,13 @@
-# Compute the average time on treatement for cohort pairs
+#' @title
+#' Get Self-Controlled cohort stats
+#' @description
+#' compute average time on treatement and average time to outcome
+#' @param config reward cdm config object
+#' @param analysisOptions arguments for SCC
+#' @param analysisId Id for storage in returned datafame
+#' @param targetCohortIds target cohort ids
+#' @param outcomeCohortIds outcome cohort ids
+#' @return data.frame of stats mapped for reward db
 getAverageTimeOnTreatment <- function(config, analysisOptions = list(), analysisId = NULL, targetCohortIds = NULL, outcomeCohortIds = NULL) {
   args <- list(
     connectionDetails = config$connectionDetails,

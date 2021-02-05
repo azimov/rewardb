@@ -1,9 +1,13 @@
 CONST_META_FILE_NAME <- "rb-meta.json"
-#'
+
+#' @title
+#' Unzip and verify results zip with meta-data json
 #' @description
 #' Used to unzip and check all files in a zip folder with meta data file containing md5 hashes at time of creation
 #' Used by both results generation and reference files
-#'
+#' @param exportZipFilePath zip file to inflate
+#' @param unzipPath path to create
+#' @param overwrite overwrite any existing
 unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   ParallelLogger::logInfo("Inflating zip archive")
   if (!dir.exists(unzipPath)) {

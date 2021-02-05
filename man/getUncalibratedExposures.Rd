@@ -2,7 +2,7 @@
 % Please edit documentation in R/Calibration.R
 \name{getUncalibratedExposures}
 \alias{getUncalibratedExposures}
-\title{get exposures that are not calibrated}
+\title{Get uncalibrated exposures}
 \usage{
 getUncalibratedExposures(appContext)
 }

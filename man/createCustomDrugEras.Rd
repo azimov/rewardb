@@ -2,15 +2,15 @@
 % Please edit documentation in R/BuildCohorts.R
 \name{createCustomDrugEras}
 \alias{createCustomDrugEras}
-\title{create the custom drug eras, these are for drugs with nonstandard eras (e.g. where doeses aren't picked up by
-repeat perscriptions). Could be something like a vaccine where exposed time is non trivial.}
+\title{Create custom drug eras}
 \usage{
 createCustomDrugEras(configPath)
 }
 \arguments{
-\item{connection}{DatabaseConnector connection to cdm}
+\item{configPath}{path to cdm config}
 }
 \description{
 create the custom drug eras, these are for drugs with nonstandard eras (e.g. where doeses aren't picked up by
 repeat perscriptions). Could be something like a vaccine where exposed time is non trivial.
+deprecated It is now best to use atlas cohort definitions, will be removed in future version
 }

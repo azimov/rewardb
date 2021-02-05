@@ -2,15 +2,18 @@
 % Please edit documentation in R/BuildCohorts.R
 \name{createOutcomeCohorts}
 \alias{createOutcomeCohorts}
-\title{Create outcome cohorts in the CDM - this function can take a very very long time}
+\title{Create outcome cohorts}
 \usage{
 createOutcomeCohorts(connection, config, deleteExisting = FALSE)
 }
 \arguments{
 \item{connection}{DatabaseConnector connection to cdm}
 
-\item{dataSources}{dataSources to run cohort on}
+\item{config}{cdm config}
+
+\item{deleteExisting}{remove existing data}
 }
 \description{
 Create outcome cohorts in the CDM - this function can take a very very long time
+Does not compute if results already exist in cohort tables
 }

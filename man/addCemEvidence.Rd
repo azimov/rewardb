@@ -2,15 +2,15 @@
 % Please edit documentation in R/BuildDashboard.R
 \name{addCemEvidence}
 \alias{addCemEvidence}
-\title{ing a CEM source finds any evidence related to conditions and exposures
-This is used for the automated construction of negative control sets and the indication labels}
+\title{Add CEM based associations}
 \usage{
 addCemEvidence(appContext, connection)
 }
 \arguments{
-\item{appContext}{rewardb app context}
+\item{appContext}{application context loaded from yaml}
+
+\item{connection}{DatabaseConnector connection to cdm}
 }
 \description{
-ing a CEM source finds any evidence related to conditions and exposures
 This is used for the automated construction of negative control sets and the indication labels
 }

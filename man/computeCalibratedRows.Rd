@@ -2,7 +2,7 @@
 % Please edit documentation in R/Calibration.R
 \name{computeCalibratedRows}
 \alias{computeCalibratedRows}
-\title{Actual calibration is performed here in a dplyr friendly way}
+\title{Compute calibrated rows}
 \usage{
 computeCalibratedRows(positives, negatives, idCol, calibrationType = 1)
 }
@@ -12,6 +12,8 @@ computeCalibratedRows(positives, negatives, idCol, calibrationType = 1)
 \item{negatives}{these are the negative control cohort results}
 
 \item{idCol}{- either target_cohort_id or outcome_cohort_id, this function is used in p}
+
+\item{calibrationType}{- value stored in calibrated column of table}
 }
 \value{
 data.frame

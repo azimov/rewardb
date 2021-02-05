@@ -16,9 +16,13 @@ CONST_EXCLUDE_REF_COLS <- list(
   "atlasExposureReference" = c("SQL_DEFINITION", "DEFINITION")
 )
 
+#' @title
 #' Export Reference tables
 #' @description
 #' Takes created reference tables (cohort definitions) from central rewardb and exports them to a zipped csv file
+#' @param config global reward config
+#' @param exportPath path to export files to before zipping
+#' @param exportZipPath resulting zip files
 exportReferenceTables <- function(
   config,
   exportPath = tempdir(),
@@ -61,9 +65,13 @@ exportReferenceTables <- function(
   options(scipen = scipen)
 }
 
-#'
+#' @title
+#' Import reference tables
 #' @description
 #' Note that this always overwrites the existing reference tables stored in the database
+#' @param cdmConfig cdmConfig object
+#' @param zipFilePath zip file path
+#' @param usePgCopy Use postgre copy function (not included in database connector)
 importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
   unzipAndVerify(zipFilePath, cdmConfig$referencePath, TRUE)
   connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
@@ -145,8 +153,10 @@ registerCdm <- function(connection, globalConfig, cdmConfig) {
   }
 }
 
+#' @title
+#' exportAtlasCohortRef
+#' @description
 #' Exports atlas cohort references to a zip file for import in to an already existing db
-#' #TODO
 #' @param connection DatabaseConnector::connection to postgres
 #' @param config rewardb global config
 #' @param atlasIds ids to atlas cohort to pull down

@@ -2,11 +2,14 @@ strQueryWrap <- function(vec) {
   paste0("'", vec, "'", sep = "")
 }
 
+#' @title
+#' Dashboard instance
+#' @description
 #' Requires a server appContext instance to be loaded in environment see scoping of launchDashboard
 #' This can be obtained with rewardb::loadAppContext(...)
 #' @param input shiny input object
 #' @param output shiny output object
-#' @param session
+#' @param session shiny session
 dashboardInstance <- function(input, output, session) {
   library(shiny, warn.conflicts = FALSE)
   library(shinyWidgets, warn.conflicts = FALSE)
@@ -212,10 +215,11 @@ dashboardInstance <- function(input, output, session) {
 
 }
 
+#' @title
 #' Launch the REWARD Shiny app dashboard
-#' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
-#' @details
+#' @description
 #' Launches a Shiny app for a given configuration file
+#' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
 #' @export
 launchDashboard <- function(appConfigPath, globalConfigPath) {
   e <- environment()
@@ -223,11 +227,15 @@ launchDashboard <- function(appConfigPath, globalConfigPath) {
   shiny::shinyApp(server = dashboardInstance, dashboardUi, enableBookmarking = "url")
 }
 
+#' @title
+#' reportInstance
+#' @description
 #' Requires a server appContext instance to be loaded in environment see scoping of launchDashboard
 #' This can be obtained with rewardb::loadAppContext(...)
+#' UNDER DEVELOPMENT
 #' @param input shiny input object
 #' @param output shiny output object
-#' @param session
+#' @param session shiny session object
 reportInstance <- function(input, output, session) {
   library(shiny, warn.conflicts = FALSE)
   library(shinyWidgets, warn.conflicts = FALSE)
@@ -300,6 +308,14 @@ reportInstance <- function(input, output, session) {
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
 }
 
+#' @title
+#' Launch the REWARD Shiny app report
+#' @description
+#' Launches a Shiny app for a given configuration file
+#' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
+#' @param exposureId exposure cohort id
+#' @param outcomeId outcome cohort id
+#' @export
 launchReport <- function(globalConfigPath, exposureId = NULL, outcomeId = NULL) {
   e <- environment()
   e$reportAppContext <- loadReportContext(globalConfigPath, exposureId = exposureId, outcomeId = outcomeId)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Calibration.R
 \name{getExposureControls}
 \alias{getExposureControls}
-\title{Returns a set of specified negative controls for input outcome cohorts}
+\title{Get exposure controls}
 \usage{
 getExposureControls(appContext, connection, minCohortSize = 10)
 }
@@ -12,8 +12,6 @@ getExposureControls(appContext, connection, minCohortSize = 10)
 \item{connection}{DatabaseConnector connection to postgres rewardb instance}
 
 \item{minCohortSize}{smaller cohorts are not generally used for calibration as rr values tend to be extremes}
-
-\item{outcomeCohortIds}{cohorts to get negative controls for}
 }
 \value{
 data.frame of negative control exposures for specified outcomes

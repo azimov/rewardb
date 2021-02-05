@@ -1,3 +1,6 @@
+#' @title
+#' Forest plot
+#' @description
 #' Create a forest plot
 #' @param table data.frame with columns RR, LB_95, UB_95
 #' @return ggplot plot
@@ -26,6 +29,9 @@ forestPlot <- function(table) {
   return(plot)
 }
 
+#' @title
+#' Get Meta Analysis Data
+#' @description
 #' Peform meta analysis on a dataframe of elements and return row (e.g. to be appended with rbind
 #' @param table expected data.frame containing fielsds: T_AT_RISK, T_PT, T_CASES, C_AT_RISK, C_PT, C_CASES, IRR
 getMetaAnalysisData <- function(table) {
@@ -58,7 +64,12 @@ getMetaAnalysisData <- function(table) {
   return(row)
 }
 
-
+#' @title
+#' Box Plot Distribution
+#' @description
+#' Create a boxplot
+#' @param data data.frame
+#' @return ggplot plot
 boxPlotDist <- function(data) {
   plot <- ggplot2::ggplot(data,
                           ggplot2::aes(x = .data$SOURCE_NAME,

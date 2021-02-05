@@ -2,15 +2,18 @@
 % Please edit documentation in R/BuildCohorts.R
 \name{createCohorts}
 \alias{createCohorts}
-\title{Create exposures cohorts in the CDM - this function can take a long time}
+\title{Create exposure cohorts}
 \usage{
 createCohorts(connection, config, deleteExisting = FALSE)
 }
 \arguments{
 \item{connection}{DatabaseConnector connection to cdm}
 
-\item{dataSources}{dataSources to run cohort on}
+\item{config}{cdm config}
+
+\item{deleteExisting}{delete any existing computed cohorts}
 }
 \description{
-Create exposures cohorts in the CDM - this function can take a long time
+Create all the exposure cohorts on a CDM
+Note, will not recompute if they already exist
 }

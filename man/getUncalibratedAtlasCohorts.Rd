@@ -2,7 +2,7 @@
 % Please edit documentation in R/Calibration.R
 \name{getUncalibratedAtlasCohorts}
 \alias{getUncalibratedAtlasCohorts}
-\title{Get atlas cohorts results pre-calibration}
+\title{Get uncalibrated Atlas cohorts}
 \usage{
 getUncalibratedAtlasCohorts(appContext)
 }

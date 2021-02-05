@@ -1,7 +1,11 @@
-#' Create exposures cohorts in the CDM - this function can take a long time
+#' @title
+#' Create exposure cohorts
+#' @description
+#' Create all the exposure cohorts on a CDM
+#' Note, will not recompute if they already exist
 #' @param connection DatabaseConnector connection to cdm
-#' @param config
-#' @param dataSources dataSources to run cohort on
+#' @param config cdm config
+#' @param deleteExisting delete any existing computed cohorts
 createCohorts <- function(connection, config, deleteExisting = FALSE) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createCohortTable.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
@@ -52,11 +56,14 @@ createCohorts <- function(connection, config, deleteExisting = FALSE) {
   computeAtlasCohorts(connection, config, exposureCohorts = TRUE)
 }
 
-#'
+#' @title
+#' get Uncomputed Atlas Cohorts
 #' @description
 #' Get cohorts that haven't been computed and return their references from file on disk
 #' SQL and JSON references are not stored in the CDM database's scratch schema
-#'
+#' @param connection connection
+#' @param config cdmConfig
+#' @param exposureCohorts get exposures or not
 getUncomputedAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
 
   if (exposureCohorts) {
@@ -93,10 +100,14 @@ getUncomputedAtlasCohorts <- function(connection, config, exposureCohorts = FALS
   return(fullCohorts[fullCohorts$COHORT_DEFINITION_ID %in% atlasCohorts$COHORT_DEFINITION_ID,])
 }
 
+#' @title
+#' Create outcome cohorts
+#' @description
 #' Create outcome cohorts in the CDM - this function can take a very very long time
+#' Does not compute if results already exist in cohort tables
 #' @param connection DatabaseConnector connection to cdm
-#' @param config
-#' @param dataSources dataSources to run cohort on
+#' @param config cdm config
+#' @param deleteExisting remove existing data
 createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
 
   ParallelLogger::logInfo("Creating concept ancestor grouping and table")
@@ -168,6 +179,13 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
   computeAtlasCohorts(connection, config)
 }
 
+#' @title
+#' Compute Atlas cohorts
+#' @description
+#' Computes sql cohorts against the CDM
+#' @param connection DatabaseConnector connection to cdm
+#' @param config cdmConfig
+#' @param exposureCohorts get exposures or not
 computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
   atlasCohorts <- getUncomputedAtlasCohorts(connection, config, exposureCohorts = exposureCohorts)
   if (exposureCohorts) {
@@ -193,10 +211,13 @@ computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
   }
 }
 
+#' @title
+#' Create custom drug eras
+#' @description
 #' create the custom drug eras, these are for drugs with nonstandard eras (e.g. where doeses aren't picked up by
 #' repeat perscriptions). Could be something like a vaccine where exposed time is non trivial.
-#' @param connection DatabaseConnector connection to cdm
-#' @param
+#' deprecated It is now best to use atlas cohort definitions, will be removed in future version
+#' @param configPath path to cdm config
 createCustomDrugEras <- function(configPath) {
 
   config <- rewardb::loadCdmConfig(configPath)
@@ -216,7 +237,5 @@ createCustomDrugEras <- function(configPath) {
     return(NULL)
   }
   )
-
   DatabaseConnector::disconnect(connection)
-
 }

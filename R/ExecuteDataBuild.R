@@ -1,4 +1,5 @@
-#' .getLogger
+#' @title
+#' get logger
 #' @description
 #' Get the logger and set where the log file is stored.
 #' @param logFileName path to log file
@@ -19,7 +20,8 @@
   return(logger)
 }
 
-#' getCdmVersion
+#' @title
+#' Get Cdm Version
 #' @description
 #' Get the cdm version used (e.g. 5.3.1)
 #' @returns
@@ -58,7 +60,8 @@ getDatabaseId <- function(cdmConfig) {
   return(version)
 }
 
-#' getZippedSccResults
+#' @title
+#' Get Zipped Scc Results
 #' @description
 #' Get zip files for scc
 #' Partial reward execution with a subset of targets or outcomes. If both are null this will generate SCC results for all
@@ -130,7 +133,8 @@ getZippedSccResults <- function(
   return(zipFiles)
 }
 
-#' Full rewardb execution
+#' @title
+#' Full reward execution
 #' @description
 #' Run a full execution of the rewardb pipeline on the CDM sets specified
 #' This creates a set of reference tables, creates exposure cohorts, creates outcome cohorts, generates summary tables
@@ -185,6 +189,7 @@ generateSccResults <- function(
   return(zipFiles)
 }
 
+#' @title
 #' oneOffSccResults
 #' @description
 #' Partial reward execution with a subset of targets or outcomes. If both are null this will generate SCC results for all

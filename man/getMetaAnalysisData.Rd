@@ -2,7 +2,7 @@
 % Please edit documentation in R/Plots.R
 \name{getMetaAnalysisData}
 \alias{getMetaAnalysisData}
-\title{Peform meta analysis on a dataframe of elements and return row (e.g. to be appended with rbind}
+\title{Get Meta Analysis Data}
 \usage{
 getMetaAnalysisData(table)
 }

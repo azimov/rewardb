@@ -2,7 +2,7 @@
 % Please edit documentation in R/BuildDashboard.R
 \name{metaAnalysis}
 \alias{metaAnalysis}
-\title{Perform meta-analysis on data sources}
+\title{meta analysis}
 \usage{
 metaAnalysis(table)
 }
@@ -13,5 +13,6 @@ metaAnalysis(table)
 data.frame - results of meta analysis
 }
 \description{
+compute meta-analysis across data sources provided in table
 Perform meta-analysis on data sources
 }

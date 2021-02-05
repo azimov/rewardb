@@ -1,7 +1,10 @@
+#' @title
+#' Get outcome controls
+#' @description
 #' Returns a set of specified negative controls for input target cohorts
 #' @param appContext rewardb app context
 #' @param connection DatabaseConnector connection to postgres rewardb instance
-#' @param outcomeCohortIds cohorts to get negative controls for
+#' @param targetIds cohorts to get negative controls for
 #' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
 #' @return data.frame of negative control exposures for specified outcomes
 getOutcomeControls <- function(appContext, connection, targetIds = NULL, outcomeTypes = c(0,1), minCohortSize = 10) {
@@ -29,10 +32,12 @@ getOutcomeControls <- function(appContext, connection, targetIds = NULL, outcome
   return(negatives)
 }
 
+#' @title
+#' Get exposure controls
+#' @description
 #' Returns a set of specified negative controls for input outcome cohorts
 #' @param appContext rewardb app context
 #' @param connection DatabaseConnector connection to postgres rewardb instance
-#' @param outcomeCohortIds cohorts to get negative controls for
 #' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
 #' @return data.frame of negative control exposures for specified outcomes
 getExposureControls <- function(appContext, connection, minCohortSize = 10) {
@@ -57,8 +62,11 @@ getExposureControls <- function(appContext, connection, minCohortSize = 10) {
   return(negatives)
 }
 
+#' @title
+#' Get uncalibrated outcomes
+#' @description
 #' get outcomes that are not calibrated
-#' param appContext rewardb app context
+#' @param appContext rewardb app context
 #' @return data.frame of uncalibrated results from databases
 getUncalibratedOutcomes <- function(appContext) {
   sql <- "
@@ -73,6 +81,9 @@ getUncalibratedOutcomes <- function(appContext) {
   return(positives)
 }
 
+#' @title
+#' Get uncalibrated exposures
+#' @description
 #' get exposures that are not calibrated
 #' @param appContext rewardb app context
 #' @return data.frame of uncalibrated results from databases
@@ -90,6 +101,9 @@ getUncalibratedExposures <- function(appContext) {
   return(positives)
 }
 
+#' @title
+#' Get uncalibrated Atlas cohorts
+#' @description
 #' Get atlas cohorts results pre-calibration
 #' @param appContext rewardb app context
 #' @return data.frame of uncalibrated results from databases
@@ -107,10 +121,14 @@ getUncalibratedAtlasCohorts <- function(appContext) {
   return(positives)
 }
 
+#' @title
+#' Compute calibrated rows
+#' @description
 #' Actual calibration is performed here in a dplyr friendly way
 #' @param positives this is the cohort set that should be calibrated
 #' @param negatives these are the negative control cohort results
 #' @param idCol - either target_cohort_id or outcome_cohort_id, this function is used in p
+#' @param calibrationType - value stored in calibrated column of table
 #' @return data.frame
 computeCalibratedRows <- function(positives, negatives, idCol, calibrationType = 1) {
   nullDist <- EmpiricalCalibration::fitNull(logRr = log(negatives$RR), seLogRr = negatives$SE_LOG_RR)
@@ -148,6 +166,12 @@ computeCalibratedRows <- function(positives, negatives, idCol, calibrationType =
 }
 
 
+#' @title
+#' Get calibrated Atlas cohorts
+#' @description
+#' Compute calibtation on atlas targets
+#' @param appContext rewardb app context
+#' @return data.frame of uncalibrated results
 getCalibratedAtlasTargets <- function(appContext, connection) {
   # Apply to atlas cohorts
   controlOutcomes <- getOutcomeControls(appContext, connection, outcomeTypes = 1)
@@ -167,6 +191,12 @@ getCalibratedAtlasTargets <- function(appContext, connection) {
   return(resultSetAtlas)
 }
 
+#' @title
+#' Get calibrated generic, not atlas cohorts
+#' @description
+#' Compute calibtation on atlas targets
+#' @param appContext rewardb app context
+#' @return data.frame of calibrated results
 getCalibratedGenericTargets <- function(appContext, connection) {
    # get negative control data rows
   controlOutcomes <- getOutcomeControls(appContext, connection)
@@ -189,17 +219,24 @@ getCalibratedGenericTargets <- function(appContext, connection) {
   return(resultSet)
 }
 
-
+#' @title
+#' Get all calibrated target cohorts
+#' @description
 #' Compute the calibrated results for cohort targets
 #' Requires negative control cohorts to be set
 #' @param appContext takes a rewardb application context
+#' @return data.frame of calibrated results
 getCalibratedTargets <- function(appContext, connection) {
   return(rbind(getCalibratedAtlasTargets(appContext, connection), getCalibratedGenericTargets(appContext, connection)))
 }
 
+#' @title
+#' Get all calibrated outcome cohorts
+#' @description
 #' Compute the calibrated results for cohort outcomes
 #' Requires negative control cohorts to be set
 #' @param appContext takes a rewardb application context
+#' @return data.frame of calibrated results
 getCalibratedOutcomes <- function(appContext, connection) {
   # get negative control data rows
   controlExposures <- getExposureControls(appContext, connection)

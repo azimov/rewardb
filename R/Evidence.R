@@ -1,9 +1,15 @@
-#'
+#' @title
+#' Get mapped controlls
+#' @description
+#' Gets mapped concepts from cem schema
 #' @param connection DatabaseConnector connection
-#' @targetCohortTable condition concept ids
-#' @outcomeCohortTable drug concept ids
-#' @schema CEM schema
-#' @summaryTable schma for summary of CEM results - probably matrix summary
+#' @param targetCohortIds condition cohort
+#' @param outcomeCohortIds drug cohort ids
+#' @param schema dashboard schema
+#' @param cemSchema CEM schema
+#' @param vocabularySchema vocabulary schema
+#' @param summaryTable schma for summary of CEM results - probably matrix summary
+#' @return data.frame of negative controlls mapped by concept
 getMappedControls <- function(
   connection,
   targetCohortIds,
@@ -26,7 +32,17 @@ getMappedControls <- function(
   )
 }
 
+#' @title
+#' Get mapped controlls
+#' @description
 #' From  outcome and target cohort ids, construct tables that contain their concept ids
+#' @param connection DatabaseConnector connection
+#' @param targetCohortIds condition concept ids
+#' @param outcomeCohortIds drug concept ids
+#' @param schema dashboard schema
+#' @param cemSchema CEM schema
+#' @param vocabularySchema vocabulary schema
+#' @return data.frame of negative controlls mapped by concept
 getStudyControls <- function(
   connection,
   schema,

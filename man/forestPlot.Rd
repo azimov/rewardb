@@ -2,7 +2,7 @@
 % Please edit documentation in R/Plots.R
 \name{forestPlot}
 \alias{forestPlot}
-\title{Create a forest plot}
+\title{Forest plot}
 \usage{
 forestPlot(table)
 }

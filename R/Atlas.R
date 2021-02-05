@@ -1,3 +1,4 @@
+#' @title
 #' add Phenotype Library Cohorts
 #' @description
 #' Add the OHDSI phenotype library references to the db.
@@ -7,7 +8,10 @@
 #' @param config Global rewardb config object
 #' @param libraryRepo Path to the repository. If local = TRUE path to custom git should be set here. Otherwise must specify a github repo
 #' @param ref git ref to use. Defaults to master. could be a specific git tag or branch
-#' @param local
+#' @param local local copy or github
+#' @param packageName name of package to install
+#' @param removeExisting remove existing pacakge of the same name
+#' @param generateSql use web api to generate sql from source
 addPhenotypeLibrary <- function(connection,
                                 config,
                                 libraryRepo = "OHDSI/PhenotypeLibrary",
@@ -70,12 +74,19 @@ addPhenotypeLibrary <- function(connection,
   }
 }
 
+#' @title
+#' Insert atlas cohort ref to postgres db
+#' @description
 #' Adds atlas cohort to db reference, from web api
 #' Inserts name/id in to custom cohort table
-#' Maps condition concepts of interest, any desecdants or if they're excluded from the cohort
+#' Maps condition and drug concepts of interest, any desecdants or if they're excluded from the cohort
+#' Concepts not from drug domain are ignored for exposures, concepts not from condition domain are ignored for outcomes
 #' @param connection DatabaseConnector::connection to postgres
 #' @param config rewardb global config
 #' @param atlasId id to atlas cohort to pull down
+#' @param exposure If exposure, cohort is treated as an exposure, drug domains are captured
+#'
+#' @export
 insertAtlasCohortRef <- function(
   connection,
   config,
@@ -187,11 +198,17 @@ insertAtlasCohortRef <- function(
   }
 }
 
+#' @title
+#' Insert atlas cohort ref to postgres db
+#' @description
 #' Removes atlas entries from the cdm store
 #' @param connection DatabaseConnector::connection to cdm
 #' @param config rewardb global config
 #' @param atlasIds ids to remove from db
 #' @param dataSources specified data sources to remove entry from
+#' @param exposure is an exposure cohort or not
+#'
+#' @export
 removeAtlasCohort <- function(connection, config, atlasId, webApiUrl = NULL, exposure = FALSE) {
   if (is.null(webApiUrl)) {
     webApiUrl <- config$webApiUrl
@@ -218,13 +235,21 @@ removeAtlasCohort <- function(connection, config, atlasId, webApiUrl = NULL, exp
   )
 }
 
+#' @title
+#' Insert atlas concept set to postgres db for a custom exposure cohort
+#' @description
 #' Adds atlas concept set to db reference, from web api
 #' Inserts name/id in to custom cohort table
 #' Maps condition concepts of interest, any desecdants or if they're excluded from the cohort
+#' deprecated
+#' Use expsosure = TRUE with atlas cohort definitions and add them will be removed in future version
 #' @param connection DatabaseConnector::connection to cdm
 #' @param config rewardb global config
 #' @param conceptSetId id to atlas cohort to pull down
 #' @param conceptSetDefinition webApi response object
+#' @param cohortName Name to give cohort
+#' @param .warnNonIngredients Warn for non ingredients
+#' @param webApiUrl URL of webAPI service (if different from specified in config)
 insertCustomExposureRef <- function(
   connection,
   config,
@@ -302,11 +327,16 @@ insertCustomExposureRef <- function(
   }
 }
 
+#' @title
+#' Remove exposure conceptset cohort
+#' @description
 #' Removes atlas entries from the cdm store
+#' deprecated
+#' Use expsosure = TRUE with atlas cohort definitions and add them will be removed in future version
 #' @param connection DatabaseConnector::connection to cdm
 #' @param config rewardb global config
 #' @param conceptSetId ids to remove from db
-#' @param dataSources specified data sources to remove entry from
+#' @param webApiUrl URL of WebApi resource (or other source if not imported via web api)
 removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiUrl = NULL) {
   if (is.null(webApiUrl)) {
     webApiUrl <- config$webApiUrl
@@ -323,7 +353,14 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
   )
 }
 
-
+#' @title
+#' Generate scc results for a one off atlas cohort (added after a full results run)
+#' @description
+#' Removes atlas entries from the cdm store
+#' @param cdmConfig cdmConfig object loaded with loadCdmConfig
+#' @param zipFilePath path to ouputed zipFile
+#' @param configId String configuration id
+#' @export
 sccOneOffAtlasCohort <- function(cdmConfig, zipFilePath, configId) {
   exportIdFolder <- paste("export-", configId)
   dir.create(exportIdFolder)
