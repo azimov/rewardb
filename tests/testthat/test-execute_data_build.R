@@ -43,9 +43,10 @@ test_that("Full data generation and export", {
   )
   expect_true(qdf$CNT[[1]] == 1)
 
-  generateSccResults(cdmConfigPath, .getDbId = FALSE)
-  importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug = TRUE)
-  importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-2.zip", .debug = TRUE)
+  zips <- generateSccResults(cdmConfigPath)
+  for (zip in zips) {
+    importResultsFiles(config$connectionDetails, "test", zip, .debug = TRUE)
+  }
 
   # Assert that the tables contain data
   qdf <- DatabaseConnector::renderTranslateQuerySql(
@@ -58,23 +59,7 @@ test_that("Full data generation and export", {
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT count(*) as results_count FROM @results_schema.scc_result WHERE ANALYSIS_ID = 2",
-    results_schema = config$rewardbResultsSchema
-  )
-
-  expect_true(qdf$RESULTS_COUNT[[1]] > 0)
-
-  qdf <- DatabaseConnector::renderTranslateQuerySql(
-    connection,
     "SELECT count(*) as results_count FROM @results_schema.time_on_treatment WHERE ANALYSIS_ID = 1",
-    results_schema = config$rewardbResultsSchema
-  )
-  # Outcome cohorts should be created
-  expect_true(qdf$RESULTS_COUNT[[1]] > 0)
-
-  qdf <- DatabaseConnector::renderTranslateQuerySql(
-    connection,
-    "SELECT count(*) as results_count FROM @results_schema.time_on_treatment WHERE ANALYSIS_ID = 2",
     results_schema = config$rewardbResultsSchema
   )
   # Outcome cohorts should be created

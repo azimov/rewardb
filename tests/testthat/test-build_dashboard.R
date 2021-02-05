@@ -31,8 +31,10 @@ exportReferenceTables(config)
 print("import refs")
 importReferenceTables(cdmConfig, zipFilePath)
 print("scc results")
-generateSccResults(cdmConfigPath, .getDbId = FALSE)
-importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug=TRUE)
+zips <- generateSccResults(cdmConfigPath)
+for (zip in zips) {
+  importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug=TRUE)
+}
 
 appContextFile <- system.file("tests", "test.dashboard.yml", package = "rewardb")
 
@@ -48,7 +50,7 @@ test_that("Data model utilitiy queries", {
   expect_true(length(df)  > 1)
 
   count <- model$countQuery("SELECT * FROM @schema.result")
-  expect_true(length(df) == count)
+  expect_true(nrow(df) == count)
   expect_true(model$tableExists("result"))
   expect_false(model$tableExists("foo_table"))
   model$closeConnection()

@@ -1,3 +1,11 @@
+#' Build postgres schema
+#' @description
+#' Build the reward database schema for postgres instance from scratch
+#' This will also require a CEM schema to be built which uses the OHDSI Common Evidence Model to generate the matrix
+#' of known assocations for OMOP Standard Vocabulary terms. This is required for generating any stats that require negative controls
+#' @param configFilePath path to global reward config
+#' @param buildPhenotypeLibrary optionally add the entire phenotype library github R package
+#' @param generatePlSql If building the phenotype library, generate the SQL from the github defintion or not (if false this assumes the git defintion works)
 buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE, generatePlSql = TRUE) {
   config <- loadGlobalConfig(configFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)

@@ -18,5 +18,5 @@ getType0OutcomeIds <- function(cdmConfig) {
 for (cdmConfigPath in cdmConfigPaths) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   outcomeIds <- getType0OutcomeIds(cdmConfig)
-  oneOffSccResults(cdmConfig, paste0("type0_outcome_cohorts", cdmConfig$database), outcomeIds, .getDbId = FALSE)
+  oneOffSccResults(cdmConfigPath, paste0("type0_outcome_cohorts", cdmConfig$database), outcomeCohortIds = outcomeIds)
 }

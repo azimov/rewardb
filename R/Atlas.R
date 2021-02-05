@@ -357,6 +357,6 @@ sccOneOffAtlasCohort <- function(cdmConfig, zipFilePath, configId) {
     })
   }
 
-  oneOffSccResults(cdmConfig, configId, atlasCohorts$COHORT_DEFINITION_ID, .getDbId = FALSE)
+  oneOffSccResults(cdmConfig, configId, atlasCohorts$COHORT_DEFINITION_ID)
 
 }

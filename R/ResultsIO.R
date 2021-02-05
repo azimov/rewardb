@@ -29,6 +29,7 @@ exportResults <- function(
   jsonlite::write_json(meta, metaDataFilename)
 
   zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)
+
 }
 
 getMetaDt <- function(unzipPath) {

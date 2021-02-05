@@ -107,7 +107,7 @@ WITH treatment_times as (
         FROM (
             SELECT subject_id AS person_id,
                 ot.@outcome_id AS outcome_id,
-                ot.@outcome_start_date AS outcome_date,
+                ot.@outcome_start_date AS outcome_date
                 {@first_outcome_only} ? {,ROW_NUMBER() OVER (PARTITION BY ot.@outcome_person_id, ot.@outcome_id ORDER BY ot.@outcome_start_date) AS rn1}
             FROM
                 @outcome_database_schema.@outcome_table ot
