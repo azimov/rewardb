@@ -160,40 +160,54 @@ registerCdm <- function(connection, globalConfig, cdmConfig) {
 #' @param connection DatabaseConnector::connection to postgres
 #' @param config rewardb global config
 #' @param atlasIds ids to atlas cohort to pull down
+#' @param exposure exposure cohort
 exportAtlasCohortRef <- function(
   config,
   atlasIds,
   exportZipFile,
   atlasUrl = NULL,
-  exportPath = tempdir()
+  exportPath = tempdir(),
+  exposure = FALSE
 ) {
   scipen <- getOption("scipen")
+
+  if (exposure) {
+    referenceTable <- "atlas_exposure_reference"
+    outputTables <- c(
+      "cohort_definition" = "SELECT * FROM @schema.cohort_definition WHERE cohort_definition_id IN (@cohort_definition_ids)",
+      "atlas_exposure_reference" = "SELECT * FROM @schema.atlas_exposure_reference WHERE cohort_definition_id IN (@cohort_definition_ids)",
+      "atlas_exposure_concept" = "SELECT * FROM @schema.atlas_exposure_concept WHERE cohort_definition_id IN (@cohort_definition_ids)"
+    )
+  } else {
+    referenceTable <- "atlas_outcome_reference"
+    outputTables <- c(
+      "outcome_cohort_definition" = "SELECT * FROM @schema.outcome_cohort_definition WHERE cohort_definition_id IN (@cohort_definition_ids)",
+      "atlas_outcome_reference" = "SELECT * FROM @schema.atlas_outcome_reference WHERE cohort_definition_id IN (@cohort_definition_ids)",
+      "atlas_outcome_concept" = "SELECT * FROM @schema.atlas_outcome_concept WHERE cohort_definition_id IN (@cohort_definition_ids)"
+    )
+  }
+
   options(scipen = 999)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   tryCatch(
   {
     # Get the cohort definition ids for these atlas cohorts
     sql <- "
-      SELECT cohort_definition_id FROM @schema.atlas_outcome_reference
+      SELECT cohort_definition_id FROM @schema.@reference_table
       WHERE atlas_id IN (@atlas_ids)
       {@atlas_url != ''} ? {AND atlas_url = '@atlas_url'}
     "
-    cohortDefinitionIds <- renderTranslateQuerySql(connection,
-                                                   sql,
-                                                   schema = config$rewardbResultsSchema,
-                                                   atlas_ids = atlasIds,
-                                                   atlas_url = atlasUrl)$COHORT_DEFINITION_ID
+    cohortDefinitionIds <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                                      sql,
+                                                                      reference_table = referenceTable,
+                                                                      schema = config$rewardbResultsSchema,
+                                                                      atlas_ids = atlasIds,
+                                                                      atlas_url = atlasUrl)$COHORT_DEFINITION_ID
 
 
     # Collect all files and make a hash
     meta <- list(atlasIds = atlasIds, cohortDefinitionIds = cohortDefinitionIds)
     meta$hashList <- list()
-
-    outputTables <- c(
-      "outcome_cohort_definition" = "SELECT * FROM @schema.outcome_cohort_definition WHERE cohort_definition_id IN (@cohort_definition_ids)",
-      "atlas_outcome_reference" = "SELECT * FROM @schema.atlas_outcome_reference WHERE cohort_definition_id IN (@cohort_definition_ids)",
-      "atlas_outcome_concept" = "SELECT * FROM @schema.atlas_outcome_concept WHERE cohort_definition_id IN (@cohort_definition_ids)"
-    )
 
     meta$tableNames <- names(outputTables)
 
@@ -224,18 +238,26 @@ exportAtlasCohortRef <- function(
   options(scipen = scipen)
 }
 
-importAtlasCohortReferencesZip <- function(cdmConfig, zipFilePath, exportPath) {
+importAtlasCohortReferencesZip <- function(cdmConfig, zipFilePath, exportPath, exposure = FALSE) {
   unzipAndVerify(zipFilePath, exportPath, TRUE)
   connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
 
-  tryCatch(
-  {
-
+  if (exposure) {
+    inputTables <- c(
+      "cohort_definition",
+      "atlas_exposure_reference",
+      "atlas_exposure_concept"
+    )
+  } else {
     inputTables <- c(
       "outcome_cohort_definition",
       "atlas_outcome_reference",
       "atlas_outcome_concept"
     )
+  }
+
+  tryCatch(
+  {
     fileList <- file.path(exportPath, paste0(inputTables, ".csv"))
     for (file in fileList) {
       camelName <- SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])
@@ -249,7 +271,7 @@ importAtlasCohortReferencesZip <- function(cdmConfig, zipFilePath, exportPath) {
         data <- data[, !(names(data) %in% rewardb::CONST_EXCLUDE_REF_COLS[[camelName]])]
       }
 
-      insertTable(
+      DatabaseConnector::insertTable(
         connection = connection,
         tableName = paste(cdmConfig$referenceSchema, tableName, sep = "."),
         data = data,

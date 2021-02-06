@@ -361,14 +361,23 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
 #' @param zipFilePath path to ouputed zipFile
 #' @param configId String configuration id
 #' @export
-sccOneOffAtlasCohort <- function(cdmConfig, zipFilePath, configId) {
+sccOneOffAtlasCohort <- function(cdmConfigPath, zipFilePath, configId, exposure = FALSE) {
+  cdmConfig <- loadCdmConfig(cdmConfigPath)
   exportIdFolder <- paste("export-", configId)
   dir.create(exportIdFolder)
   importAtlasCohortReferencesZip(cdmConfig, zipFilePath, exportIdFolder)
 
+  if (exposure) {
+    referenceFile <- "atlas_exposure_reference.csv"
+    targetCohortTable <- cdmConfig$tables$cohort
+  } else {
+    referenceFile <- "atlas_outcome_reference.csv"
+    targetCohortTable <- cdmConfig$tables$outcomeCohort
+  }
+
   connection <- connect(cdmConfig$connection)
   # Create the cohort
-  atlasCohorts <- read.csv(file.path(exportIdFolder, "atlas_outcome_reference.csv"))
+  atlasCohorts <- read.csv(file.path(exportIdFolder, referenceFile))
 
   if (length(atlasCohorts)) {
     # Generate each cohort
@@ -378,7 +387,7 @@ sccOneOffAtlasCohort <- function(cdmConfig, zipFilePath, configId) {
         connection,
         sql = "DELETE FROM @target_database_schema.@target_cohort_table WHERE cohort_definition_id = @cohort_definition_id",
         target_database_schema = cdmConfig$resultSchema,
-        target_cohort_table = cdmConfig$tables$outcomeCohort,
+        target_cohort_table = targetCohortTable,
         cohort_definition_id = cohortReference["COHORT_DEFINITION_ID"]
       )
 
@@ -388,12 +397,24 @@ sccOneOffAtlasCohort <- function(cdmConfig, zipFilePath, configId) {
         cdm_database_schema = cdmConfig$cdmSchema,
         vocabulary_database_schema = cdmConfig$vocabularySchema,
         target_database_schema = cdmConfig$resultSchema,
-        target_cohort_table = cdmConfig$tables$outcomeCohort,
+        target_cohort_table = targetCohortTable,
         target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
       )
     })
   }
 
-  oneOffSccResults(cdmConfig, configId, atlasCohorts$COHORT_DEFINITION_ID)
+
+  params <- list(
+    cdmConfigPath = cdmConfigPath,
+    configId = configId
+  )
+
+  if (exposure) {
+    params$targetCohortIds <- atlasCohorts$COHORT_DEFINITION_ID
+  } else {
+    params$outcomeCohortIds <- atlasCohorts$COHORT_DEFINITION_ID
+  }
+
+  do.call(oneOffSccResults, params)
 
 }

@@ -1,18 +1,36 @@
+devtools::load_all()
+atlasId <- c(7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7549, 7550, 7822,
+             7823, 10357, 11073, 2538, 10605, 15078, 10607, 11643, 12047, 14615, 13719, 10977, 19398)
 
-atlasId <- NULL
-zipFile <- paste(atlasId, "reward-reference.zip")
+refZipFile <- "atlas-pre-existing-reward-reference.zip"
 config <- loadGlobalConfig("config/global-cfg.yml")
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-insertAtlasCohortRef(connection, config, atlasId)
-exportAtlasCohortRef(config, atlasId, zipFile)
+exportAtlasCohortRef(config, atlasId, refZipFile)
 
-
-configId <- paste("atlasRun-", atlasId)
-cdmConfigPaths <- c("config/cdm/ccae.yml", "config/cdm/optum.yml", "config/cdm/mcdc.yml", "config/cdm/mcdr.yml", "config/cdm/pharmetrics.yml")
+configId <- paste("atlasRun-pre-existing")
+cdmConfigPaths <-c(
+  "config/cdm/pharmetrics.yml",
+  "config/cdm/mcdc.yml",
+  "config/cdm/mcdr.yml",
+  "config/cdm/ccae.yml",
+  "config/cdm/optum.yml"
+)
 
 for (cdmConfigPath in cdmConfigPaths) {
-  zipFiles <- sccOneOffAtlasCohort(cdmConfig, zipFilePath, configId)
+  zipFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId)
   for (zipFile in zipFiles) {
     importResultsZip(zipFile, unzipPath = paste(configId, "import_folder") )
   }
 }
+
+atlasExposureId <- c(19177, 19178)
+exportAtlasCohortRef(config, atlasExposureId, refZipFile, exposure = TRUE)
+
+for (cdmConfigPath in cdmConfigPaths) {
+  zipFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, exposure = TRUE)
+  for (zipFile in zipFiles) {
+    importResultsZip(zipFile, unzipPath = paste(configId, "import_folder") )
+  }
+}
+
+DatabaseConnector::disconnect(connection)

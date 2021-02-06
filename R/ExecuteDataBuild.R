@@ -81,7 +81,6 @@ getZippedSccResults <- function(
   targetCohortIds = NULL,
   .generateCohortStats = TRUE
 ) {
-
   cdmVersion <- getCdmVersion(config)
   dbId <- getDatabaseId(config)
 
@@ -111,7 +110,9 @@ getZippedSccResults <- function(
       if (.generateCohortStats) {
         timeOnTreatment <- getAverageTimeOnTreatment(config, analysisSettings, analysisId = analysisId, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
         statsFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, "-time_on_treatment_stats", ".csv"))
-        suppressWarnings({ write.csv(timeOnTreatment, statsFileName, na = "", row.names = FALSE, fileEncoding = "ascii") })
+        suppressWarnings({
+          write.csv(timeOnTreatment, statsFileName, na = "", row.names = FALSE, fileEncoding = "ascii")
+        })
         tableNames[[basename(statsFileName)]] <- "time_on_treatment"
       }
 
@@ -195,7 +196,7 @@ generateSccResults <- function(
 #' Partial reward execution with a subset of targets or outcomes. If both are null this will generate SCC results for all
 #' exposure and outcome pairs. This is only really useful if you're adding an cohort after the full result set has been
 #' generated.
-#' @param cdmConfigFilePath - path to cdm config loaded with loadCdmConfig function
+#' @param cdmConfigPath - path to cdm config loaded with loadCdmConfig function
 #' @param configId - string id that will be used as a prefix to store results files
 #' @param outcomeCohortIds - vector of outcome cohort ids or NULL
 #' @param targetCohortIds - vector of exposure cohort ids or NULL
@@ -203,7 +204,7 @@ generateSccResults <- function(
 #' @param getDbId - assumes CDM version is stored in the cdm_source table
 #' @param logFileName logfile used. If null is based on the passed configId
 oneOffSccResults <- function(
-  cdmConfigFilePath,
+  cdmConfigPath,
   configId,
   outcomeCohortIds = NULL,
   targetCohortIds = NULL,
@@ -211,7 +212,7 @@ oneOffSccResults <- function(
   logFileName = NULL
 ) {
 
-  config <- loadCdmConfig(cdmConfigFilePath)
+  config <- loadCdmConfig(cdmConfigPath)
   if (is.null(logFileName)) {
     logFileName <- paste0(configId, "scc-data-build-results.log")
   }
