@@ -196,11 +196,11 @@ getSelfControlledCohortExposureStats <- function(connectionDetails,
   ParallelLogger::logInfo("Retrieving stats from database")
 
   if (length(outcomeIds)) {
-    DatabaseConnector::insertTable(conn, "tempdb..#scc_outcome_ids", data.frame(outcome_id = outcomeIds))
+    DatabaseConnector::insertTable(conn, "#scc_outcome_ids", data.frame(outcome_id = outcomeIds), tempTable = TRUE)
   }
 
   if (length(exposureIds)) {
-    DatabaseConnector::insertTable(conn, "tempdb..#scc_exposure_ids", data.frame(exposure_id = exposureIds))
+    DatabaseConnector::insertTable(conn, "#scc_exposure_ids", data.frame(exposure_id = exposureIds), tempTable = TRUE)
   }
 
   sql <- SqlRender::readSql(system.file("sql/sql_server", "averageTimeOnTreatment.sql", package = "rewardb"))
