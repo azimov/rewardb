@@ -30,7 +30,8 @@ createDashSchema <- function(appContext, connection) {
     target_cohort_ids = targetCohortIds,
     outcome_cohort_ids = outcomeCohortIds,
     vocabulary_schema = appContext$globalConfig$vocabularySchema,
-    results_database_schema = appContext$globalConfig$rewardbResultsSchema
+    results_database_schema = appContext$globalConfig$rewardbResultsSchema,
+    source_ids = appContext$dataSources
   )
 }
 

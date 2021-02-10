@@ -40,6 +40,7 @@ SELECT
   FROM @results_database_schema.scc_result scca
   WHERE scca.rr IS NOT NULL
   AND scca.analysis_id = 1
+  {@source_ids != ''} ? {AND scca.source_id in (@source_ids)}
   {@target_cohort_ids_length} ? {AND target_cohort_id in (@target_cohort_ids)}
   {@outcome_cohort_ids_length} ? {AND outcome_cohort_id in (@outcome_cohort_ids)};
 
