@@ -358,14 +358,18 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
 #' @description
 #' Removes atlas entries from the cdm store
 #' @param cdmConfig cdmConfig object loaded with loadCdmConfig
-#' @param zipFilePath path to ouputed zipFile
+#' @param referenceZipFile path to ouputed zipFile of references if they need to be updated
 #' @param configId String configuration id
+#' @param exposure boolean - is this for exposure or outcome cohorts
 #' @export
-sccOneOffAtlasCohort <- function(cdmConfigPath, zipFilePath, configId, exposure = FALSE) {
+sccOneOffAtlasCohort <- function(cdmConfigPath, configId, exposure = FALSE, referenceZipFile = NULL) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   exportIdFolder <- paste("export-", configId)
   dir.create(exportIdFolder)
-  importAtlasCohortReferencesZip(cdmConfig, zipFilePath, exportIdFolder)
+
+  if (!is.null(referenceZipFile)) {
+    importReferenceTables(cdmConfig, referenceZipFile)
+  }
 
   if (exposure) {
     referenceFile <- "atlas_exposure_reference.csv"
@@ -375,9 +379,9 @@ sccOneOffAtlasCohort <- function(cdmConfigPath, zipFilePath, configId, exposure 
     targetCohortTable <- cdmConfig$tables$outcomeCohort
   }
 
-  connection <- connect(cdmConfig$connection)
+  connection <- DatabaseConnector::connect(cdmConfig$connection)
   # Create the cohort
-  atlasCohorts <- read.csv(file.path(exportIdFolder, referenceFile))
+  atlasCohorts <- read.csv(file.path(cdmConfig$referencePath, referenceFile))
 
   if (length(atlasCohorts)) {
     # Generate each cohort

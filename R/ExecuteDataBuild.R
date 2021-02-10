@@ -243,11 +243,11 @@ oneOffSccResults <- function(
   logger <- .getLogger(logFileName)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   resultsFiles <- list()
-  resultsFiless$scc_result <- getSccResults(config,
-                                            connection,
-                                            configId,
-                                            outcomeCohortIds = outcomeCohortIds,
-                                            targetCohortIds = targetCohortIds)
+  resultsFiles$scc_result <- getSccResults(config,
+                                           connection,
+                                           configId,
+                                           outcomeCohortIds = outcomeCohortIds,
+                                           targetCohortIds = targetCohortIds)
 
   if (.generateCohortStats) {
     resultsFiles$time_on_treatment <- getSccStats(config,

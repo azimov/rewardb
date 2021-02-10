@@ -79,6 +79,12 @@ runScc <- function(
 
   ParallelLogger::logInfo(paste("Completed SCC for", config$database))
   sccSummary <- base::summary(sccResult)
+
+  if (nrow(sccSummary) == 0) {
+    ParallelLogger::logError("No results found with scc settings. Check cohorts were run")
+    stop("No results found with scc settings. Check cohorts were run")
+  }
+
   sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
   sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
 
