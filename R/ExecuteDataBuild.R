@@ -35,7 +35,7 @@ getCdmVersion <- function(cdmConfig) {
   tryCatch({
     version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema)[[1]]
   },
-  error = ParallelLogger::logError
+    error = ParallelLogger::logError
   )
   DatabaseConnector::disconnect(connection)
   return(version)
@@ -54,7 +54,7 @@ getDatabaseId <- function(cdmConfig) {
   tryCatch({
     version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema)[[1]]
   },
-  error = ParallelLogger::logError
+    error = ParallelLogger::logError
   )
   DatabaseConnector::disconnect(connection)
   return(version)
@@ -147,7 +147,6 @@ getSccStats <- function(
 }
 
 
-
 #' @title
 #' Full reward execution
 #' @description
@@ -196,19 +195,19 @@ generateSccResults <- function(
     time_on_treatment = c()
   )
   if (.runSCC) {
-    resultsFiles$scc_result <- rbind(resultsFiles$scc_result, getSccResults(config,
-                                                      connection,
-                                                      configId = config$exportPath,
-                                                      outcomeCohortIds = NULL,
-                                                      targetCohortIds = NULL))
+    resultsFiles$scc_result <- getSccResults(config,
+                                             connection,
+                                             configId = config$exportPath,
+                                             outcomeCohortIds = NULL,
+                                             targetCohortIds = NULL)
   }
 
   if (.generateCohortStats) {
-    resultsFiles$time_on_treatment <- rbind(resultsFiles$time_on_treatment, getSccStats(config,
-                                                      connection,
-                                                      configId = config$exportPath,
-                                                      outcomeCohortIds = NULL,
-                                                      targetCohortIds = NULL))
+    resultsFiles$time_on_treatment <- getSccStats(config,
+                                                  connection,
+                                                  configId = config$exportPath,
+                                                  outcomeCohortIds = NULL,
+                                                  targetCohortIds = NULL)
   }
   DatabaseConnector::disconnect(connection)
   ParallelLogger::unregisterLogger(logger)
@@ -239,16 +238,24 @@ oneOffSccResults <- function(
 
   config <- loadCdmConfig(cdmConfigPath)
   if (is.null(logFileName)) {
-    logFileName <- paste0(configId, "scc-data-build-results.log")
+    logFileName <- paste0(configId, "-scc-data-build-results.log")
   }
   logger <- .getLogger(logFileName)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-  resultsFiles <- getSccResults(config,
-                                connection,
-                                configId,
-                                outcomeCohortIds = outcomeCohortIds,
-                                targetCohortIds = targetCohortIds,
-                                .generateCohortStats = .generateCohortStats)
+  resultsFiles <- list()
+  resultsFiless$scc_result <- getSccResults(config,
+                                            connection,
+                                            configId,
+                                            outcomeCohortIds = outcomeCohortIds,
+                                            targetCohortIds = targetCohortIds)
+
+  if (.generateCohortStats) {
+    resultsFiles$time_on_treatment <- getSccStats(config,
+                                                  connection,
+                                                  configId = configId,
+                                                  outcomeCohortIds = NULL,
+                                                  targetCohortIds = NULL)
+  }
   DatabaseConnector::disconnect(connection)
   ParallelLogger::unregisterLogger(logger)
 
