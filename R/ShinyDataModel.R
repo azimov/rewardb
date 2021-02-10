@@ -282,9 +282,10 @@ DashboardDbModel$methods(
           r.SOURCE_ID,
           ds.SOURCE_NAME,
           r.outcome_cohort_id,
-          o.cohort_name,
+          o.cohort_name as outcome_cohort_name,
           r.target_cohort_id,
-          t.cohort_name,
+          t.cohort_name as target_cohort_name,
+          t.is_atc_4,
           r.RR,
           r.lb_95,
           r.ub_95,
@@ -301,7 +302,7 @@ DashboardDbModel$methods(
           INNER JOIN @schema.exposure_class ec ON ec.exposure_class_id = tec.exposure_class_id
         }
        WHERE r.calibrated = @calibrated
-       GROUP BY r.source_id, ds.SOURCE_NAME, r.outcome_cohort_id, o.cohort_name, r.target_cohort_id, t.cohort_name, r.RR, r.lb_95, r.ub_95, r.P_VALUE, r2.I2
+       GROUP BY r.source_id, ds.SOURCE_NAME, r.outcome_cohort_id, o.cohort_name, r.target_cohort_id, t.cohort_name, t.is_atc_4, r.RR, r.lb_95, r.ub_95, r.P_VALUE, r2.I2
     "
 
     df <- queryDb(sql, calibrated = calibrated, show_exposure_classes = config$useExposureControls)
