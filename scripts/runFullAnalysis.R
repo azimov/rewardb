@@ -16,7 +16,6 @@ for (atlasId in atlasExposureCohorts) {
   insertAtlasCohortRef(connection, config, atlasId, exposure = TRUE)
 }
 
-
 customExposureRefs <- list(
   "IL-17 Inhibitors" = 11721
 )
@@ -37,17 +36,14 @@ cdmConfigPaths <- c(
   "config/cdm/optum.yml"
 )
 
-resultsFiles <- c()
-
 for (cdmConfigPath in cdmConfigPaths) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   importReferenceTables(cdmConfig, "rewardb-references.zip")
-  resultsFiles <- rbind(resultsFiles, generateSccResults(cdmConfigPath))
-}
-
-# Copy files
-for (table in names(resultsFiles)) {
-  for (file in resultsFiles[[table]]) {
-    pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
+  resultsFiles <- generateSccResults(cdmConfigPath)
+  # Copy files
+  for (table in names(resultsFiles)) {
+    for (file in resultsFiles[[table]]) {
+      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
+    }
   }
 }

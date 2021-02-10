@@ -68,7 +68,7 @@ getStudyControls <- function(
     )
 
     zeroIds <- mappedCounts[mappedCounts$count == 0,]$outcome_cohort_id
-    zeroCounts <- outcomeConceptMapping[outcomeConceptMapping$OUTCOME_COHORT_ID %in% zeroIds,]
+    zeroCounts <- mappedControls[mappedControls$OUTCOME_COHORT_ID %in% zeroIds,]
 
     if (nrow(zeroCounts)) {
       DatabaseConnector::insertTable(connection, "#outcome_cohort_table", zeroCounts, tempTable = TRUE)

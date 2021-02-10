@@ -16,21 +16,31 @@ cdmConfigPaths <-c(
   "config/cdm/optum.yml"
 )
 
+
 for (cdmConfigPath in cdmConfigPaths) {
-  zipFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId)
-  for (zipFile in zipFiles) {
-    importResultsZip(zipFile, unzipPath = paste(configId, "import_folder") )
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId)
+  # Copy files
+  for (table in names(resultsFiles)) {
+    for (file in resultsFiles[[table]]) {
+      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
+    }
   }
 }
 
 atlasExposureId <- c(19177, 19178)
 exportAtlasCohortRef(config, atlasExposureId, refZipFile, exposure = TRUE)
 
+resultsFiles <- c()
 for (cdmConfigPath in cdmConfigPaths) {
-  zipFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, exposure = TRUE)
-  for (zipFile in zipFiles) {
-    importResultsZip(zipFile, unzipPath = paste(configId, "import_folder") )
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, exposure = TRUE)
+  # Copy files
+  for (table in names(resultsFiles)) {
+    for (file in resultsFiles[[table]]) {
+      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
+    }
   }
 }
 
+
 DatabaseConnector::disconnect(connection)
+
