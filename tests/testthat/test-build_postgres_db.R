@@ -3,7 +3,6 @@
 # Created by: James Gilbert
 # Created on: 2020-10-05
 
-
 configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
 config <- loadGlobalConfig(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)

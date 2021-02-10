@@ -73,16 +73,13 @@ getDatabaseId <- function(cdmConfig) {
 #' @param targetCohortIds - vector of exposure cohort ids or NULL
 #' @param .generateCohortStats - generate time on treatment and time to outcome stats or not
 #' @returns list of zip file locations
-getZippedSccResults <- function(
+getSccResults <- function(
   config,
   connection,
   configId,
   outcomeCohortIds = NULL,
-  targetCohortIds = NULL,
-  .generateCohortStats = TRUE
+  targetCohortIds = NULL
 ) {
-  cdmVersion <- getCdmVersion(config)
-  dbId <- getDatabaseId(config)
 
   if (!dir.exists(configId)) {
     dir.create(configId)
@@ -95,8 +92,7 @@ getZippedSccResults <- function(
                                                                       reference_schema = config$referenceSchema,
                                                                       analysis_setting = config$tables$analysisSetting)
 
-    zipFiles <- apply(sccAnalysisSettings, 1, function(analysis) {
-      tableNames <- list()
+    filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
       analysisId <- analysis[["ANALYSIS_ID"]]
       ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
       analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
@@ -105,34 +101,52 @@ getZippedSccResults <- function(
       dataFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, ".csv"))
       ParallelLogger::logInfo(paste("Writing file", dataFileName))
       suppressWarnings({ write.csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na = "", row.names = FALSE, fileEncoding = "ascii") })
-      tableNames[[basename(dataFileName)]] <- "scc_result"
-
-      if (.generateCohortStats) {
-        timeOnTreatment <- getAverageTimeOnTreatment(config, analysisSettings, analysisId = analysisId, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
-        statsFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, "-time_on_treatment_stats", ".csv"))
-        suppressWarnings({
-          write.csv(timeOnTreatment, statsFileName, na = "", row.names = FALSE, fileEncoding = "ascii")
-        })
-        tableNames[[basename(statsFileName)]] <- "time_on_treatment"
-      }
-
-      exportZipFile <- paste0(configId, "-reward-scc-results-aid-", config$database, "-", analysisId, ".zip")
-      ParallelLogger::logInfo("Exporting results zip to ", exportZipFile)
-      exportResults(config,
-                    exportZipFile = exportZipFile,
-                    tableNames = tableNames,
-                    csvPattern = paste0("rb-results-", config$database, "-aid-", analysisId, "*.csv"),
-                    cdmVersion = cdmVersion,
-                    databaseId = dbId,
-                    exportPath = configId)
-
-      return(exportZipFile)
+      return(dataFileName)
     })
   },
     error = ParallelLogger::logError
   )
-  return(zipFiles)
+  return(filesGenerated)
 }
+
+getSccStats <- function(
+  config,
+  connection,
+  configId,
+  outcomeCohortIds = NULL,
+  targetCohortIds = NULL
+) {
+
+  if (!dir.exists(configId)) {
+    dir.create(configId)
+  }
+
+  tryCatch({
+    getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc' AND analysis_id = 1"
+    sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                                      getSccSettingsSql,
+                                                                      reference_schema = config$referenceSchema,
+                                                                      analysis_setting = config$tables$analysisSetting)
+
+    filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
+      analysisId <- analysis[["ANALYSIS_ID"]]
+      ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
+      analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
+
+      timeOnTreatment <- getAverageTimeOnTreatment(config, analysisSettings, analysisId = analysisId, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
+      statsFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, "-time_on_treatment_stats", ".csv"))
+      suppressWarnings({
+        write.csv(timeOnTreatment, statsFileName, na = "", row.names = FALSE, fileEncoding = "ascii")
+      })
+      return(statsFileName)
+    })
+  },
+    error = ParallelLogger::logError
+  )
+  return(filesGenerated)
+}
+
+
 
 #' @title
 #' Full reward execution
@@ -154,8 +168,8 @@ generateSccResults <- function(
   cdmConfigFilePath,
   .createExposureCohorts = TRUE,
   .createOutcomeCohorts = TRUE,
-  .runSCC = TRUE,
   .generateCohortStats = TRUE,
+  .runSCC = TRUE,
   logFileName = "rbDataBuild.log"
 ) {
   logger <- .getLogger(logFileName)
@@ -177,17 +191,28 @@ generateSccResults <- function(
     error = ParallelLogger::logError
   )
 
+  resultsFiles <- list(
+    scc_result = c(),
+    time_on_treatment = c()
+  )
   if (.runSCC) {
-    zipFiles <- getZippedSccResults(config,
-                                    connection,
-                                    configId = config$exportPath,
-                                    outcomeCohortIds = NULL,
-                                    targetCohortIds = NULL,
-                                    .generateCohortStats = .generateCohortStats)
+    resultsFiles$scc_result <- rbind(resultsFiles$scc_result, getSccResults(config,
+                                                      connection,
+                                                      configId = config$exportPath,
+                                                      outcomeCohortIds = NULL,
+                                                      targetCohortIds = NULL))
+  }
+
+  if (.generateCohortStats) {
+    resultsFiles$time_on_treatment <- rbind(resultsFiles$time_on_treatment, getSccStats(config,
+                                                      connection,
+                                                      configId = config$exportPath,
+                                                      outcomeCohortIds = NULL,
+                                                      targetCohortIds = NULL))
   }
   DatabaseConnector::disconnect(connection)
   ParallelLogger::unregisterLogger(logger)
-  return(zipFiles)
+  return(resultsFiles)
 }
 
 #' @title
@@ -218,14 +243,14 @@ oneOffSccResults <- function(
   }
   logger <- .getLogger(logFileName)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-  zipFiles <- getZippedSccResults(config,
-                                  connection,
-                                  configId,
-                                  outcomeCohortIds = outcomeCohortIds,
-                                  targetCohortIds = targetCohortIds,
-                                  .generateCohortStats = .generateCohortStats)
+  resultsFiles <- getSccResults(config,
+                                connection,
+                                configId,
+                                outcomeCohortIds = outcomeCohortIds,
+                                targetCohortIds = targetCohortIds,
+                                .generateCohortStats = .generateCohortStats)
   DatabaseConnector::disconnect(connection)
   ParallelLogger::unregisterLogger(logger)
 
-  return(zipFiles)
+  return(resultsFiles)
 }

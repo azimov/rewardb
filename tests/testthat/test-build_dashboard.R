@@ -31,9 +31,11 @@ exportReferenceTables(config)
 print("import refs")
 importReferenceTables(cdmConfig, zipFilePath)
 print("scc results")
-zips <- generateSccResults(cdmConfigPath)
-for (zip in zips) {
-  importResultsFiles(config$connectionDetails, "test", "reward-b-scc-results-aid-1.zip", .debug=TRUE)
+resultsFiles <- generateSccResults(cdmConfigPath)
+for (table in names(resultsFiles)) {
+  for (file in resultsFiles[[table]]) {
+    pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
+  }
 }
 
 appContextFile <- system.file("tests", "test.dashboard.yml", package = "rewardb")

@@ -43,12 +43,14 @@ test_that("Full data generation and export", {
   )
   expect_true(qdf$CNT[[1]] == 1)
 
-  zips <- generateSccResults(cdmConfigPath)
-  for (zip in zips) {
-    importResultsFiles(config$connectionDetails, "test", zip, .debug = TRUE)
+  resultsFiles <- generateSccResults(cdmConfigPath)
+  for (table in names(resultsFiles)) {
+    for (file in resultsFiles[[table]]) {
+      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
+    }
   }
 
-  # Assert that the tables contain data
+  # Assert that the tables contain d ata
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT count(*) as results_count FROM @results_schema.scc_result WHERE ANALYSIS_ID = 1",

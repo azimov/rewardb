@@ -403,7 +403,6 @@ sccOneOffAtlasCohort <- function(cdmConfigPath, zipFilePath, configId, exposure 
     })
   }
 
-
   params <- list(
     cdmConfigPath = cdmConfigPath,
     configId = configId
@@ -416,5 +415,4 @@ sccOneOffAtlasCohort <- function(cdmConfigPath, zipFilePath, configId, exposure 
   }
 
   do.call(oneOffSccResults, params)
-
 }

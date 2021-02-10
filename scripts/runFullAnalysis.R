@@ -37,11 +37,17 @@ cdmConfigPaths <- c(
   "config/cdm/optum.yml"
 )
 
+resultsFiles <- c()
+
 for (cdmConfigPath in cdmConfigPaths) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   importReferenceTables(cdmConfig, "rewardb-references.zip")
-  zips <- generateSccResults("config/cdm/ccae.yml")
-  for (zip in zips) {
-    importResultsFiles(config$connectionDetails, "rewardb", zip)
+  resultsFiles <- rbind(resultsFiles, generateSccResults(cdmConfigPath))
+}
+
+# Copy files
+for (table in names(resultsFiles)) {
+  for (file in resultsFiles[[table]]) {
+    pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
   }
 }
