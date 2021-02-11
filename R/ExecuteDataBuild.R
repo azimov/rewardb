@@ -253,8 +253,8 @@ oneOffSccResults <- function(
     resultsFiles$time_on_treatment <- getSccStats(config,
                                                   connection,
                                                   configId = configId,
-                                                  outcomeCohortIds = NULL,
-                                                  targetCohortIds = NULL)
+                                                  outcomeCohortIds = outcomeCohortIds,
+                                                  targetCohortIds = targetCohortIds)
   }
   DatabaseConnector::disconnect(connection)
   ParallelLogger::unregisterLogger(logger)
