@@ -362,7 +362,7 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
 #' @param configId String configuration id
 #' @param exposure boolean - is this for exposure or outcome cohorts
 #' @export
-sccOneOffAtlasCohort <- function(cdmConfigPath, configId, exposure = FALSE, referenceZipFile = NULL) {
+sccOneOffAtlasCohort <- function(cdmConfigPath, configId, atlasIds, exposure = FALSE, referenceZipFile = NULL) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   exportIdFolder <- paste("export-", configId)
   dir.create(exportIdFolder)
@@ -382,6 +382,7 @@ sccOneOffAtlasCohort <- function(cdmConfigPath, configId, exposure = FALSE, refe
   connection <- DatabaseConnector::connect(cdmConfig$connection)
   # Create the cohort
   atlasCohorts <- read.csv(file.path(cdmConfig$referencePath, referenceFile))
+  atlasCohorts <- atlasCohorts[atlasCohorts$ATLAS_ID %in% atlasIds,]
 
   if (length(atlasCohorts)) {
     # Generate each cohort
@@ -405,6 +406,8 @@ sccOneOffAtlasCohort <- function(cdmConfigPath, configId, exposure = FALSE, refe
         target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
       )
     })
+  } else {
+    stop("No cohorts specified to compute found in reference file.")
   }
 
   params <- list(
