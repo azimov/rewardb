@@ -18,7 +18,7 @@ cdmConfigPaths <-c(
 
 
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId)
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, atlasId)
   # Copy files
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
@@ -32,7 +32,7 @@ exportAtlasCohortRef(config, atlasExposureId, refZipFile, exposure = TRUE)
 
 resultsFiles <- c()
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, exposure = TRUE)
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, atlasExposureId, exposure = TRUE)
   # Copy files
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {

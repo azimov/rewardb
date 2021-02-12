@@ -35,23 +35,13 @@ unlink("rb-import")
 
 test_that("Full data generation and export", {
   atlasId <- c(12047)
-  refZipFile <- "atlas-pre-existing-reward-reference-test.zip"
-  exportAtlasCohortRef(config, atlasId, refZipFile)
+  configId <- "atlasRun-exposures"
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, atlasIds = atlasId)
 
-  configId <- paste("atlasRun-pre-existing")
-
-  zipFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId)
-  for (zipFile in zipFiles) {
-    importResultsZip(zipFile, unzipPath = paste(configId, "import_folder") )
-  }
-
+  configId <- "atlasRun-exposures"
   atlasExposureId <- c(19321)
-  exportAtlasCohortRef(config, atlasExposureId, refZipFile, exposure = TRUE)
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, atlasIds = atlasExposureId, exposure = TRUE)
 
-  zipFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, exposure = TRUE)
-  for (zipFile in zipFiles) {
-    importResultsZip(zipFile, unzipPath = paste(configId, "import_folder") )
-  }
 })
 DatabaseConnector::disconnect(connection)
 unlink(refZipFile)
