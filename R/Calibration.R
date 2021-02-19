@@ -173,6 +173,7 @@ computeCalibratedRows <- function(positives, negatives, idCol, calibrationType =
 #' @param appContext rewardb app context
 #' @return data.frame of uncalibrated results
 getCalibratedAtlasTargets <- function(appContext, connection) {
+  library(dplyr)
   # Apply to atlas cohorts
   controlOutcomes <- getOutcomeControls(appContext, connection, outcomeTypes = 1)
   atlasPositives <- getUncalibratedAtlasCohorts(appContext)
@@ -235,6 +236,7 @@ getCalibratedTargets <- function(appContext, connection) {
 #' @description
 #' Compute the calibrated results for cohort outcomes
 #' Requires negative control cohorts to be set
+#' Used automatically when appContext$useExposureControls is TRUE
 #' @param appContext takes a rewardb application context
 #' @return data.frame of calibrated results
 getCalibratedOutcomes <- function(appContext, connection) {
