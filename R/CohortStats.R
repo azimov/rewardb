@@ -20,11 +20,14 @@ getAverageTimeOnTreatment <- function(config, analysisOptions = list(), analysis
     outcomeTable = config$tables$outcomeCohort
   )
 
-  results <- do.call(getSelfControlledCohortExposureStats, c(args, analysisOptions))
-  results$source_id <- config$sourceId
-  results$analysis_id <- as.integer(analysisId)
-  colnames(results)[colnames(results) == "EXPOSURE_ID"] <- "TARGET_COHORT_ID"
-  colnames(results)[colnames(results) == "OUTCOME_ID"] <- "OUTCOME_COHORT_ID"
+  results <- do.call(getSCCExposureStats, c(args, analysisOptions))
+
+  if (nrow(results) > 0) {
+    results$source_id <- config$sourceId
+    results$analysis_id <- as.integer(analysisId)
+    colnames(results)[colnames(results) == "EXPOSURE_ID"] <- "TARGET_COHORT_ID"
+    colnames(results)[colnames(results) == "OUTCOME_ID"] <- "OUTCOME_COHORT_ID"
+  }
 
   return(results)
 }
@@ -119,30 +122,30 @@ getAverageTimeOnTreatment <- function(config, analysisOptions = list(), analysis
 #'                                      outcomeTable = "condition_era")
 #' }
 #' @export
-getSelfControlledCohortExposureStats <- function(connectionDetails,
-                                                 cdmDatabaseSchema,
-                                                 exposureIds,
-                                                 outcomeIds,
-                                                 outcomeDatabaseSchema,
-                                                 exposureDatabaseSchema,
-                                                 outcomeTable = "condition_era",
-                                                 exposureTable = "drug_era",
-                                                 oracleTempSchema = NULL,
-                                                 firstExposureOnly = TRUE,
-                                                 firstOutcomeOnly = TRUE,
-                                                 minAge = "",
-                                                 maxAge = "",
-                                                 studyStartDate = "",
-                                                 studyEndDate = "",
-                                                 addLengthOfExposureExposed = TRUE,
-                                                 riskWindowStartExposed = 1,
-                                                 riskWindowEndExposed = 1,
-                                                 addLengthOfExposureUnexposed = TRUE,
-                                                 riskWindowEndUnexposed = -1,
-                                                 riskWindowStartUnexposed = -1,
-                                                 hasFullTimeAtRisk = TRUE,
-                                                 washoutPeriod = 0,
-                                                 followupPeriod = 0) {
+getSCCExposureStats <- function(connectionDetails,
+                                cdmDatabaseSchema,
+                                exposureIds,
+                                outcomeIds,
+                                outcomeDatabaseSchema,
+                                exposureDatabaseSchema,
+                                outcomeTable = "condition_era",
+                                exposureTable = "drug_era",
+                                oracleTempSchema = NULL,
+                                firstExposureOnly = TRUE,
+                                firstOutcomeOnly = TRUE,
+                                minAge = "",
+                                maxAge = "",
+                                studyStartDate = "",
+                                studyEndDate = "",
+                                addLengthOfExposureExposed = TRUE,
+                                riskWindowStartExposed = 1,
+                                riskWindowEndExposed = 1,
+                                addLengthOfExposureUnexposed = TRUE,
+                                riskWindowEndUnexposed = -1,
+                                riskWindowStartUnexposed = -1,
+                                hasFullTimeAtRisk = TRUE,
+                                washoutPeriod = 0,
+                                followupPeriod = 0) {
 
 
   if (riskWindowEndExposed < riskWindowStartExposed && !addLengthOfExposureExposed)

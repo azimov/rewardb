@@ -29,6 +29,8 @@ unlink(refFolder)
 exportReferenceTables(config)
 importReferenceTables(cdmConfig, zipFilePath)
 registerCdm(connection, config, cdmConfig)
+createOutcomeCohorts(connection, cdmConfig)
+createCohorts(connection, cdmConfig)
 
 unlink("export")
 unlink("rb-import")
@@ -36,14 +38,13 @@ unlink("rb-import")
 test_that("Full data generation and export", {
   atlasId <- c(12047)
   configId <- "atlasRun-exposures"
-  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, atlasIds = atlasId)
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, configId, atlasIds = atlasId)
 
   configId <- "atlasRun-exposures"
   atlasExposureId <- c(19321)
-  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, atlasIds = atlasExposureId, exposure = TRUE)
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, configId, atlasIds = atlasExposureId, exposure = TRUE)
 
 })
 DatabaseConnector::disconnect(connection)
-unlink(refZipFile)
 unlink("export")
 unlink("rb-import")

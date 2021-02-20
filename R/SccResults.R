@@ -81,22 +81,22 @@ runScc <- function(
   sccSummary <- base::summary(sccResult)
 
   if (nrow(sccSummary) == 0) {
-    ParallelLogger::logError("No results found with scc settings. Check cohorts were run")
-    stop("No results found with scc settings. Check cohorts were run")
+    ParallelLogger::logWarn("No results found with scc settings. Check cohorts were run")
+
+  } else {
+    sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
+    sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
+
+    if (removeNullValues) {
+      sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
+    }
+
+    sccSummary$source_id <- config$sourceId
+    sccSummary$analysis_id <- as.integer(analysisId)
+    sccSummary$c_at_risk <- sccSummary$numPersons
+
+    sccSummary <- dplyr::rename(sccSummary, rewardb::SCC_RESULT_COL_NAMES)
   }
-
-  sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
-  sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
-
-  if (removeNullValues) {
-    sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
-  }
-
-  sccSummary$source_id <- config$sourceId
-  sccSummary$analysis_id <- as.integer(analysisId)
-  sccSummary$c_at_risk <- sccSummary$numPersons
-
-  sccSummary <- dplyr::rename(sccSummary, rewardb::SCC_RESULT_COL_NAMES)
 
   ParallelLogger::logInfo(paste("Generated results for SCC", config$database))
 

@@ -4,8 +4,6 @@ atlasId <- c(7542, 7551, 7552, 7553, 7576, 7543, 7545, 7546, 7507, 7547, 7548, 7
 
 refZipFile <- "atlas-pre-existing-reward-reference.zip"
 config <- loadGlobalConfig("config/global-cfg.yml")
-connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-exportAtlasCohortRef(config, atlasId, refZipFile)
 
 configId <- paste("atlasRun-pre-existing")
 cdmConfigPaths <-c(
@@ -18,7 +16,7 @@ cdmConfigPaths <-c(
 
 
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, atlasId)
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, configId, atlasId)
   # Copy files
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
@@ -28,11 +26,9 @@ for (cdmConfigPath in cdmConfigPaths) {
 }
 
 atlasExposureId <- c(19177, 19178)
-exportAtlasCohortRef(config, atlasExposureId, refZipFile, exposure = TRUE)
-
 resultsFiles <- c()
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, refZipFile, configId, atlasExposureId, exposure = TRUE)
+  resultsFiles <- sccOneOffAtlasCohort(cdmConfigPath, configId, atlasExposureId, exposure = TRUE)
   # Copy files
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
@@ -40,7 +36,3 @@ for (cdmConfigPath in cdmConfigPaths) {
     }
   }
 }
-
-
-DatabaseConnector::disconnect(connection)
-

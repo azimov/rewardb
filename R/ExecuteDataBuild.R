@@ -85,27 +85,30 @@ getSccResults <- function(
     dir.create(configId)
   }
 
-  tryCatch({
-    getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc' AND analysis_id = 1"
-    sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
-                                                                      getSccSettingsSql,
-                                                                      reference_schema = config$referenceSchema,
-                                                                      analysis_setting = config$tables$analysisSetting)
+  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc' AND analysis_id = 1"
+  sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                                    getSccSettingsSql,
+                                                                    reference_schema = config$referenceSchema,
+                                                                    analysis_setting = config$tables$analysisSetting)
 
-    filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
-      analysisId <- analysis[["ANALYSIS_ID"]]
-      ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
-      analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
+  filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
+    analysisId <- analysis[["ANALYSIS_ID"]]
+    ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
+    analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
 
-      sccSummary <- runScc(connection, config, analysisId, analysisSettings, exposureIds = targetCohortIds, outcomeIds = outcomeCohortIds)
+    sccSummary <- runScc(connection, config, analysisId, analysisSettings, exposureIds = targetCohortIds, outcomeIds = outcomeCohortIds)
+
+    if (nrow(sccSummary) > 0) {
       dataFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, ".csv"))
       ParallelLogger::logInfo(paste("Writing file", dataFileName))
       suppressWarnings({ write.csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na = "", row.names = FALSE, fileEncoding = "ascii") })
       return(dataFileName)
-    })
-  },
-    error = ParallelLogger::logError
-  )
+    } else {
+      ParallelLogger::logInfo("No data to export, no file written")
+      return(NULL)
+    }
+  })
+
   return(filesGenerated)
 }
 
@@ -121,28 +124,30 @@ getSccStats <- function(
     dir.create(configId)
   }
 
-  tryCatch({
-    getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc' AND analysis_id = 1"
-    sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
-                                                                      getSccSettingsSql,
-                                                                      reference_schema = config$referenceSchema,
-                                                                      analysis_setting = config$tables$analysisSetting)
+  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc' AND analysis_id = 1"
+  sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                                    getSccSettingsSql,
+                                                                    reference_schema = config$referenceSchema,
+                                                                    analysis_setting = config$tables$analysisSetting)
 
-    filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
-      analysisId <- analysis[["ANALYSIS_ID"]]
-      ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
-      analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
+  filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
+    analysisId <- analysis[["ANALYSIS_ID"]]
+    analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
+    ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
+    timeOnTreatment <- getAverageTimeOnTreatment(config, analysisSettings, analysisId = analysisId, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
 
-      timeOnTreatment <- getAverageTimeOnTreatment(config, analysisSettings, analysisId = analysisId, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
+    if (nrow(timeOnTreatment) > 0) {
       statsFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, "-time_on_treatment_stats", ".csv"))
       suppressWarnings({
         write.csv(timeOnTreatment, statsFileName, na = "", row.names = FALSE, fileEncoding = "ascii")
       })
       return(statsFileName)
-    })
-  },
-    error = ParallelLogger::logError
-  )
+    } else {
+      ParallelLogger::logInfo("No data to export, no file written")
+      return(NULL)
+    }
+  })
+
   return(filesGenerated)
 }
 
