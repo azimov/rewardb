@@ -32,6 +32,15 @@ target_cohort_concept AS (
     SELECT cohort_definition_id as target_cohort_id, concept_id as target_concept_id, 0 as is_atc_4
     FROM @schema.custom_exposure_concept
     {@target_cohort_ids != ''} ? {WHERE cohort_definition_id IN (@target_cohort_ids)}
+
+    UNION
+
+    SELECT
+        cohort_definition_id as target_cohort_id,
+        concept_id as target_concept_id,
+        2 as is_atc_4
+    FROM @schema.atlas_exposure_concept
+    {@target_cohort_ids != ''} ? {WHERE cohort_definition_id IN (@target_cohort_ids)}
 )
 
 
