@@ -15,7 +15,7 @@
 addPhenotypeLibrary <- function(connection,
                                 config,
                                 libraryRepo = "OHDSI/PhenotypeLibrary",
-                                ref = "develop",
+                                ref = "master",
                                 local = FALSE,
                                 packageName = "PhenotypeLibrary",
                                 removeExisting = FALSE,

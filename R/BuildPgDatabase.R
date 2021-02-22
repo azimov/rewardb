@@ -8,7 +8,7 @@
 #' @param buildPhenotypeLibrary optionally add the entire phenotype library github R package
 #' @param generatePlSql If building the phenotype library, generate the SQL from the github defintion or not (if false this assumes the git defintion works)
 #' @export
-buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE, generatePlSql = TRUE) {
+buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE, generatePlSql = TRUE, recreateCem = FALSE) {
   config <- loadGlobalConfig(configFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   tryCatch({
@@ -36,14 +36,18 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPheno
       schema = config$rewardbResultsSchema
     )
 
-    sql <- SqlRender::readSql(system.file("sql/create", "cemSchema.sql", package = "rewardb"))
-    DatabaseConnector::renderTranslateExecuteSql(connection, sql)
+    cemSchema <- DatabaseConnector::renderTranslateQuerySql(connection, "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'cem';")
+    if (recreateCem | nrow(cemSchema) == 0) {
+      sql <- SqlRender::readSql(system.file("sql/create", "cemSchema.sql", package = "rewardb"))
+      DatabaseConnector::renderTranslateExecuteSql(connection, sql)
+    }
+
     addAnalysisSettingsJson(connection, config)
 
     if (buildPhenotypeLibrary) {
       addPhenotypeLibrary(connection, config,
                           libraryRepo = "OHDSI/PhenotypeLibrary",
-                          ref = "master",
+                          ref = "develop",
                           local = FALSE,
                           packageName = "PhenotypeLibrary",
                           removeExisting = FALSE,
