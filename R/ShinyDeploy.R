@@ -1,7 +1,7 @@
 # Create app.R code template
 appDotRtpl <- templates::tmpl(~`renv::load("{{ renvPath }}")
 library(rewardb)
-launchDashboard("config.yml", "{{ globalConfigPath }}")`)
+launchDashboard({{ appConfigPath }}, "{{ globalConfigPath }}")`)
 
 #' @title
 #' Deploy shiny application
@@ -25,7 +25,7 @@ deployShinyApp <- function(appConfigPath,
   fp <- tempfile()
   dir.create(fp)
 
-  appR <- templates::tmplUpdate(appDotRtpl, renvPath = renvPath, globalConfigPath = globalConfigPath)
+  appR <- templates::tmplUpdate(appDotRtpl, renvPath = renvPath, globalConfigPath = globalConfigPath, appConfigPath = appConfigPath)
   outFile <- file(file.path(fp, "app.R"))
   writeLines(appR, outFile)
   close(outFile)
