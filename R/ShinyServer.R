@@ -18,18 +18,11 @@ dashboardInstance <- function(input, output, session) {
   library(foreach, warn.conflicts = FALSE)
   library(dplyr, warn.conflicts = FALSE)
 
-  model <- DashboardDbModel(appContext)
-  session$onSessionEnded(function() {
-    writeLines("Closing connection")
-    model$closeConnection()
-  })
-
   getOutcomeCohortTypes <- reactive({
     cohortTypeMapping <- list("ATLAS defined" = 2, "Inpatient" = 1, "Two diagnosis codes" = 0)
     rs <- foreach(i = input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
     return(rs)
   })
-
 
   getMainTableParams <- reactive({
     outcomeCohortNames <- if (length(input$outcomeCohorts)) strQueryWrap(input$outcomeCohorts) else NULL
@@ -216,18 +209,6 @@ dashboardInstance <- function(input, output, session) {
 }
 
 #' @title
-#' Launch the REWARD Shiny app dashboard
-#' @description
-#' Launches a Shiny app for a given configuration file
-#' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
-#' @export
-launchDashboard <- function(appConfigPath, globalConfigPath) {
-  e <- environment()
-  e$appContext <- loadAppContext(appConfigPath, globalConfigPath)
-  shiny::shinyApp(server = dashboardInstance, dashboardUi, enableBookmarking = "url")
-}
-
-#' @title
 #' reportInstance
 #' @description
 #' Requires a server appContext instance to be loaded in environment see scoping of launchDashboard
@@ -245,10 +226,9 @@ reportInstance <- function(input, output, session) {
   library(dplyr, warn.conflicts = FALSE)
 
   ParallelLogger::logDebug("init")
-  model <- ReportDbModel(reportAppContext)
 
   ParallelLogger::logDebug("loaded model")
-  session$onSessionEnded(function() {
+  shiny::onStop(function() {
     writeLines("Closing database connection")
     model$closeConnection()
   })
@@ -317,7 +297,29 @@ reportInstance <- function(input, output, session) {
 #' @param outcomeId outcome cohort id
 #' @export
 launchReport <- function(globalConfigPath, exposureId = NULL, outcomeId = NULL) {
-  e <- environment()
-  e$reportAppContext <- loadReportContext(globalConfigPath, exposureId = exposureId, outcomeId = outcomeId)
-  shiny::shinyApp(server = reportInstance, ui = reportUi)
+  .GlobalEnv$reportAppContext <- loadReportContext(globalConfigPath, exposureId = exposureId, outcomeId = outcomeId)
+  .GlobalEnv$model <- ReportDbModel(reportAppContext)
+  shiny::shinyApp(server = reportInstance, ui = reportUi, onStart = function() {
+    shiny::onStop(function() {
+      writeLines("Closing connection")
+      model$closeConnection()
+    })
+  })
+}
+
+#' @title
+#' Launch the REWARD Shiny app dashboard
+#' @description
+#' Launches a Shiny app for a given configuration file
+#' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
+#' @export
+launchDashboard <- function(appConfigPath, globalConfigPath) {
+  .GlobalEnv$appContext <- loadAppContext(appConfigPath, globalConfigPath)
+  .GlobalEnv$model <- DashboardDbModel(appContext)
+  shiny::shinyApp(server = dashboardInstance, dashboardUi, enableBookmarking = "url", onStart = function() {
+    shiny::onStop(function() {
+      writeLines("Closing connection")
+      model$closeConnection()
+    })
+  })
 }

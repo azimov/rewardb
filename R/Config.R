@@ -6,14 +6,14 @@
 #' @param promt text prompt when loading askpass prompt
 #' @returns string from prompt or environment variable
 getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the reward database password") {
-    pass <- Sys.getenv(envVar)
-    if (pass == "") {
-        pass <- askpass::askpass(prompt)
-        args <- list(pass)
-        names(args) <- envVar
-        do.call(Sys.setenv, args)
-    }
-    return(pass)
+  pass <- Sys.getenv(envVar)
+  if (pass == "") {
+    pass <- askpass::askpass(prompt)
+    args <- list(pass)
+    names(args) <- envVar
+    do.call(Sys.setenv, args)
+  }
+  return(pass)
 }
 
 #' @title
@@ -24,14 +24,14 @@ getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the 
 #' @param config list of configuration options
 #' @param defaults list of default values to check and set if null
 #' @returns updated list
-.setDefaultOptions <- function (config, defaults) {
-    for(n in names(defaults)) {
-      if(is.null(config[[n]])) {
-        config[[n]] <- defaults[[n]]
-      }
+.setDefaultOptions <- function(config, defaults) {
+  for (n in names(defaults)) {
+    if (is.null(config[[n]])) {
+      config[[n]] <- defaults[[n]]
     }
+  }
 
-    return(config)
+  return(config)
 }
 
 #' @title
@@ -41,24 +41,24 @@ getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the 
 #' @param appContext application context
 #' @param defaults list of default values to check and set if null
 #' @returns updated list
-getOutcomeCohortIds <- function (appContext, connection) {
-    if (!length(appContext$outcome_concept_ids) & !length(appContext$custom_outcome_cohort_ids)) {
-        return(NULL)
-    }
+getOutcomeCohortIds <- function(appContext, connection) {
+  if (!length(appContext$outcome_concept_ids) & !length(appContext$custom_outcome_cohort_ids)) {
+    return(NULL)
+  }
 
-    sql <- "
+  sql <- "
     SELECT cohort_definition_id AS ID FROM @reference_schema.outcome_cohort_definition WHERE conceptset_id IN (@concept_ids)
     UNION
     SELECT cohort_definition_id AS ID FROM @reference_schema.atlas_outcome_reference WHERE atlas_id IN (@atlas_ids)
     "
-    result <- DatabaseConnector::renderTranslateQuerySql(
-      connection,
-      sql,
-      reference_schema = appContext$globalConfig$rewardbResultsSchema,
-      concept_ids = if (length(appContext$outcome_concept_ids)) appContext$outcome_concept_ids else "NULL",
-      atlas_ids = if (length(appContext$custom_outcome_cohort_ids)) appContext$custom_outcome_cohort_ids else "NULL",
-    )
-    return(result$ID)
+  result <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    sql,
+    reference_schema = appContext$globalConfig$rewardbResultsSchema,
+    concept_ids = if (length(appContext$outcome_concept_ids)) appContext$outcome_concept_ids else "NULL",
+    atlas_ids = if (length(appContext$custom_outcome_cohort_ids)) appContext$custom_outcome_cohort_ids else "NULL",
+  )
+  return(result$ID)
 }
 
 #' @title
@@ -68,27 +68,29 @@ getOutcomeCohortIds <- function (appContext, connection) {
 #' @param appContext application context
 #' @param defaults list of default values to check and set if null
 #' @returns updated list
-getTargetCohortIds <- function (appContext, connection) {
-    if (!length(appContext$target_concept_ids) & !length(appContext$custom_exposure_ids) & !length(appContext$atlas_exposure_ids)) {
-        return(NULL)
-    }
+getTargetCohortIds <- function(appContext, connection) {
+  if (!length(appContext$target_concept_ids) &
+    !length(appContext$custom_exposure_ids) &
+    !length(appContext$atlas_exposure_ids)) {
+    return(NULL)
+  }
 
-    sql <- "
+  sql <- "
     SELECT cohort_definition_id AS ID FROM @reference_schema.cohort_definition WHERE drug_conceptset_id IN (@concept_ids)
     UNION
     SELECT cohort_definition_id AS ID FROM @reference_schema.custom_exposure WHERE concept_set_id IN (@custom_exposure_ids)
     UNION
     SELECT cohort_definition_id AS ID FROM @reference_schema.atlas_exposure_reference WHERE atlas_id IN (@atlas_exposure_ids)
     "
-    result <- DatabaseConnector::renderTranslateQuerySql(
-      connection,
-      sql,
-      reference_schema = appContext$globalConfig$rewardbResultsSchema,
-      concept_ids = if (length(appContext$target_concept_ids)) appContext$target_concept_ids else "NULL",
-      custom_exposure_ids = if (length(appContext$custom_exposure_ids)) appContext$custom_exposure_ids else "NULL",
-      atlas_exposure_ids = if (length(appContext$atlas_exposure_ids)) appContext$atlas_exposure_ids else "NULL",
-    )
-    return(result$ID)
+  result <- DatabaseConnector::renderTranslateQuerySql(
+    connection,
+    sql,
+    reference_schema = appContext$globalConfig$rewardbResultsSchema,
+    concept_ids = if (length(appContext$target_concept_ids)) appContext$target_concept_ids else "NULL",
+    custom_exposure_ids = if (length(appContext$custom_exposure_ids)) appContext$custom_exposure_ids else "NULL",
+    atlas_exposure_ids = if (length(appContext$atlas_exposure_ids)) appContext$atlas_exposure_ids else "NULL",
+  )
+  return(result$ID)
 }
 
 
@@ -104,32 +106,33 @@ getTargetCohortIds <- function (appContext, connection) {
 #' @keywords appContext
 #' @export
 #' @examples
-#' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
+#'      appContext <- loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
 loadAppContext <- function(configPath, globalConfigPath, .env = .GlobalEnv) {
 
-    defaults <- list(
-        useExposureControls = FALSE,
-        custom_exposure_ids = c()
-    )
+  defaults <- list(
+    useExposureControls = FALSE,
+    custom_exposure_ids = c(),
+    useConnectionPool = TRUE
+  )
 
-    appContext <- .setDefaultOptions(yaml::read_yaml(configPath), defaults)
-    appContext$globalConfig <- loadGlobalConfig(globalConfigPath)
-    appContext$connectionDetails <- appContext$globalConfig$connectionDetails
+  appContext <- .setDefaultOptions(yaml::read_yaml(configPath), defaults)
+  appContext$globalConfig <- loadGlobalConfig(globalConfigPath)
+  appContext$connectionDetails <- appContext$globalConfig$connectionDetails
 
-    class(appContext) <- append(class(appContext), "rewardb::appContext")
-    .env$appContext <- appContext
+  class(appContext) <- append(class(appContext), "rewardb::appContext")
+  return(appContext)
 }
 
 # Path for config shared across shiny apps and data build
 loadGlobalConfig <- function(globalConfigPath) {
-    config <- yaml::read_yaml(globalConfigPath)
+  config <- yaml::read_yaml(globalConfigPath)
 
-    if (is.null(config$connectionDetails$password)) {
-        config$connectionDetails$password <- getPasswordSecurely()
-    }
+  if (is.null(config$connectionDetails$password)) {
+    config$connectionDetails$password <- getPasswordSecurely()
+  }
 
-    config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
-    return(config)
+  config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
+  return(config)
 }
 
 #' @title
@@ -147,12 +150,13 @@ loadGlobalConfig <- function(globalConfigPath) {
 #' @examples
 #' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
 loadReportContext <- function(globalConfigPath, .env = .GlobalEnv, exposureId = NULL, outcomeId = NULL) {
-    reportAppContext <- yaml::read_yaml(globalConfigPath)
-    reportAppContext$exposureId = exposureId
-    reportAppContext$outcomeId = outcomeId
+  reportAppContext <- yaml::read_yaml(globalConfigPath)
+  reportAppContext$exposureId = exposureId
+  reportAppContext$outcomeId = outcomeId
+  reportAppContext$useConnectionPool = TRUE
 
-    class(reportAppContext) <- append(class(reportAppContext), "rewardb::reportAppContext")
-    .env$reportAppContext <- reportAppContext
+  class(reportAppContext) <- append(class(reportAppContext), "rewardb::reportAppContext")
+  return(reportAppContext)
 }
 
 #' @title
@@ -163,25 +167,25 @@ loadReportContext <- function(globalConfigPath, .env = .GlobalEnv, exposureId = 
 #' @param cdmConfigPath cdmConfigPath
 #' @export
 loadCdmConfig <- function(cdmConfigPath) {
-    defaults <- list(
-        passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",
-        useSecurePassword = FALSE,
-        useMppBulkLoad = FALSE
-    )
-    config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)
+  defaults <- list(
+    passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",
+    useSecurePassword = FALSE,
+    useMppBulkLoad = FALSE
+  )
+  config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)
 
-    defaultTables <- list()
+  defaultTables <- list()
 
-    for (table in rewardb::CONST_REFERENCE_TABLES) {
-        defaultTables[[SqlRender::snakeCaseToCamelCase(table)]] <- table
-    }
+  for (table in rewardb::CONST_REFERENCE_TABLES) {
+    defaultTables[[SqlRender::snakeCaseToCamelCase(table)]] <- table
+  }
 
-    config$tables <- .setDefaultOptions(config$tables, defaultTables)
+  config$tables <- .setDefaultOptions(config$tables, defaultTables)
 
-    if (config$useSecurePassword) {
-        config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable, prompt = "Enter cdm database password")
-    }
-    config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
+  if (config$useSecurePassword) {
+    config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable, prompt = "Enter cdm database password")
+  }
+  config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
 
-    return(config)
+  return(config)
 }

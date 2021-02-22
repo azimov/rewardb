@@ -10,7 +10,18 @@ DbModel$methods(
   },
 
   initializeConnection = function() {
-    dbConn <<- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
+    if (config$useConnectionPool) {
+      dbConn <<- pool::dbPool(
+        drv = DatabaseConnector::DatabaseConnectorDriver(),
+        dbms = config$connectionDetails$dbms,
+        server = config$connectionDetails$server,
+        port = config$connectionDetails$port,
+        user = config$connectionDetails$user,
+        password = config$connectionDetails$password
+      )
+    } else {
+      dbConn <<- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
+    }
     connectionActive <<- TRUE
   },
 
@@ -18,7 +29,14 @@ DbModel$methods(
     if (!connectionActive) {
       stop("Connection has not be initialized or has been closed. Call initalizeConnection")
     }
-    DatabaseConnector::disconnect(dbConn)
+
+    if (DBI::dbIsValid(dbObj = dbConn)) {
+      if (is(dbConn, "Pool")) {
+        pool::poolClose(pool = dbConn)
+      } else {
+        DatabaseConnector::disconnect(dbConn)
+      }
+    }
     connectionActive <<- FALSE
   },
 
@@ -35,15 +53,26 @@ DbModel$methods(
       warning("Schema name has not been set, call setSchemaName")
     }
 
+    sql <- SqlRender::render(query, schema = schemaName, warnOnMissingParameters = FALSE, ...)
+    sql <- SqlRender::translate(sql, targetDialect = "postgresql")
+
     tryCatch({
-      df <- DatabaseConnector::renderTranslateQuerySql(dbConn, query, schema = schemaName, warnOnMissingParameters = FALSE, ...)
-      return(df)
-    },
-      error = function(e) {
-        ParallelLogger::logError(e)
+      if (is(dbConn, "Pool")) {
+        data <- DatabaseConnector::dbGetQuery(dbConn, sql)
+        colnames(data) <- toupper(colnames(data))
+      } else {
+        data <- DatabaseConnector::querySql(dbConn, sql)
+      }
+      return(data)
+    }, error = function(e) {
+      ParallelLogger::logError(e)
+      if (is(dbConn, "Pool")) {
+        writeLines(sql)
+      } else {
         closeConnection()
         initializeConnection()
-      })
+      }
+    })
   },
 
   countQuery = function(query, ..., render = TRUE) {
