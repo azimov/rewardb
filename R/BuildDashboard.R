@@ -63,6 +63,38 @@ addCemEvidence <- function(appContext, connection) {
   }
 }
 
+addCemEvidenceFiles <- function(appContext) {
+
+  if (!length(appContext$cemEvidenceFiles)) {
+    stop("No files to add")
+  }
+
+  appContext$useConnectionPool <- FALSE
+  model <- DashboardDbModel(appContext)
+
+  for (cohortId in names(appContext$cemEvidenceFiles)) {
+    file <- files[[cohortId]]
+    cohortId <- as.integer(cohortId)
+    data <- read.csv(file)
+
+    positives <- model$queryDb(
+      "SELECT DISTINCT outcome_cohort_id FROM @schema.outcome_concept WHERE condition_concept_id IN (@condition_concepts)",
+      condition_concepts = data[data$`Suggested.Negative.Control` == "N",]$Id
+    )
+    positives$target_cohort_id <- cohortId
+
+    negatives <- model$queryDb(
+      "SELECT DISTINCT outcome_cohort_id FROM @schema.outcome_concept WHERE condition_concept_id IN (@condition_concepts)",
+      condition_concepts = data[data$`Suggested.Negative.Control` == "Y",]$Id
+    )
+    negatives$target_cohort_id <- cohortId
+
+    pgCopyDataFrame(appContext$connectionDetails, negatives, appContext$short_name, "negative_control")
+    pgCopyDataFrame(appContext$connectionDetails, positives, appContext$short_name, "positive_indication")
+  }
+  model$closeConnection()
+}
+
 #' @title
 #' meta analysis
 #' @description
@@ -151,6 +183,10 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
     computeMetaAnalysis(appContext, connection)
     message("Adding negative controls from CEM")
     addCemEvidence(appContext, connection)
+
+     if (is.null(appContext$cemEvidenceFiles)) {
+      addCemEvidenceFiles(appContext)
+    }
 
     if (performCalibration) {
       .removeCalibratedResults(appContext, connection)
