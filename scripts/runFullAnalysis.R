@@ -5,16 +5,18 @@ config <- loadGlobalConfig("config/global-cfg.yml")
 exportReferenceTables(config)
 
 cdmConfigPaths <- c(
-  "config/cdm/pharmetrics.yml",
-  "config/cdm/mcdc.yml",
-  "config/cdm/mcdr.yml",
+
+  "config/cdm/mdcd.yml",
+  "config/cdm/mdcr.yml",
   "config/cdm/ccae.yml",
-  "config/cdm/optum.yml"
+  "config/cdm/optum.yml",
+  "config/cdm/pharmetrics.yml"
 )
 
 for (cdmConfigPath in cdmConfigPaths) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   importReferenceTables(cdmConfig, "rewardb-references.zip")
+  createCustomDrugEras(cdmConfigPath)
   resultsFiles <- generateSccResults(cdmConfigPath)
   # Copy files
   for (table in names(resultsFiles)) {

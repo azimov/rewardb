@@ -22,12 +22,12 @@ addPhenotypeLibrary <- function(connection,
                                 generateSql = TRUE) {
   # Go through folders and add each cohort with names and descriptions
   if (local) {
-    remotes::install_git(libraryRepo, ref = ref)
+    remotes::install_git(libraryRepo, ref = ref, force = TRUE)
   } else {
-    remotes::install_github(libraryRepo, ref = ref)
+    remotes::install_github(libraryRepo, ref = ref, force = TRUE)
   }
 
-  definitions <- Sys.glob(paste0(system.file("", package = packageName), "*/*.json"))
+  definitions <- Sys.glob(file.path(system.file("", package = packageName), "*", "*.json"))
 
   failures <- list()
 
