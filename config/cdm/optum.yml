@@ -16,11 +16,11 @@ useSecurePassword: True
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
 useMppBulkLoad: True
 
-resultSchema: "scratch_reward_optum_ses"
-referenceSchema: "scratch_reward_optum_ses"
+resultSchema: "scratch_reward_optum_feb2021"
+referenceSchema: "scratch_reward_optum_feb2021"
 cdmSchema: "cdm"
 vocabularySchema: "cdm"
-drugEraSchema: "scratch_reward_optum_ses"
+drugEraSchema: "scratch_reward_optum_feb2021"
 
 tables:
   outcomeCohort: "rb_outcome_cohort"
