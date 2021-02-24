@@ -181,19 +181,12 @@ generateSccResults <- function(
   config <- loadCdmConfig(cdmConfigFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
-  tryCatch({
-    if (.createExposureCohorts) {
-      ParallelLogger::logInfo("Creating exposure cohorts")
-      createCohorts(connection, config)
-    }
+  ParallelLogger::logInfo("Creating exposure cohorts")
+  createCohorts(connection, config)
 
-    if (.createOutcomeCohorts) {
-      ParallelLogger::logInfo("Creating outcome cohorts")
-      createOutcomeCohorts(connection, config)
-    }
-  },
-    error = ParallelLogger::logError
-  )
+  ParallelLogger::logInfo("Creating outcome cohorts")
+  createOutcomeCohorts(connection, config)
+    
 
   resultsFiles <- list(
     scc_result = c(),

@@ -194,7 +194,7 @@ computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
     cohortTable <- config$tables$outcomeCohort
   }
 
-  if (length(atlasCohorts)) {
+  if (nrow(atlasCohorts) > 0) {
     # Generate each cohort
     apply(atlasCohorts, 1, function(cohortReference) {
       ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])
