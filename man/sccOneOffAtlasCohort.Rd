@@ -4,14 +4,22 @@
 \alias{sccOneOffAtlasCohort}
 \title{Generate scc results for a one off atlas cohort (added after a full results run)}
 \usage{
-sccOneOffAtlasCohort(cdmConfig, zipFilePath, configId)
+sccOneOffAtlasCohort(
+  cdmConfigPath,
+  configId,
+  atlasIds,
+  exposure = FALSE,
+  referenceZipFile = NULL
+)
 }
 \arguments{
-\item{cdmConfig}{cdmConfig object loaded with loadCdmConfig}
-
-\item{zipFilePath}{path to ouputed zipFile}
-
 \item{configId}{String configuration id}
+
+\item{exposure}{boolean - is this for exposure or outcome cohorts}
+
+\item{referenceZipFile}{path to ouputed zipFile of references if they need to be updated}
+
+\item{cdmConfig}{cdmConfig object loaded with loadCdmConfig}
 }
 \description{
 Removes atlas entries from the cdm store

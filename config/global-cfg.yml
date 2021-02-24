@@ -1,6 +1,4 @@
 webApiUrl: "https://epi.jnj.com:8443/WebAPI"
-testMode: false
-resultsTablePrefix: reward_results_dev
 exportPath: "export"
 
 connectionDetails:

@@ -15,4 +15,5 @@ data.frame of calibrated results
 \description{
 Compute the calibrated results for cohort outcomes
 Requires negative control cohorts to be set
+Used automatically when appContext$useExposureControls is TRUE
 }

@@ -1,0 +1,30 @@
+---
+title: "About REWARD steps"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{about}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Cohort definitions
+
+## Outcomes
+* Type 0 - requiring two visits, first visit is used as date of outcome
+* Type 1 - requiring one inpatient visit
+
+## Exposures
+
+ATC Level
+Ingredients
+Custom ATLAS exposures
+
+Soon:
+    - Ingredient form (IV/Topical/Oral)
