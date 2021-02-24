@@ -31,7 +31,7 @@ for (conceptSetName in names(customExposureRefs)) {
 
 for (cdmPath in Sys.glob("config/cdm/*.yml")) {
   cdmConfig <- loadCdmConfig(cdmPath)
-  registerCdm(connection, cdmConfig, config)
+  registerCdm(connection, config, cdmConfig)
 }
 
 DatabaseConnector::disconnect(connection)
