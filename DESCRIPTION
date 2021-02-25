@@ -21,7 +21,8 @@ Imports:
     checkmate,
     RJSONIO,
     readr,
-    ParallelLogger
+    ParallelLogger,
+    templates
 Suggests:
     doParallel,
     foreach,

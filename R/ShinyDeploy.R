@@ -1,8 +1,3 @@
-# Create app.R code template
-appDotRtpl <- templates::tmpl(~`renv::load("{{ renvPath }}")
-library(rewardb)
-launchDashboard({{ appConfigPath }}, "{{ globalConfigPath }}")`)
-
 #' @title
 #' Deploy shiny application
 #'
@@ -18,7 +13,12 @@ deployShinyApp <- function(appConfigPath,
                            deployPath = "~/ShinyApps/reward/",
                            renvPath = "~/reward/",
                            keyfile = NULL) {
-  
+
+  # Create app.R code template
+  appDotRtpl <- templates::tmpl(~`renv::load("{{ renvPath }}")
+  library(rewardb)
+  launchDashboard({{ appConfigPath }}, "{{ globalConfigPath }}")`)
+
   appCfg <- yaml::read_yaml(appConfigPath)
   deployDir <- file.path(deployPath, appCfg$short_name, fsep = "/")
   # Files to upload
