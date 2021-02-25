@@ -123,7 +123,11 @@ loadAppContext <- function(configPath, globalConfigPath, .env = .GlobalEnv) {
   return(appContext)
 }
 
-# Path for config shared across shiny apps and data build
+#' @title
+#' Loads global config
+#' @description
+#' @param globalConfigPath path to global yaml
+#' @export
 loadGlobalConfig <- function(globalConfigPath) {
   config <- yaml::read_yaml(globalConfigPath)
 

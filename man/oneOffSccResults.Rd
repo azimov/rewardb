@@ -5,7 +5,7 @@
 \title{oneOffSccResults}
 \usage{
 oneOffSccResults(
-  cdmConfigFilePath,
+  cdmConfigPath,
   configId,
   outcomeCohortIds = NULL,
   targetCohortIds = NULL,
@@ -14,7 +14,7 @@ oneOffSccResults(
 )
 }
 \arguments{
-\item{cdmConfigFilePath}{- path to cdm config loaded with loadCdmConfig function}
+\item{cdmConfigPath}{- path to cdm config loaded with loadCdmConfig function}
 
 \item{configId}{- string id that will be used as a prefix to store results files}
 

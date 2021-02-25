@@ -27,5 +27,10 @@ Suggests:
     foreach,
     meta,
     testthat,
-    ssh
+    ssh,
+    knitr,
+    rmarkdown
+Remotes:
+    OHDSI/CohortDiagnostics
 RoxygenNote: 7.1.0
+VignetteBuilder: knitr

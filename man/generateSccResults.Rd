@@ -8,8 +8,8 @@ generateSccResults(
   cdmConfigFilePath,
   .createExposureCohorts = TRUE,
   .createOutcomeCohorts = TRUE,
-  .runSCC = TRUE,
   .generateCohortStats = TRUE,
+  .runSCC = TRUE,
   logFileName = "rbDataBuild.log"
 )
 }

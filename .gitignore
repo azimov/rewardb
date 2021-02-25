@@ -20,3 +20,4 @@ rbDataBuild.log
 /tests/testthat/dashboardLog.log
 /tests/testthat/reference_files/*.csv
 /tests/testthat/export-*.zip
+inst/doc

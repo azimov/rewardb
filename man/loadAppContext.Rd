@@ -19,6 +19,6 @@ loads database password from prompt if REWARD_B_PASSWORD system env variable is 
 The idea is to allow shared configuration settings between the web app and any data processing tools
 }
 \examples{
-loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
+     appContext <- loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
 }
 \keyword{appContext}

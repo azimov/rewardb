@@ -7,7 +7,8 @@
 buildPgDatabase(
   configFilePath = "config/global-cfg.yml",
   buildPhenotypeLibrary = TRUE,
-  generatePlSql = TRUE
+  generatePlSql = TRUE,
+  recreateCem = FALSE
 )
 }
 \arguments{
