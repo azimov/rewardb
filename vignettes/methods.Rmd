@@ -1,5 +1,5 @@
 ---
-title: "Methods Overview"
+title: "REWARD Methods Overview"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{data-build}
@@ -161,12 +161,46 @@ However, this process is still prone to failure and often needs to be restarted 
 
 The size of the tables in scratch space is unavoidably large, taking over 100 GB on some CDMs.
 
-# Generating effect estimates
+# Generating results
 
 ## Self-controlled cohort study design
+Reward has protocol approval for Self-Controlled cohort, Self-controlled case series and comparative cohort designs.
+Currently, only the self-controlled cohort design has been implemented and is preferable to comparative designs as allowing individuals to act as their own controls allows for the control of time-invariant bias within subjects.
+
+Automated methods for comparative cohort designs should also be explored as they allow different questions to be asked.
 
 ## Exposure/outcome cohort statistics
 
+For the self-controlled cohort study design additional statistics regarding the time on treatment and absolute time between exposure and outcome are calculated.
+This distribution applies only to the time at risk windows for patients exposed to the treatment that have the outcome of interest.
+
+Future work in to characterization of the exposure/outcome pairs should be conducted as this is likely important information (e.g. questions arise about the demographics of patients at the time of exposure/ when they experience the outcome).
+
 ## Meta-analysis
+The `meta` r package is used to calculate meta-analysis across all databases.
+Meta analysis is not performed until a study area dashboard is created, this is a post processing step.
+It is not computationally intensive to compute meta-analysis for an individual exposure/outcome pair, but computing it accross the E * O set of exposures is time prohibative and not currently necessary.
 
 ## Empirical Calibration
+The [`EmpiricalCalibration` OHDSI r package](https://github.com/OHDSI/EmpiricalCalibration/) is used to compute calibrated p-values and confidence intervals.
+Using an automated negative control selection process allows the effect estimates to be adjusted according to the computed empirical null distribution.
+
+### Negative control selection
+Negative control selection is based around the Common Evidence Model (CEM) that uses spontaneous reports, literature data and labels to build a map of associations between ingredients and outcomes.
+A matrix for all the ingredient and condition level associations is stored in the reward postgres instance.
+This is an export from the CEM package and is stored in the table `cem.matrix_summary`.
+Here a 1 indicates that an ingredient/outcome pair are related via some mechanism identified in the CEM, and 0 indicates that no known association has been found.
+
+ATLAS exports of concept set evidence can also be imported into REWARD when dashboards are generated.
+These will be applied in addition to the automated cohorts.
+For example, the process my find no mappings - this is a simple work around to ensure that automated negative controls can be used.
+
+Adding the `cemEvidenceFiles` option to a dashboard config file supports this, for example:
+
+```
+cemEvidenceFiles:
+    13735: "extra/controls/influenza_vaccine_controls_export.csv"
+    13734: "extra/controls/pneumenocccoal_vaccine_export.csv"
+```
+
+The process for automated negative control selection as been outlined as interesting to many other researchers and is currently under evaluation.
