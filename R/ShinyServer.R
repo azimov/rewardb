@@ -124,7 +124,7 @@ dashboardInstance <- function(input, output, session) {
     # Handles messy response
       error = function(e) {
         ParallelLogger::logError(paste(e))
-        return(DT::datatable(data.frame()))
+        return(data.frame())
       })
   })
 
@@ -156,6 +156,16 @@ dashboardInstance <- function(input, output, session) {
     },
     content = function(file) {
       write.csv(fullDataDownload(), file, row.names = FALSE)
+    }
+  )
+
+  output$downloadFullData <- downloadHandler(
+    filename = function() {
+      paste0(appContext$short_name, '-export.csv')
+    },
+    content = function(file) {
+      data <- model$getFullDataSet()
+      write.csv(data, file, row.names = FALSE)
     }
   )
 

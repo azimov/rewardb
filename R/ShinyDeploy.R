@@ -17,10 +17,12 @@ deployShinyApp <- function(appConfigPath,
   # Create app.R code template
   appDotRtpl <- templates::tmpl(~`renv::load("{{ renvPath }}")
   library(rewardb)
-  launchDashboard({{ appConfigPath }}, "{{ globalConfigPath }}")`)
+  launchDashboard("{{ appConfigPath }}", "{{ globalConfigPath }}")`)
 
   appCfg <- yaml::read_yaml(appConfigPath)
   deployDir <- file.path(deployPath, appCfg$short_name, fsep = "/")
+
+  appConfigPath <- file.path(renvPath, appConfigPath, fsep = "/")
   # Files to upload
   fp <- tempfile()
   dir.create(fp)

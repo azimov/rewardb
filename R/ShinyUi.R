@@ -122,6 +122,10 @@ dashboardUi <- function(request) {
         "downloadData",
         "Download filtered results as a csv"
       ),
+      downloadButton(
+        "downloadFullData",
+        "Download full results"
+      ),
       width = 6,
       title = paste("About this dashboard -", appContext$name)
     ),

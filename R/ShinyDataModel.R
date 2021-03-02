@@ -305,7 +305,7 @@ DashboardDbModel$methods(
     return(dt)
   },
 
-  getFullDataSet = function(calibrated = 1) {
+  getFullDataSet = function(calibrated = c(0,1)) {
     sql <- readr::read_file(system.file("sql/export/", "fullDashboardData.sql", package = "rewardb"))
     df <- queryDb(sql, calibrated = calibrated, show_exposure_classes = config$useExposureControls)
     return(df)
