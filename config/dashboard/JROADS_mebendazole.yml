@@ -6,3 +6,4 @@ custom_exposure_cohort_ids: ~
 atlas_exposure_ids: ~
 target_concept_ids: [ 1794280 ]
 useExposureControls: False
+dataSources: [10, 11, 12, 13]

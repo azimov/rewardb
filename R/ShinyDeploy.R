@@ -62,7 +62,7 @@ updateShinyServer <- function(user, shinyServer = "sharedshiny-prod.jnj.com", po
 
   tryCatch({
     # create directory and sub dirs, if any do not exist
-    ssh::ssh_exec_(session, command = paste("cd", renvPath, "; git pull"))
+    ssh::ssh_exec_wait(session, command = paste("cd", renvPath, "; git pull"))
     ssh::ssh_exec_wait(session, command = paste("cd", renvPath, "; R -e 'renv::load(); devtools::install(upgrade = TRUE)' "))
     },
     error = ParallelLogger::logError

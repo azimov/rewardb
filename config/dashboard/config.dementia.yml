@@ -1,14 +1,8 @@
 name: Dementia
-short_name: dementia_develop
-description: 'dementia'
+short_name: dementia
+description: "Dashboard for dementia and Alzheimer\'s"
 outcome_concept_ids: [4182210, 3784190]
 custom_outcome_cohort_ids: [7547, 7548, 7823]
 target_concept_ids: ~
 useExposureControls: True
 dataSources: [10, 11, 12, 13]
-
-connectionDetails:
-  dbms: "postgresql"
-  server: "reward.cterqq54xyuu.us-east-1.rds.amazonaws.com/rewardb_dev"
-  port: 5432
-  user: "reward_admin"

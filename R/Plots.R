@@ -71,6 +71,10 @@ getMetaAnalysisData <- function(table) {
 #' @param data data.frame
 #' @return ggplot plot
 boxPlotDist <- function(data) {
+  if (nrow(data) == 0) {
+    return(ggplot2::ggplot())
+  }
+
   plot <- ggplot2::ggplot(data,
                           ggplot2::aes(x = .data$SOURCE_NAME,
                                        ymin = .data$MIN,

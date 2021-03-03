@@ -184,7 +184,7 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
     message("Adding negative controls from CEM")
     addCemEvidence(appContext, connection)
 
-     if (is.null(appContext$cemEvidenceFiles)) {
+     if (!is.null(appContext$cemEvidenceFiles)) {
       addCemEvidenceFiles(appContext)
     }
 
