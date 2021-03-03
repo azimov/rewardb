@@ -1,5 +1,5 @@
 name: Depression outcomes
-short_name: depression_outcomes_new
+short_name: depression_outcomes
 description: 'depression outcomes'
 outcome_concept_ids: [4151170]
 custom_outcome_cohort_ids: [10357, 7543]
