@@ -1,6 +1,6 @@
 name: Dementia
 short_name: dementia
-description: "Dashboard for dementia and Alzheimer\'s"
+description: "Dashboard for dementia and Alzheimers"
 outcome_concept_ids: [4182210, 3784190]
 custom_outcome_cohort_ids: [7547, 7548, 7823]
 target_concept_ids: ~
