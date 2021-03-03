@@ -9,6 +9,7 @@ Depends: R (>= 3.5.0)
 License: Copyright Janssen Research & Development 2020 all rights reserved
 Imports:
     DatabaseConnector,
+    pool,
     shiny,
     shinyWidgets,
     shinydashboard,
