@@ -37,7 +37,7 @@ SELECT
   scca.p_value,
   'scca' as study_design,
   0 as calibrated
-  FROM @results_database_schema.scc_result_merged scca
+  FROM @results_database_schema.scc_result scca
   WHERE scca.rr IS NOT NULL
   AND scca.analysis_id = 1
   {@source_ids != ''} ? {AND scca.source_id in (@source_ids)}
