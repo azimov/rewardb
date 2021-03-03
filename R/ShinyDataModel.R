@@ -13,7 +13,7 @@ DbModel$methods(
     if (config$useConnectionPool) {
       dbConn <<- pool::dbPool(
         drv = DatabaseConnector::DatabaseConnectorDriver(),
-        dbms = config$connectionDetails$dbms(),
+        dbms = config$connectionDetails$dbms,
         server = config$connectionDetails$server(),
         port = config$connectionDetails$port(),
         user = config$connectionDetails$user(),
