@@ -33,7 +33,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
       if (model$config$useExposureControls) {
         negatives <- model$getExposureControls(outcomeIds = outcome)
       } else {
-        otype <- if (getOutcomeType(outcome) == 0) 0 else 1
+        otype <- if (getOutcomeType(outcome) == 1) 1 else 0
         negatives <- model$getOutcomeControls(targetIds = treatment)
         # Subset for outcome types
         negatives <- negatives[negatives$OUTCOME_TYPE == otype,]

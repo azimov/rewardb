@@ -175,7 +175,7 @@ computeCalibratedRows <- function(positives, negatives, idCol, calibrationType =
 getCalibratedAtlasTargets <- function(appContext, connection) {
   library(dplyr)
   # Apply to atlas cohorts
-  controlOutcomes <- getOutcomeControls(appContext, connection, outcomeTypes = 1)
+  controlOutcomes <- getOutcomeControls(appContext, connection)
   atlasPositives <- getUncalibratedAtlasCohorts(appContext)
   message(paste("Calibrating", nrow(atlasPositives), "atlas outcomes"))
   resultSetAtlas <- atlasPositives %>%

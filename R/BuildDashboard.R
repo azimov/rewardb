@@ -190,15 +190,7 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
     }
 
     if (performCalibration) {
-      .removeCalibratedResults(appContext, connection)
-      if (appContext$useExposureControls) {
-        message("Calibrating outcomes")
-        calibratedData <- getCalibratedOutcomes(appContext, connection)
-      } else {
-        message("Calibrating targets")
-        calibratedData <- getCalibratedTargets(appContext, connection)
-      }
-      pgCopyDataFrame(appContext$connectionDetails, calibratedData, appContext$short_name, "result")
+      performCalibration(appContext, connection)
     }
 
     if (allowUserAccess) {
@@ -208,6 +200,28 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
     error = ParallelLogger::logError
   )
   DatabaseConnector::disconnect(connection)
+}
+
+performCalibration <- function(appContext, connection = NULL) {
+  initConn <- FALSE
+  if (is.null(connection)) {
+    initConn <- TRUE
+    connection <- DatabaseConnector::connect(appContext$connectionDetails)
+  }
+
+  .removeCalibratedResults(appContext, connection)
+  if (appContext$useExposureControls) {
+    message("Calibrating outcomes")
+    calibratedData <- getCalibratedOutcomes(appContext, connection)
+  } else {
+    message("Calibrating targets")
+    calibratedData <- getCalibratedTargets(appContext, connection)
+  }
+  pgCopyDataFrame(appContext$connectionDetails, calibratedData, appContext$short_name, "result")
+
+  if (initConn) {
+    DatabaseConnector::disconnect(connection)
+  }
 }
 
 grantReadOnlyUserPermissions <- function(connection, schema) {
