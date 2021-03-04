@@ -169,8 +169,9 @@ computeMetaAnalysis <- function(appContext, connection) {
 #' @param filePath - path to a yaml configuration file used
 #' @param globalConfigPath path to global reward config containing postgres db connection details
 #' @param performCalibration - use empirical calibration package to compute adjusted p values, effect estimates and confidence intervals
+#' @param allowUserAccess - enables grant permission for read only database user
 #' @export
-buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE) {
+buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE, allowUserAccess = FALSE) {
   appContext <- loadAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
 
@@ -199,8 +200,18 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
       }
       pgCopyDataFrame(appContext$connectionDetails, calibratedData, appContext$short_name, "result")
     }
+
+    if (allowUserAccess) {
+      grantReadOnlyUserPermissions(connection, appContext$short_name)
+    }
   },
     error = ParallelLogger::logError
   )
   DatabaseConnector::disconnect(connection)
+}
+
+grantReadOnlyUserPermissions <- function(connection, schema) {
+  pathToSqlFile <- system.file("sql/postgresql", "grantPermissions.sql", package = "rewardb")
+  sql <- SqlRender::readSql(pathToSqlFile)
+  DatabaseConnector::renderTranslateExecuteSql(connection, sql, schema = schema)
 }
