@@ -3,7 +3,9 @@ config <- loadGlobalConfig(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 # Set up a database with constructed cohorts etc
-buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
+buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE, recreateCem = TRUE)
+importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
+
 cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
 sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
 insertAtlasCohortRef(connection, config, 1, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)

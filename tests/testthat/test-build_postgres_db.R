@@ -8,7 +8,8 @@ config <- loadGlobalConfig(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 test_that("build rewardb postgres db", {
-  buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
+  buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE, recreateCem = TRUE)
+  importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT  * FROM @schema.scc_result",
@@ -36,8 +37,6 @@ test_that("build rewardb postgres db", {
   )
   # Cohorts should be created
   expect_true(qdf$COHORT_COUNT[[1]] > 0)
-
-  importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
 })
 
 
