@@ -136,6 +136,65 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
   )
 }
 
+#' @title
+#' Get OMOP Cdm Version used
+#' @description
+#' Get the cdm version used (e.g. 5.3.1)
+#' @returns
+#' String containing version number or Unknown
+#' @param connection DatabaseConnector connection
+#' @param config reward cdmConfig loaded with cdmConfig
+getCdmVersion <- function(cdmConfig) {
+  if (!is.null(cdmConfig$cdmVersion)) {
+    return(cdmConfig$cdmVersion)
+  }
+
+  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
+  sql <- "SELECT cdm_version FROM @cdm_schema.cdm_source"
+  version <- "Unknown"
+  tryCatch({
+    version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema)[[1]]
+  },
+    error = ParallelLogger::logError
+  )
+  return(version)
+}
+
+#' getCdmVersion
+#' @description
+#' Get the database version if a _version table exists. This is a JNJ standard but not a requirment of a cdm
+#' Returns -1 where table is not present. Only really used for debugging in meta-data
+#' @param connection DatabaseConnector connection
+#' @param cdmConfig reward cdmConfig loaded with cdmConfig
+getDatabaseId <- function(cdmConfig) {
+
+  if (is.list(cdmConfig$cdmVersionDate)) {
+    if("VERSION_ID" %in% names(cdmConfig$cdmVersionDate) & "VERSION_DATE" %in% names(cdmConfig$cdmVersionDate)){
+      return(cdmConfig$cdmVersionDate)
+    }
+    warning("Incorrect format for cdm version date in config")
+  }
+
+  if (is.null(cdmConfig$cdmVersionTable)) {
+    return(list(VERSION_ID = NULL, VERSION_DATE = NULL))
+  }
+
+  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
+
+  sql <- " SELECT version_id, version_date FROM @cdm_schema.@version_table;"
+  version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema, version_table = cdmConfig$cdmVersionTable)[[1]]
+
+  return(version)
+}
+
+#' getCdmVersion
+#' @description
+#' Register a cdm with central postgres db
+#' @param connection DatabaseConnector connection
+#' @param globalConfig globak reward config
+#' @param cdmConfig reward cdmConfig loaded with cdmConfig
 registerCdm <- function(connection, globalConfig, cdmConfig) {
   # Check if CDM ID is in table
   # Check if source key is a match
@@ -144,13 +203,22 @@ registerCdm <- function(connection, globalConfig, cdmConfig) {
   res <- DatabaseConnector::renderTranslateQuerySql(connection, sql, schema = globalConfig$rewardbResultsSchema, source_id = cdmConfig$sourceId)
 
   if (res$CNT[[1]] == 0) {
-    sql <- "insert into @schema.data_source (source_id, source_key, source_name)
-              values (@source_id, '@source_key', '@source_name');"
+    cdmVersion <- getCdmVersion(cdmConfig)
+    dbId <- getDatabaseId(cdmConfig)
+
+    sql <- "insert into @schema.data_source (source_id, source_key, source_name, cdm_version, db_id, version_date)
+              values (@source_id, '@source_key', '@source_name', '@cdm_version',
+                        {@db_id != ''} ? {'@db_id'} : {NULL}, {@version_date != ''} ? {'@version_date'} : {NULL});"
     DatabaseConnector::renderTranslateExecuteSql(connection,
                                                  sql,
                                                  schema = globalConfig$rewardbResultsSchema,
                                                  source_id = cdmConfig$sourceId,
                                                  source_name = cdmConfig$name,
-                                                 source_key = cdmConfig$database)
+                                                 source_key = cdmConfig$database,
+                                                 db_id = dbId$VERSION_ID,
+                                                 version_date = dbId$VERSION_DATE,
+                                                 cdm_version = cdmVersion)
+  } else {
+    warning("CDM already exists")
   }
 }

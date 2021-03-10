@@ -53,5 +53,8 @@ CREATE TABLE @schema.time_on_treatment (
 CREATE TABLE @schema.data_source (
     source_id INT PRIMARY KEY,
     source_name varchar,
-    source_key varchar
+    source_key varchar,
+    cdm_version varchar,
+    db_id varchar,
+    version_date date
 );

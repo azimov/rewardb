@@ -4,6 +4,12 @@
 # Created on: 2020-10-21
 test_that("Phenotype Library From github", {
   # Set up a database with constructed cohorts etc
+  build <- ifelse(is.null(getOption("testBuildPhenotypeLibrary")),FALSE, getOption("testBuildPhenotypeLibrary"))
+
+  if(!build) {
+    skip("use setOption('testBuildPhenotypeLibrary', TRUE) to test phenotype library")
+  }
+
   buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = TRUE, generatePlSql = FALSE)
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,

@@ -163,3 +163,15 @@ SELECT
 FROM @schema.target_exposure_class tec
 INNER JOIN @vocabulary_schema.concept c ON tec.exposure_class_id = c.concept_id
 ;
+
+INSERT INTO @schema.data_source (
+    source_id,
+    source_name,
+    source_key,
+    cdm_version,
+    db_id,
+    version_date
+)
+SELECT * FROM @results_database_schema.data_source
+{@source_ids != ''} ? {WHERE source_id in (@source_ids)}
+;

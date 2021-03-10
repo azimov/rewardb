@@ -21,6 +21,7 @@ referenceSchema: "scratch_reward_mdcr_feb2021"
 cdmSchema: "cdm"
 vocabularySchema: "cdm"
 drugEraSchema: "scratch_reward_mdcr_feb2021"
+cdmVersionTable: "_version"
 
 tables:
   outcomeCohort: "rb_outcome_cohort"

@@ -79,13 +79,12 @@ DROP TABLE IF EXISTS @schema.data_source;
 CREATE TABLE @schema.data_source (
     source_id INT PRIMARY KEY,
     source_name varchar,
-    source_key varchar
+    source_key varchar,
+    cdm_version varchar,
+    db_id varchar,
+    version_date date
 );
 
-INSERT INTO @schema.data_source (source_id, source_name, source_key) values (10,'Optum SES','CDM_Optum_Extended_SES_v1156');
-INSERT INTO @schema.data_source (source_id, source_name, source_key) values (11,'IBM CCAE','CDM_IBM_CCAE_V1151');
-INSERT INTO @schema.data_source (source_id, source_name, source_key) values (12,'IBM MDCD','CDM_IBM_MDCD_v1153');
-INSERT INTO @schema.data_source (source_id, source_name, source_key) values (13,'IBM MDCR','CDM_IBM_MDCR_v1152');
 INSERT INTO @schema.data_source (source_id, source_name, source_key) values (-99,'Meta Analysis','Meta Analysis');
 
 DROP TABLE IF EXISTS @schema.reward_version;

@@ -21,6 +21,7 @@ referenceSchema: "scratch_reward_pharmetric_feb_2021"
 cdmSchema: "cdm"
 vocabularySchema: "cdm"
 drugEraSchema: "scratch_reward_pharmetric_feb_2021"
+cdmVersionTable: "_version"
 
 tables:
   outcomeCohort: "rb_outcome_cohort"

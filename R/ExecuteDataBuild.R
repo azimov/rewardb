@@ -20,45 +20,6 @@
   return(logger)
 }
 
-#' @title
-#' Get Cdm Version
-#' @description
-#' Get the cdm version used (e.g. 5.3.1)
-#' @returns
-#' String containing version number or Unknown
-#' @param connection DatabaseConnector connection
-#' @param config reward cdmConfig loaded with cdmConfig
-getCdmVersion <- function(cdmConfig) {
-  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
-  on.exit(DatabaseConnector::disconnect(connection))
-  sql <- "SELECT cdm_version FROM @cdm_schema.cdm_source"
-  version <- "Unknown"
-  tryCatch({
-    version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema)[[1]]
-  },
-    error = ParallelLogger::logError
-  )
-  return(version)
-}
-
-#' getCdmVersion
-#' @description
-#' Get the database version if a _version table exists. This is a JNJ standard but not a requirment of a cdm
-#' Returns -1 where table is not present. Only really used for debugging in meta-data
-#' @param connection DatabaseConnector connection
-#' @param cdmConfig reward cdmConfig loaded with cdmConfig
-getDatabaseId <- function(cdmConfig) {
-  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
-  on.exit(DatabaseConnector::disconnect(connection))
-  sql <- " SELECT version_id FROM @cdm_schema._version;"
-  version <- -1
-  tryCatch({
-    version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema)[[1]]
-  },
-    error = ParallelLogger::logError
-  )
-  return(version)
-}
 
 #' @title
 #' Get Zipped Scc Results

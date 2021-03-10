@@ -194,8 +194,6 @@ computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
     cohortTable <- config$tables$outcomeCohort
   }
 
-
-
   if (nrow(atlasCohorts) > 0) {
     cluster <- ParallelLogger::makeCluster(numberOfThreads = 10)
     # Generate each cohort
