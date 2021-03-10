@@ -7,7 +7,7 @@ test_that("Phenotype Library From github", {
   build <- ifelse(is.null(getOption("testBuildPhenotypeLibrary")),FALSE, getOption("testBuildPhenotypeLibrary"))
 
   if(!build) {
-    skip("use setOption('testBuildPhenotypeLibrary', TRUE) to test phenotype library")
+    skip("use options('testBuildPhenotypeLibrary' = TRUE) to test phenotype library")
   }
 
   buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = TRUE, generatePlSql = FALSE)
