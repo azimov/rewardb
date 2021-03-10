@@ -1,3 +1,4 @@
+
 CONST_REFERENCE_TABLES <- c(
   "concept_set_definition",
   "cohort_definition",
@@ -40,7 +41,7 @@ exportReferenceTables <- function(
     meta$hashList <- list()
     meta$tableNames <- CONST_REFERENCE_TABLES
 
-    for (table in rewardb::CONST_REFERENCE_TABLES) {
+    for (table in CONST_REFERENCE_TABLES) {
       data <- DatabaseConnector::renderTranslateQuerySql(
         connection,
         "SELECT * FROM @schema.@table;",
@@ -53,10 +54,10 @@ exportReferenceTables <- function(
       meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
     }
 
-    metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
+    metaDataFilename <- file.path(exportPath, CONST_META_FILE_NAME)
     jsonlite::write_json(meta, metaDataFilename)
 
-    exportFiles <- file.path(exportPath, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
+    exportFiles <- file.path(exportPath, paste0(CONST_REFERENCE_TABLES, ".csv"))
     zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)
 
     ParallelLogger::logInfo(paste("Created export zipfile", exportZipFile))
@@ -97,7 +98,7 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
       analysis_setting = cdmConfig$tables$analysisSetting
     )
 
-    fileList <- file.path(cdmConfig$referencePath, paste0(rewardb::CONST_REFERENCE_TABLES, ".csv"))
+    fileList <- file.path(cdmConfig$referencePath, paste0(CONST_REFERENCE_TABLES, ".csv"))
     for (file in fileList) {
       camelName <- SqlRender::snakeCaseToCamelCase(strsplit(basename(file), ".csv")[[1]])
       tableName <- cdmConfig$tables[[camelName]]
@@ -110,8 +111,8 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
         data <- read.csv(file)
 
         # Remove columns we don't want to store on the CDM
-        if (camelName %in% names(rewardb::CONST_EXCLUDE_REF_COLS)) {
-          data <- data[, !(names(data) %in% rewardb::CONST_EXCLUDE_REF_COLS[[camelName]])]
+        if (camelName %in% names(CONST_EXCLUDE_REF_COLS)) {
+          data <- data[, !(names(data) %in% CONST_EXCLUDE_REF_COLS[[camelName]])]
           ParallelLogger::logDebug(names(data))
         }
 

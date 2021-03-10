@@ -1,3 +1,4 @@
+#' @export
 CONST_META_FILE_NAME <- "rb-meta.json"
 
 #' @title
@@ -18,9 +19,9 @@ unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   # Unzip full file
   utils::unzip(zipfile = exportZipFilePath, exdir = unzipPath, overwrite = TRUE)
   # Perform checksum verifications
-  metaFilePath <- file.path(unzipPath, rewardb::CONST_META_FILE_NAME)
+  metaFilePath <- file.path(unzipPath, CONST_META_FILE_NAME)
   checkmate::assert_file_exists(metaFilePath)
-  meta <- jsonlite::read_json(file.path(unzipPath, rewardb::CONST_META_FILE_NAME))
+  meta <- jsonlite::read_json(file.path(unzipPath, CONST_META_FILE_NAME))
 
   ParallelLogger::logInfo(paste("Verifying file checksums"))
   # Check files are valid

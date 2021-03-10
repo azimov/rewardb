@@ -25,7 +25,7 @@ exportResults <- function(
     meta$hashList[[basename(file)]] <- tools::md5sum(file)[[1]]
   }
 
-  metaDataFilename <- file.path(exportPath, rewardb::CONST_META_FILE_NAME)
+  metaDataFilename <- file.path(exportPath, CONST_META_FILE_NAME)
   jsonlite::write_json(meta, metaDataFilename)
 
   zip::zipr(exportZipFile, append(exportFiles, metaDataFilename), include_directories = FALSE)
@@ -33,7 +33,7 @@ exportResults <- function(
 }
 
 getMetaDt <- function(unzipPath) {
-  jsonlite::read_json(file.path(unzipPath, rewardb::CONST_META_FILE_NAME))
+  jsonlite::read_json(file.path(unzipPath, CONST_META_FILE_NAME))
 }
 
 #' Only works with postgres

@@ -180,7 +180,7 @@ loadCdmConfig <- function(cdmConfigPath) {
 
   defaultTables <- list()
 
-  for (table in rewardb::CONST_REFERENCE_TABLES) {
+  for (table in CONST_REFERENCE_TABLES) {
     defaultTables[[SqlRender::snakeCaseToCamelCase(table)]] <- table
   }
 
