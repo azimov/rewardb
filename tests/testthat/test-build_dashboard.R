@@ -1,46 +1,6 @@
-configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
-config <- loadGlobalConfig(configFilePath)
-connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-
 # Set up a database with constructed cohorts etc
-buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE, recreateCem = TRUE)
-importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
-
-cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
-sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
-insertAtlasCohortRef(connection, config, 1, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
-
-cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
-sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
-insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
-
-cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasExposureCohort19321.json", package = "rewardb"))
-sqlDefinition <- readr::read_file(system.file("tests", "atlasExposureCohort19321.sql", package = "rewardb"))
-insertAtlasCohortRef(connection, config, 19321, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
-
-conceptSetId <- 11933
-conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
-insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
-
-cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
-cdmConfig <- loadCdmConfig(cdmConfigPath)
-
-zipFilePath <- "rewardb-references.zip"
-refFolder <- "reference_test_folder"
-unlink(zipFilePath)
-unlink(refFolder)
-exportReferenceTables(config)
-print("import refs")
-importReferenceTables(cdmConfig, zipFilePath)
-print("scc results")
-resultsFiles <- generateSccResults(cdmConfigPath)
-for (table in names(resultsFiles)) {
-  for (file in resultsFiles[[table]]) {
-    pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
-  }
-}
-
-appContextFile <- system.file("tests", "test.dashboard.yml", package = "rewardb")
+fullDbSetup()
+runDataBuild()
 
 test_that("Dashboard creation works", {
   Sys.setenv("REWARD_B_PASSWORD" = "postgres")
@@ -75,4 +35,3 @@ test_that("Model getter functions", {
   model$closeConnection()
 })
 
-DatabaseConnector::disconnect(connection)

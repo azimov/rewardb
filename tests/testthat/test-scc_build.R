@@ -1,41 +1,7 @@
-configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
-config <- loadGlobalConfig(configFilePath)
-connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
-# Set up a database with constructed cohorts etc
-buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE)
-# Add some extra scc settings
-addAnalysisSettingsJson(connection, config, settingsFilePath = system.file("tests", "testSCCSettings.json", package = "rewardb"))
-
-cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
-sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
-insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
-
-cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasExposureCohort19321.json", package = "rewardb"))
-sqlDefinition <- readr::read_file(system.file("tests", "atlasExposureCohort19321.sql", package = "rewardb"))
-insertAtlasCohortRef(connection, config, 19321, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
-
-conceptSetId <- 11933
-conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
-insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
-
-cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
-cdmConfig <- loadCdmConfig(cdmConfigPath)
-
-zipFilePath <- "rewardb-references.zip"
-refFolder <- "reference_test_folder"
-unlink(zipFilePath)
-unlink(refFolder)
-exportReferenceTables(config)
-importReferenceTables(cdmConfig, zipFilePath)
-
-
-unlink("export")
-unlink("rb-import")
 
 test_that("Full data generation and export", {
-  registerCdm(connection, config, cdmConfig)
-
+  fullDbSetup()
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT count(*) as cnt FROM @results_schema.data_source",
@@ -43,12 +9,7 @@ test_that("Full data generation and export", {
   )
   expect_true(qdf$CNT[[1]] == 1)
 
-  resultsFiles <- generateSccResults(cdmConfigPath)
-  for (table in names(resultsFiles)) {
-    for (file in resultsFiles[[table]]) {
-      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
-    }
-  }
+  runDataBuild()
 
   # Assert that the tables contain d ata
   qdf <- DatabaseConnector::renderTranslateQuerySql(
@@ -68,6 +29,3 @@ test_that("Full data generation and export", {
   expect_true(qdf$RESULTS_COUNT[[1]] > 0)
 
 })
-DatabaseConnector::disconnect(connection)
-unlink("export")
-unlink("rb-import")

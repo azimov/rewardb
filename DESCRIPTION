@@ -27,6 +27,7 @@ Imports:
 Suggests:
     doParallel,
     foreach,
+    withr,
     meta,
     testthat,
     ssh,

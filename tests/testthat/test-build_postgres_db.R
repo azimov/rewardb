@@ -3,10 +3,6 @@
 # Created by: James Gilbert
 # Created on: 2020-10-05
 
-configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
-config <- loadGlobalConfig(configFilePath)
-connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-
 test_that("build rewardb postgres db", {
   buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE, recreateCem = TRUE)
   importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
@@ -110,8 +106,3 @@ test_that("Add and remove custom exposure references", {
   expect_false(conceptSetId %in% qdf$CONCEPT_SET_ID)
 
 })
-
-# Check that the vocabulary schema is there
-
-# Check that creation of a CEM sumamry table works
-DatabaseConnector::disconnect(connection)
