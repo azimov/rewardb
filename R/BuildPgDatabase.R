@@ -11,6 +11,8 @@
 buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE, generatePlSql = TRUE, recreateCem = FALSE) {
   config <- loadGlobalConfig(configFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
+
   tryCatch({
     message("creating rewardb results schema")
     sql <- SqlRender::readSql(system.file("sql/create", "pgSchema.sql", package = "rewardb"))
@@ -56,7 +58,6 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPheno
   },
     error = ParallelLogger::logError
   )
-  DatabaseConnector::disconnect(connection)
 }
 
 importCemSummary <- function(summaryFilePath, configFilePath = "config/global-cfg.yml") {

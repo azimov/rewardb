@@ -30,6 +30,7 @@
 #' @param config reward cdmConfig loaded with cdmConfig
 getCdmVersion <- function(cdmConfig) {
   connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
   sql <- "SELECT cdm_version FROM @cdm_schema.cdm_source"
   version <- "Unknown"
   tryCatch({
@@ -37,7 +38,6 @@ getCdmVersion <- function(cdmConfig) {
   },
     error = ParallelLogger::logError
   )
-  DatabaseConnector::disconnect(connection)
   return(version)
 }
 
@@ -49,6 +49,7 @@ getCdmVersion <- function(cdmConfig) {
 #' @param cdmConfig reward cdmConfig loaded with cdmConfig
 getDatabaseId <- function(cdmConfig) {
   connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
   sql <- " SELECT version_id FROM @cdm_schema._version;"
   version <- -1
   tryCatch({
@@ -56,7 +57,6 @@ getDatabaseId <- function(cdmConfig) {
   },
     error = ParallelLogger::logError
   )
-  DatabaseConnector::disconnect(connection)
   return(version)
 }
 
@@ -180,6 +180,7 @@ generateSccResults <- function(
   # load config
   config <- loadCdmConfig(cdmConfigFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
 
   if (.createExposureCohorts) {
     ParallelLogger::logInfo("Creating exposure cohorts")
@@ -210,7 +211,6 @@ generateSccResults <- function(
                                                   outcomeCohortIds = NULL,
                                                   targetCohortIds = NULL)
   }
-  DatabaseConnector::disconnect(connection)
   ParallelLogger::unregisterLogger(logger)
   return(resultsFiles)
 }
@@ -243,6 +243,7 @@ oneOffSccResults <- function(
   }
   logger <- .getLogger(logFileName)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
   resultsFiles <- list()
   resultsFiles$scc_result <- getSccResults(config,
                                            connection,
@@ -257,7 +258,6 @@ oneOffSccResults <- function(
                                                   outcomeCohortIds = outcomeCohortIds,
                                                   targetCohortIds = targetCohortIds)
   }
-  DatabaseConnector::disconnect(connection)
   ParallelLogger::unregisterLogger(logger)
 
   return(resultsFiles)

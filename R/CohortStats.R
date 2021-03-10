@@ -190,11 +190,8 @@ getSCCExposureStats <- function(connectionDetails,
   }
 
   # Check if connection already open:
-  if (is.null(connectionDetails$conn())) {
-    conn <- DatabaseConnector::connect(connectionDetails)
-  } else {
-    conn <- connectionDetails$conn()
-  }
+  conn <- DatabaseConnector::connect(connectionDetails)
+  on.exit(DatabaseConnector::disconnect(conn))
 
   ParallelLogger::logInfo("Retrieving stats from database")
 
@@ -243,10 +240,6 @@ getSCCExposureStats <- function(connectionDetails,
 
   results <- DatabaseConnector::renderTranslateQuerySql(connection = conn, "SELECT * FROM #results;")
   DatabaseConnector::renderTranslateExecuteSql(connection = conn, "TRUNCATE TABLE #results; DROP TABLE #results;")
-
-  if (is.null(connectionDetails$conn())) {
-    DatabaseConnector::disconnect(conn)
-  }
 
   delta <- Sys.time() - start
   ParallelLogger::logInfo(paste("Computing SCC statistics took", signif(delta, 3), attr(delta, "units")))

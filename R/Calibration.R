@@ -76,8 +76,8 @@ getUncalibratedOutcomes <- function(appContext) {
       AND o.type_id != 2 -- ATLAS cohorts excluded
   "
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(dbConn))
   positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, schema = appContext$short_name)
-  DatabaseConnector::disconnect(dbConn)
   return(positives)
 }
 
@@ -95,8 +95,8 @@ getUncalibratedExposures <- function(appContext) {
       AND o.type_id != 2 -- ATLAS cohorts excluded
   "
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(dbConn))
   positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, schema = appContext$short_name)
-  DatabaseConnector::disconnect(dbConn)
 
   return(positives)
 }
@@ -116,8 +116,8 @@ getUncalibratedAtlasCohorts <- function(appContext) {
       AND o.type_id = 2 -- ATLAS cohorts only
   "
   dbConn <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(dbConn))
   positives <- DatabaseConnector::renderTranslateQuerySql(dbConn, sql, schema = appContext$short_name)
-  DatabaseConnector::disconnect(dbConn)
   return(positives)
 }
 

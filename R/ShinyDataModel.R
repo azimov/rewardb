@@ -40,6 +40,10 @@ DbModel$methods(
     connectionActive <<- FALSE
   },
 
+  finalize = function () {
+    closeConnection()
+  },
+
   setSchemaName = function(name) {
     schemaName <<- name
   },

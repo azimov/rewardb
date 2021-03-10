@@ -20,10 +20,6 @@ getAllOutcomeIds <- function(connection, config) {
   return(queryRes$COHORT_DEFINITION_ID)
 }
 
-getResultsDatabaseTableName <- function(config, dataSource) {
-  return(paste0(config$resultsTablePrefix, dataSource$database))
-}
-
 SCC_RESULT_COL_NAMES <- c(
   "source_id" = "source_id",
   "analysis_id" = "analysis_id",
@@ -101,18 +97,4 @@ runScc <- function(
   ParallelLogger::logInfo(paste("Generated results for SCC", config$database))
 
   return(sccSummary)
-}
-
-getResultsDatabaseTableName <- function(config, dataSource) {
-  return(paste0(config$resultsTablePrefix, dataSource$database))
-}
-
-createResultsTable <- function(connection, config, dataSource) {
-  sql <- SqlRender::readSql(system.file("sql/create", "createResultsTable.sql", package = "rewardb"))
-  DatabaseConnector::renderTranslateExecuteSql(
-    connection,
-    sql,
-    results_database_schema = config$cdmDatabase$schema,
-    results_table = getResultsDatabaseTableName(config, dataSource)
-  )
 }

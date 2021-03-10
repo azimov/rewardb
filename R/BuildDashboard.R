@@ -174,6 +174,7 @@ computeMetaAnalysis <- function(appContext, connection) {
 buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE, allowUserAccess = FALSE) {
   appContext <- loadAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
 
   logger <- .getLogger(paste0(appContext$short_name, "DashboardCreation.log"))
   tryCatch(
@@ -199,14 +200,12 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
   },
     error = ParallelLogger::logError
   )
-  DatabaseConnector::disconnect(connection)
 }
 
 performCalibration <- function(appContext, connection = NULL) {
-  initConn <- FALSE
   if (is.null(connection)) {
-    initConn <- TRUE
     connection <- DatabaseConnector::connect(appContext$connectionDetails)
+    on.exit(DatabaseConnector::disconnect(connection))
   }
 
   .removeCalibratedResults(appContext, connection)
@@ -219,9 +218,6 @@ performCalibration <- function(appContext, connection = NULL) {
   }
   pgCopyDataFrame(appContext$connectionDetails, calibratedData, appContext$short_name, "result")
 
-  if (initConn) {
-    DatabaseConnector::disconnect(connection)
-  }
 }
 
 grantReadOnlyUserPermissions <- function(connection, schema) {

@@ -229,7 +229,7 @@ createCustomDrugEras <- function(configPath) {
 
   config <- rewardb::loadCdmConfig(configPath)
   connection <- DatabaseConnector::connect(config$connectionDetails)
-
+  on.exit(DatabaseConnector::disconnect(connection))
   tryCatch({
     sql <- SqlRender::readSql(system.file("sql/cohorts", "customDrugEra.sql", package = "rewardb"))
     DatabaseConnector::renderTranslateExecuteSql(
@@ -238,11 +238,9 @@ createCustomDrugEras <- function(configPath) {
       cdm_database = config$cdmSchema,
       drug_era_schema = config$drugEraSchema
     )
-  },
-  error = function(err) {
+  }, error = function(err) {
     ParallelLogger::logError(err)
     return(NULL)
-  }
-  )
-  DatabaseConnector::disconnect(connection)
+  })
+
 }

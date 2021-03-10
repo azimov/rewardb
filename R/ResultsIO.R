@@ -52,6 +52,7 @@ importResultsFiles <- function(
   meta <- getMetaDt(unzipPath)
 
   connection <- DatabaseConnector::connect(connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
   # Bulk insert data in to tables with pgcopy
   tryCatch(
     {
@@ -74,7 +75,6 @@ importResultsFiles <- function(
     },
     error = ParallelLogger::logError
   )
-  DatabaseConnector::disconnect(connection)
 }
 
 importResultsZip <- function(resultsZipPath, configFilePath="config/global-cfg.yml", unzipPath = "rb-import") {

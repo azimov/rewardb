@@ -31,6 +31,8 @@ exportReferenceTables <- function(
   scipen <- getOption("scipen")
   options(scipen = 999)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
+
   tryCatch(
   {
     # Collect all files and make a hash
@@ -61,7 +63,6 @@ exportReferenceTables <- function(
   },
     error = ParallelLogger::logError
   )
-  DatabaseConnector::disconnect(connection)
   options(scipen = scipen)
 }
 
@@ -75,6 +76,7 @@ exportReferenceTables <- function(
 importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
   unzipAndVerify(zipFilePath, cdmConfig$referencePath, TRUE)
   connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
 
   tryCatch(
   {
@@ -131,7 +133,6 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
       return(NULL)
     }
   )
-  DatabaseConnector::disconnect(connection)
 }
 
 registerCdm <- function(connection, globalConfig, cdmConfig) {
