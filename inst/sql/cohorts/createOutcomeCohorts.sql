@@ -3,7 +3,7 @@ if object_id('@cohort_database_schema.@outcome_cohort_table', 'U') is not null
 	drop table @cohort_database_schema.@outcome_cohort_table;
 }
 
---HINT DISTRIBUTE_ON_KEY(subject_id)
+--HINT DISTRIBUTE_ON_KEY(cohort_definition_id)
 if object_id('@cohort_database_schema.@outcome_cohort_table', 'U') is null
     create table @cohort_database_schema.@outcome_cohort_table
     (
@@ -25,6 +25,7 @@ create table @cohort_database_schema.computed_o_cohorts AS
 SELECT DISTINCT cohort_definition_id
 FROM @cohort_database_schema.@outcome_cohort_table;
 
+--HINT DISTRIBUTE_ON_KEY(ancestor_concept_id)
 create table @cohort_database_schema.concept_ancestor_grp as
 select
   ca1.ancestor_concept_id
