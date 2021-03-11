@@ -71,6 +71,7 @@ from
 inner join @reference_schema.@outcome_cohort_definition ocr ON (
     ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 0
 )
+inner join #cohorts_to_compute coc ON coc.cohort_definition_id = ocr.cohort_definition_id
 inner join
 (
   select

@@ -115,7 +115,6 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
   DatabaseConnector::renderTranslateExecuteSql(
     connection,
     sql = sql,
-    cdm_database_schema = config$cdmSchema,
     cohort_database_schema = config$resultSchema,
     outcome_cohort_table = config$tables$outcomeCohort,
     delete_existing = deleteExisting
