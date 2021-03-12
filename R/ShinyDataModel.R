@@ -69,8 +69,7 @@ DbModel$methods(
       if (is(dbConn, "Pool")) {
         writeLines(sql)
       } else {
-        closeConnection()
-        initializeConnection()
+        DatabaseConnector::executeSql(dbConn, "ABORT;")
       }
     })
   },

@@ -3,7 +3,7 @@ if object_id('@cohort_database_schema.@outcome_cohort_table', 'U') is not null
 	drop table @cohort_database_schema.@outcome_cohort_table;
 }
 
---HINT DISTRIBUTE_ON_KEY(cohort_definition_id)
+--HINT DISTRIBUTE_ON_KEY(subject_id)
 if object_id('@cohort_database_schema.@outcome_cohort_table', 'U') is null
     create table @cohort_database_schema.@outcome_cohort_table
     (
