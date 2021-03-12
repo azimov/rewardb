@@ -193,25 +193,20 @@ computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
     cohortTable <- config$tables$outcomeCohort
   }
 
-  if (nrow(atlasCohorts) > 0) {
-    cluster <- ParallelLogger::makeCluster(numberOfThreads = 10)
+  if (length(atlasCohorts)) {
     # Generate each cohort
-    ParallelLogger::clusterApply(cluster, atlasCohorts, function(cohortReference) {
-      tryCatch({
-        ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])
-        DatabaseConnector::renderTranslateExecuteSql(
-          connection,
-          sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
-          cdm_database_schema = config$cdmSchema,
-          vocabulary_database_schema = config$vocabularySchema,
-          target_database_schema = config$resultSchema,
-          target_cohort_table = cohortTable,
-          target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
-        )
-      }, error = ParallelLogger::logError)
+    apply(atlasCohorts, 1, function(cohortReference) {
+      ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection,
+        sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
+        cdm_database_schema = config$cdmSchema,
+        vocabulary_database_schema = config$vocabularySchema,
+        target_database_schema = config$resultSchema,
+        target_cohort_table = cohortTable,
+        target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
+      )
     })
-
-    ParallelLogger::stopCluster(cluster)
   }
 }
 

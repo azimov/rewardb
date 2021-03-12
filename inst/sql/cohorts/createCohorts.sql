@@ -1,3 +1,6 @@
+IF OBJECT_ID('tempdb..#computed_cohorts', 'U') IS NOT NULL
+	DROP TABLE #computed_cohorts;
+
 --HINT DISTRIBUTE_ON_KEY(cohort_definition_id)
 CREATE TABLE #computed_cohorts AS
 SELECT DISTINCT cohort_definition_id
