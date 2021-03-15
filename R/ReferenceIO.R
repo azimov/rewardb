@@ -145,7 +145,7 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
 #' @param connection DatabaseConnector connection
 #' @param config reward cdmConfig loaded with cdmConfig
 getCdmVersion <- function(cdmConfig) {
-  if (!is.null(cdmConfig$cdmVersion)) {
+  if ("cdmVersion" %in% names(cdmConfig)) {
     return(cdmConfig$cdmVersion)
   }
 
@@ -170,21 +170,21 @@ getCdmVersion <- function(cdmConfig) {
 getDatabaseId <- function(cdmConfig) {
 
   if (is.list(cdmConfig$cdmVersionDate)) {
-    if("VERSION_ID" %in% names(cdmConfig$cdmVersionDate) & "VERSION_DATE" %in% names(cdmConfig$cdmVersionDate)){
+    if("versionId" %in% names(cdmConfig$cdmVersionDate) & "versionDate" %in% names(cdmConfig$cdmVersionDate)){
       return(cdmConfig$cdmVersionDate)
     }
     warning("Incorrect format for cdm version date in config")
   }
 
   if (is.null(cdmConfig$cdmVersionTable)) {
-    return(list(VERSION_ID = NULL, VERSION_DATE = NULL))
+    return(list(versionId = NULL, versionDate = NULL))
   }
 
   connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
   sql <- " SELECT version_id, version_date FROM @cdm_schema.@version_table;"
-  version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema, version_table = cdmConfig$cdmVersionTable)[[1]]
+  version <- DatabaseConnector::renderTranslateQuerySql(connection, sql, cdm_schema = cdmConfig$cdmSchema, version_table = cdmConfig$cdmVersionTable, snakeCaseToCamelCase = TRUE)
 
   return(version)
 }
@@ -215,8 +215,8 @@ registerCdm <- function(connection, globalConfig, cdmConfig) {
                                                  source_id = cdmConfig$sourceId,
                                                  source_name = cdmConfig$name,
                                                  source_key = cdmConfig$database,
-                                                 db_id = dbId$VERSION_ID,
-                                                 version_date = dbId$VERSION_DATE,
+                                                 db_id = dbId$versionId,
+                                                 version_date = dbId$versionDate,
                                                  cdm_version = cdmVersion)
   } else {
     warning("CDM already exists")
