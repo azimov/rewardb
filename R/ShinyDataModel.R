@@ -66,8 +66,10 @@ DbModel$methods(
       return(data)
     }, error = function(e) {
       ParallelLogger::logError(e)
+      # End current transaction to stop other queries being blocked
       if (is(dbConn, "Pool")) {
         writeLines(sql)
+        DatabaseConnector::dbExecute(dbConn, "ABORT;")
       } else {
         DatabaseConnector::executeSql(dbConn, "ABORT;")
       }
