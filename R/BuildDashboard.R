@@ -171,7 +171,7 @@ computeMetaAnalysis <- function(appContext, connection) {
 #' @param performCalibration - use empirical calibration package to compute adjusted p values, effect estimates and confidence intervals
 #' @param allowUserAccess - enables grant permission for read only database user
 #' @export
-buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE, allowUserAccess = FALSE) {
+buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE, allowUserAccess = TRUE) {
   appContext <- loadAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
