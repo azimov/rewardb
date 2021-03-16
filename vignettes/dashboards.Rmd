@@ -18,7 +18,10 @@ knitr::opts_chunk$set(
 library(rewardb)
 ```
 
-## Creating a configuration file
+# Introduction
+This process assumes that you have generated data and have a user account that can create database schemas.
+
+# Creating a configuration file
 First, you need to create a configuration YAML file. 
 The best way to do this is to copy one of the existing configurations in the `config` directory.
 E.g. open the file `../config/config.dev.yml` and save a copy `../config/config.my-study.yml`.
@@ -32,24 +35,41 @@ Edit the fields in the top of the file as follows:
 name: My study dashboard
 short_name: my_study # This is the name of the database schema!
 description: My study all about x
-outcome_concept_ids: [] # These are atlas ids and  will not be multiplied by 100
-custom_outcome_cohort_ids: [] # These are atlas ids and  will not be multiplied by 100
+outcome_concept_ids: [80488]
+custom_outcome_cohort_ids: [804880001] # These are atlas ids or pheenotype library ids
 target_concept_ids: ~
+useExposureControls: True # This option ensures that we control using based exposures as our outcomes are fixed
 ```
 
 Notice that the `target_cohort_ids` field has the character`~`, this indicates that the field is
 null. This is because, for this example, we are interested in all exposures for the specified outcomes.
 
-# Making the database 
-Then we want to create the database schema and perform empirical calibration.
+For an exposure dashboard use the following as a template
+```
+name: My study dashboard
+short_name: my_study # This is the name of the database schema!
+description: My study all about x
+outcome_concept_ids: ~
+custom_outcome_cohort_ids: ~
+target_concept_ids: [1124300]
+atlas_exposure_ids: [ 19177, 19178 ] # These are atlas ids or pheenotype library ids
+useExposureControls: False # This option ensures that we control using outcomes as our exposures are fixed
+```
+
+# Making the database schema
+Then we want to create the database schema and perform empirical calibration with the build dashboard function
 
 ```{r eval = FALSE}
 buildDashboardFromConfig("config/config.my-study.yml", "config/global-cfg.yml")
 ```
-### Viewing the dashboard 
+
+# Viewing the dashboard
 point at your new config file, e.g. `config/config.my-study.yml` relative to the current working directory.
 
 Then to run the shiny application, inside R:
 ```{r eval = FALSE}
-launchDashboard("config/config.tnfs.yml")
+rewardb::launchDashboard("config/config.tnfs.yml", "config/global-cfg.yml")
 ```
+
+Deploying the the shiny server requires installing the reward package and dependencies on the shared shiny server, uploading configurating files and then pointing the above command at their locations on the server.
+Here, you will need to place the database user credentials in `global-cfg.yml`, do not commit these in to git.
