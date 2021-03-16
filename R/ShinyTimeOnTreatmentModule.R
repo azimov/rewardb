@@ -1,4 +1,3 @@
-
 timeOnTreatmentServer <- function(id, model, selectedExposureOutcome) {
 
   server <- moduleServer(id, function(input, output, session) {
@@ -13,8 +12,12 @@ timeOnTreatmentServer <- function(id, model, selectedExposureOutcome) {
     })
 
 
-    output$timeToTreatmentStats <- DT::renderDataTable({
+    output$timeOnTreatmentStats <- DT::renderDataTable({
       data <- getTimeToTreatmentStats()
+
+      if (nrow(data) == 0) {
+        return (data.frame())
+      }
 
       output <- DT::datatable(
         data,
@@ -39,7 +42,7 @@ timeOnTreatmentServer <- function(id, model, selectedExposureOutcome) {
 timeOnTreatmentUi <- function(id) {
   tagList(
     shinycssloaders::withSpinner(plotly::plotlyOutput(NS(id, "timeOnTreatmentDist"))),
-    shinycssloaders::withSpinner(DT::dataTableOutput(NS(id, "timeToTreatmentStats")))
+    shinycssloaders::withSpinner(DT::dataTableOutput(NS(id, "timeOnTreatmentStats")))
   )
 }
 
@@ -56,6 +59,10 @@ timeToOutcomeServer <- function(id, model, selectedExposureOutcome) {
 
     output$timeToOutcomeStats <- DT::renderDataTable({
       data <- getTimeToOutcomeStats()
+
+      if (nrow(data) == 0) {
+        return (data.frame())
+      }
 
       output <- DT::datatable(
         data,
@@ -78,7 +85,7 @@ timeToOutcomeServer <- function(id, model, selectedExposureOutcome) {
 
 timeToOutcomeUi <- function(id) {
   tagList(
-   shinycssloaders::withSpinner(plotly::plotlyOutput(NS(id, "timeToOutcomeDist"))),
-   shinycssloaders::withSpinner(DT::dataTableOutput(NS(id,"timeToOutcomeStats")))
+    shinycssloaders::withSpinner(plotly::plotlyOutput(NS(id, "timeToOutcomeDist"))),
+    shinycssloaders::withSpinner(DT::dataTableOutput(NS(id, "timeToOutcomeStats")))
   )
 }
