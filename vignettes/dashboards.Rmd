@@ -56,6 +56,23 @@ atlas_exposure_ids: [ 19177, 19178 ] # These are atlas ids or pheenotype library
 useExposureControls: False # This option ensures that we control using outcomes as our exposures are fixed
 ```
 
+# Using manual negative controls
+
+The automated method of generating negative controls may fail to find good, or correct, coverage of cohorts.
+To use a manual set of negative controls use the `cemEvidenceFiles` option in the configuration file to point to exports from ATLAS concept set evidence generation.
+For example:
+
+```
+cemEvidenceFiles:
+    13735: "extra/controls/influenza_vaccine_controls_export.csv"
+    13734: "extra/controls/pneumenocccoal_vaccine_export.csv"
+```
+
+Where the id field relates to the resulting cohort id.
+These export files are directly taken from atlas.
+
+TODO: this currently only works for outcome controls as this is a seldom used feature.
+
 # Making the database schema
 Then we want to create the database schema and perform empirical calibration with the build dashboard function
 
