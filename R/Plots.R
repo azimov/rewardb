@@ -63,33 +63,3 @@ getMetaAnalysisData <- function(table) {
 
   return(row)
 }
-
-#' @title
-#' Box Plot Distribution
-#' @description
-#' Create a boxplot
-#' @param data data.frame
-#' @return ggplot plot
-boxPlotDist <- function(data) {
-  if (nrow(data) == 0) {
-    return(ggplot2::ggplot())
-  }
-
-  plot <- ggplot2::ggplot(data,
-                          ggplot2::aes(x = .data$SOURCE_NAME,
-                                       ymin = .data$MIN,
-                                       lower = .data$P25,
-                                       middle = .data$MEDIAN,
-                                       upper = .data$P75,
-                                       ymax = .data$MAX,
-                                       average = .data$MEAN,
-                                       sd = .data$SD,
-                                       group = .data$SOURCE_NAME,
-                                       y = .data$MEDIAN)) +
-    ggplot2::geom_errorbar(size = 0.5) +
-    ggplot2::geom_boxplot(stat = "identity", fill = rgb(0, 0, 0.8, alpha = 0.25), size = 0.5) +
-    ggplot2::xlab("Data source") +
-    ggplot2::ylab("Time in days")
-
-  return(plot)
-}

@@ -2,6 +2,20 @@ strQueryWrap <- function(vec) {
   paste0("'", vec, "'", sep = "")
 }
 
+#' Wrapper around boxplot module
+timeOnTreatmentServer <- function(id, model, selectedExposureOutcome) {
+  caption <- "Table: Shows time on treatment for population od patients exposed to medication that experience the outcome of interest."
+  server <- moduleServer(id, boxPlotModuleServer(model$getTimeOnTreatmentStats, caption, selectedExposureOutcome))
+  return(server)
+}
+
+#' Wrapper around boxplot module
+timeToOutcomeServer <- function(id, model, selectedExposureOutcome) {
+  caption <- "Table: shows distribution of absolute difference of time between exposure and outcome for population of patients exposed to medication that expeirence the outcome."
+  server <- moduleServer(id, boxPlotModuleServer(model$getTimeToOutcomeStats, caption, selectedExposureOutcome))
+  return(server)
+}
+
 #' @title
 #' Dashboard instance
 #' @description
@@ -209,11 +223,11 @@ dashboardInstance <- function(input, output, session) {
   calibrationPlotServer("calibrationPlot", model, selectedExposureOutcome)
 
   timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
-  tabPanelTimeOnTreatment <- tabPanel("Time on treatment", timeOnTreatmentUi("timeOnTreatment"))
+  tabPanelTimeOnTreatment <- tabPanel("Time on treatment", boxPlotModuleUi("timeOnTreatment"))
   shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeOnTreatment)
 
   timeToOutcomeServer("timeToOutcome", model, selectedExposureOutcome)
-  tabPanelTimeToOutcome <- tabPanel("Time to outcome", timeToOutcomeUi("timeToOutcome"))
+  tabPanelTimeToOutcome <- tabPanel("Time to outcome", boxPlotModuleUi("timeToOutcome"))
   shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeToOutcome)
 
 }
