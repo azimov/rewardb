@@ -209,12 +209,18 @@ dashboardInstance <- function(input, output, session) {
     }
   )
 
+  # Subset without limit
+  mainTableDownload <- reactive({
+    params <- getMainTableParams()
+    do.call(model$getFilteredTableResults, params)
+  })
+
   output$downloadFullTable <- downloadHandler(
     filename = function() {
       paste0(appContext$short_name, '-filtered-', input$cutrange1, '-', input$cutrange2, '.csv')
     },
     content = function(file) {
-      write.csv(mainTableReac(), file, row.names = FALSE)
+      write.csv(mainTableDownload(), file, row.names = FALSE)
     }
   )
 
