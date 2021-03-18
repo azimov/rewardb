@@ -9,19 +9,19 @@ boxPlotDist <- function(data) {
     return(ggplot2::ggplot())
   }
 
-  plot <- ggplot2::ggplot(data,
-                          ggplot2::aes(x = .data$SOURCE_NAME,
-                                       ymin = .data$MIN,
-                                       lower = .data$P25,
-                                       middle = .data$MEDIAN,
-                                       upper = .data$P75,
-                                       ymax = .data$MAX,
-                                       average = .data$MEAN,
-                                       sd = .data$SD,
-                                       group = .data$SOURCE_NAME,
-                                       y = .data$MEDIAN)) +
+  plot <- ggplot2::ggplot(data = data) +
+    ggplot2::aes(x = .data$SOURCE_NAME,
+                 ymin = .data$MIN,
+                 lower = .data$P25,
+                 middle = .data$MEDIAN,
+                 upper = .data$P75,
+                 ymax = .data$MAX,
+                 average = .data$MEAN,
+                 sd = .data$SD,
+                 group = .data$SOURCE_NAME,
+                 y = .data$MEDIAN) +
     ggplot2::geom_errorbar(size = 0.5) +
-    ggplot2::geom_boxplot(stat = "identity", fill = rgb(0, 0, 0.8, alpha = 0.25), size = 0.5) +
+    ggplot2::geom_boxplot(stat = "identity", fill = rgb(0, 0, 0.8, alpha = 0.25), size = 0.2) +
     ggplot2::xlab("Data source") +
     ggplot2::ylab("Time in days")
 
@@ -61,10 +61,10 @@ boxPlotModuleServer <- function(distStatsFunc, caption, selectedExposureOutcome)
       return(output)
     })
 
-    output$distPlot <- plotly::renderPlotly({
+    output$distPlot <- renderPlot({
       dt <- getDistStats()
       plot <- boxPlotDist(dt)
-      return(plotly::ggplotly(plot))
+      return(plot)
     })
   }
   return(serverFunction)
@@ -73,7 +73,7 @@ boxPlotModuleServer <- function(distStatsFunc, caption, selectedExposureOutcome)
 
 boxPlotModuleUi <- function(id) {
   tagList(
-    shinycssloaders::withSpinner(plotly::plotlyOutput(NS(id, "distPlot"))),
+    shinycssloaders::withSpinner(shiny::plotOutput(NS(id, "distPlot"))),
     shinycssloaders::withSpinner(DT::dataTableOutput(NS(id, "statsTable")))
   )
 }
