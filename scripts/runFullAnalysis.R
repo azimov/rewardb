@@ -17,7 +17,20 @@ for (cdmConfigPath in cdmConfigPaths) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   importReferenceTables(cdmConfig, "rewardb-references.zip")
   createCustomDrugEras(cdmConfigPath)
-  resultsFiles <- generateSccResults(cdmConfigPath)
+}
+
+for (cdmConfigPath in cdmConfigPaths) {
+  cdmConfig <- loadCdmConfig(cdmConfigPath)
+  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
+  
+  #createCohorts(connection, cdmConfig)
+  #createOutcomeCohorts(connection, cdmConfig)
+  computeAtlasCohorts(connection, cdmConfig)
+  DatabaseConnector::disconnect(connection)
+}
+
+for (cdmConfigPath in cdmConfigPaths) {
+  resultsFiles <- generateSccResults(cdmConfigPath, .createExposureCohorts = FALSE, .createOutcomeCohorts = FALSE)
   # Copy files
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
