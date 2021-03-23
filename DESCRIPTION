@@ -35,5 +35,5 @@ Suggests:
     rmarkdown
 Remotes:
     OHDSI/CohortDiagnostics
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 VignetteBuilder: knitr

@@ -153,8 +153,8 @@ loadGlobalConfig <- function(globalConfigPath) {
 #' @export
 #' @examples
 #' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
-loadReportContext <- function(globalConfigPath, .env = .GlobalEnv, exposureId = NULL, outcomeId = NULL) {
-  reportAppContext <- yaml::read_yaml(globalConfigPath)
+loadReportContext <- function(globalConfigPath, exposureId = NULL, outcomeId = NULL) {
+  reportAppContext <- loadGlobalConfig(globalConfigPath)
   reportAppContext$exposureId = exposureId
   reportAppContext$outcomeId = outcomeId
   reportAppContext$useConnectionPool = TRUE

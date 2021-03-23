@@ -362,7 +362,7 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
 #' @param configId String configuration id
 #' @param exposure boolean - is this for exposure or outcome cohorts
 #' @export
-sccOneOffAtlasCohort <- function(cdmConfigPath, configId, atlasIds, exposure = FALSE, referenceZipFile = NULL) {
+sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, exposure = FALSE, referenceZipFile = NULL) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   exportIdFolder <- paste("export-", configId)
   dir.create(exportIdFolder)
@@ -421,5 +421,5 @@ sccOneOffAtlasCohort <- function(cdmConfigPath, configId, atlasIds, exposure = F
     params$outcomeCohortIds <- atlasCohorts$COHORT_DEFINITION_ID
   }
 
-  do.call(oneOffSccResults, params)
+  do.call(runAdHocScc, params)
 }

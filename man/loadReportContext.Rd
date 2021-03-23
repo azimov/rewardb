@@ -4,21 +4,16 @@
 \alias{loadReportContext}
 \title{Load report application context}
 \usage{
-loadReportContext(
-  globalConfigPath,
-  .env = .GlobalEnv,
-  exposureId = NULL,
-  outcomeId = NULL
-)
+loadReportContext(globalConfigPath, exposureId = NULL, outcomeId = NULL)
 }
 \arguments{
 \item{globalConfigPath}{is a yaml file for the application configuratione}
 
-\item{.env}{environment to load variable in to}
-
 \item{exposureId}{exposure cohort id}
 
 \item{outcomeId}{outcome cohort id}
+
+\item{.env}{environment to load variable in to}
 }
 \description{
 By default, loads the database connections in to this object

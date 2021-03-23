@@ -84,7 +84,6 @@ getSccStats <- function(
   if (!dir.exists(configId)) {
     dir.create(configId)
   }
-
   getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc' AND analysis_id = 1"
   sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
                                                                     getSccSettingsSql,
@@ -189,7 +188,7 @@ generateSccResults <- function(
 #' @param .generateCohortStats - generate time on treatment and time to outcome stats or not
 #' @param getDbId - assumes CDM version is stored in the cdm_source table
 #' @param logFileName logfile used. If null is based on the passed configId
-oneOffSccResults <- function(
+runAdHocScc <- function(
   cdmConfigPath,
   configId,
   outcomeCohortIds = NULL,

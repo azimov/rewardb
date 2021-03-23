@@ -195,12 +195,19 @@ getSCCExposureStats <- function(connectionDetails,
 
   ParallelLogger::logInfo("Retrieving stats from database")
 
+  
   if (length(outcomeIds)) {
-    DatabaseConnector::insertTable(conn, "#scc_outcome_ids", data.frame(outcome_id = outcomeIds), tempTable = TRUE)
+    DatabaseConnector::insertTable(connection = conn,
+                                   tableName = "#scc_outcome_ids",
+                                   data = data.frame(outcome_id = outcomeIds),
+                                   tempTable = TRUE)
   }
-
+  
   if (length(exposureIds)) {
-    DatabaseConnector::insertTable(conn, "#scc_exposure_ids", data.frame(exposure_id = exposureIds), tempTable = TRUE)
+    DatabaseConnector::insertTable(connection = conn,
+                                   tableName = "#scc_exposure_ids",
+                                   data = data.frame(exposure_id = exposureIds),
+                                   tempTable = TRUE)
   }
 
   sql <- SqlRender::readSql(system.file("sql/sql_server", "averageTimeOnTreatment.sql", package = "rewardb"))

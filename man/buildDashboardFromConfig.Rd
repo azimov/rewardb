@@ -4,7 +4,12 @@
 \alias{buildDashboardFromConfig}
 \title{Build dashboard from config file}
 \usage{
-buildDashboardFromConfig(filePath, globalConfigPath, performCalibration = TRUE)
+buildDashboardFromConfig(
+  filePath,
+  globalConfigPath,
+  performCalibration = TRUE,
+  allowUserAccess = TRUE
+)
 }
 \arguments{
 \item{filePath}{- path to a yaml configuration file used}
@@ -12,6 +17,8 @@ buildDashboardFromConfig(filePath, globalConfigPath, performCalibration = TRUE)
 \item{globalConfigPath}{path to global reward config containing postgres db connection details}
 
 \item{performCalibration}{- use empirical calibration package to compute adjusted p values, effect estimates and confidence intervals}
+
+\item{allowUserAccess}{- enables grant permission for read only database user}
 }
 \description{
 Builds a rewardb dashboard for all exposures for subset outcomes or all outcomes for subset exposures
