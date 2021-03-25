@@ -23,12 +23,13 @@ Imports:
     RJSONIO,
     readr,
     ParallelLogger,
-    templates
+    templates,
+    meta,
+    dplyr
 Suggests:
     doParallel,
     foreach,
     withr,
-    meta,
     testthat,
     ssh,
     knitr,
