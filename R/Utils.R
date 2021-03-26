@@ -60,7 +60,7 @@ getConcetptCohortData <- function(connection, config, outcomeExposurePairs, snak
                                  data = outcomeExposurePairs,
                                  camelCaseToSnakeCase = TRUE,
                                  tempTable = TRUE,
-                                 bulkLoad  = TRUE)
+                                 bulkLoad = TRUE)
 
   sql <- loadRenderTranslateSql("getRrFromConceptIds.sql",
                                 results_schema = config$rewardbResultsSchema,
@@ -79,7 +79,7 @@ getConcetptCohortData <- function(connection, config, outcomeExposurePairs, snak
 #'
 #' @param connection                DatabaseConnector connection object
 #' @param config                    Reward global config object
-#' @param outcomeExposurePairs      Dataframe containing the coulmns 'exposureConceptId' and 'outcomeConceptId'
+#' @param outcomeExposurePairs      Dataframe containing the coulmns 'exposureConceptId', 'atlasId' and 'atlasUrl'
 #' @param snakeCaseToCamelCase      convert snake case to camle case in output frame
 #' @return
 #' Dataframe containing RR results for cohorts that match the concept id pairs
@@ -91,7 +91,7 @@ getConceptCohortDataFromAtlasOutcomes <- function(connection, config, outcomeExp
                                  data = outcomeExposurePairs,
                                  camelCaseToSnakeCase = TRUE,
                                  tempTable = TRUE,
-                                 bulkLoad  = TRUE)
+                                 bulkLoad = TRUE)
 
   sql <- loadRenderTranslateSql("getExposureRrFromAtlasOutcomes.sql",
                                 results_schema = config$rewardbResultsSchema,
@@ -101,7 +101,7 @@ getConceptCohortDataFromAtlasOutcomes <- function(connection, config, outcomeExp
   data <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
 }
 
-getExposureControlConcepts <- function (connection, config, outcomeConceptIds) {
+getExposureControlConcepts <- function(connection, config, outcomeConceptIds) {
   sql <- "SELECT ingredient_concept_id as exposure_concept_id, condition_concept_id as outcome_concept_id FROM @cem_schema.matrix_summary
   WHERE evidence_exists = 0 and condition_concept_id IN (@outcome_concept_ids);"
 
@@ -112,7 +112,7 @@ getExposureControlConcepts <- function (connection, config, outcomeConceptIds) {
                                              snakeCaseToCamelCase = TRUE)
 }
 
-getOutcomeControlConcepts <- function (connection, config, exposureConceptIds) {
+getOutcomeControlConcepts <- function(connection, config, exposureConceptIds) {
   sql <- "SELECT ingredient_concept_id as exposure_concept_id, condition_concept_id as outcome_concept_id FROM @cem_schema.matrix_summary
   WHERE evidence_exists = 0 and ingredient_concept_id IN (@exposure_concept_ids);"
 
@@ -121,4 +121,19 @@ getOutcomeControlConcepts <- function (connection, config, exposureConceptIds) {
                                              cem_schema = config$cemSchema,
                                              exposure_concept_ids = exposureConceptIds,
                                              snakeCaseToCamelCase = TRUE)
+}
+
+
+getExposureOutcomeCohortPairs <- function(connection, schema, exposureOutcomePairs) {
+
+  andStrings <- apply(exposureOutcomePairs, 1, function(item) {
+    SqlRender::render("(r.target_cohort_id = @exposure_id  AND r.outcome_cohort_id = @outcome_id)",
+                      outcome_id = item["outcomeCohortId"],
+                      exposure_id = item["exposureCohortId"])
+  })
+  innerQuery <- paste(andStrings, collapse = " OR ")
+
+  sql <- "SELECT * FROM @schema.scc_result r WHERE r.analysis_id = 1 AND (@inner_query)"
+
+  return(DatabaseConnector::renderTranslateQuerySql(connection, sql, schema = schema, inner_query = innerQuery, snakeCaseToCamelCase = TRUE))
 }

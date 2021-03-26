@@ -175,12 +175,15 @@ insertAtlasCohortRef <- function(
     for (conceptSet in cohortDefinition$expression$ConceptSets) {
       for (item in conceptSet$expression$items) {
         if ((!exposure & item$concept$DOMAIN_ID == "Condition") | (exposure & item$concept$DOMAIN_ID == "Drug")) {
+          isExcluded <- if (is.null(item$isExcluded)) 0 else as.integer(item$isExcluded)
+          includeDescendants <- if (is.null(item$includeDescendants)) 0 else as.integer(item$includeDescendants)
+          includeMapped <- if (is.null(item$includeMapped)) 0 else as.integer(item$includeMapped)
           results <- rbind(results, data.frame(
               COHORT_DEFINITION_ID = cohortDefinitionId,
               CONCEPT_ID = item$concept$CONCEPT_ID,
-              IS_EXCLUDED = as.integer(item$isExcluded),
-              INCLUDE_MAPPED = as.integer(item$includeMapped),
-              include_descendants = as.integer(item$includeDescendants)
+              IS_EXCLUDED = isExcluded,
+              INCLUDE_MAPPED = includeMapped,
+              include_descendants = includeDescendants
             )
           )
         }
@@ -194,7 +197,7 @@ insertAtlasCohortRef <- function(
     }
     
   } else {
-    ParallelLogger::logDebug(paste("COHORT", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))
+    warning(paste("COHORT", atlasId, "Already in database, use removeAtlasCohort to clear entry references"))
   }
 }
 
@@ -308,14 +311,18 @@ insertCustomExposureRef <- function(
         ParallelLogger::logWarn(paste("Inserting a non-ingredient concept", item$concept$conceptId, "for cohort", cohortName))
       }
 
+      isExcluded <- if (is.null(item$isExcluded)) 0 else as.integer(item$isExcluded)
+      includeDescendants <- if (is.null(item$includeDescendants)) 0 else as.integer(item$includeDescendants)
+      includeMapped <- if (is.null(item$includeMapped)) 0 else as.integer(item$includeMapped)
+
       results <- rbind(
         results,
         data.frame(
           COHORT_DEFINITION_ID = cohortDefinitionId,
           CONCEPT_ID = item$concept$CONCEPT_ID,
-          IS_EXCLUDED = as.integer(item$isExcluded),
-          include_descendants = as.integer(item$includeDescendants),
-          include_mapped = as.integer(item$includeMapped)
+          IS_EXCLUDED = isExcluded,
+          include_descendants = includeDescendants,
+          include_mapped = includeMapped
         )
       )
     }
@@ -362,10 +369,8 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
 #' @param configId String configuration id
 #' @param exposure boolean - is this for exposure or outcome cohorts
 #' @export
-sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, exposure = FALSE, referenceZipFile = NULL) {
+sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, sourceUrl, exposure = FALSE, referenceZipFile = NULL) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
-  exportIdFolder <- paste("export-", configId)
-  dir.create(exportIdFolder)
 
   if (!is.null(referenceZipFile)) {
     importReferenceTables(cdmConfig, referenceZipFile)
@@ -382,7 +387,7 @@ sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, exposure = FALSE,
   connection <- DatabaseConnector::connect(cdmConfig$connection)
   # Create the cohort
   atlasCohorts <- read.csv(file.path(cdmConfig$referencePath, referenceFile))
-  atlasCohorts <- atlasCohorts[atlasCohorts$ATLAS_ID %in% atlasIds,]
+  atlasCohorts <- atlasCohorts[atlasCohorts$ATLAS_ID %in% atlasIds & atlasCohorts$ATLAS_URL == sourceUrl,]
 
   if (length(atlasCohorts)) {
     # Generate each cohort

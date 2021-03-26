@@ -6,7 +6,7 @@ test_that("Full data generation and export", {
   atlasId <- c(12047)
   configId <- "atlasRun-exposures"
 
-  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds = atlasId)
+  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds = atlasId, sourceUrl = config$webApiUrl)
 
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
@@ -16,7 +16,7 @@ test_that("Full data generation and export", {
 
   configId <- "atlasRun-exposures"
   atlasExposureId <- c(19321)
-  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds = atlasExposureId, exposure = TRUE)
+  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds = atlasExposureId, sourceUrl = config$webApiUrl, exposure = TRUE)
 
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
