@@ -101,6 +101,16 @@ getConceptCohortDataFromAtlasOutcomes <- function(connection, config, outcomeExp
   data <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
 }
 
+getAtlasAutomatedExposureControlData <- function(connection, config, atlasIds, sourceUrl) {
+  sql <- loadRenderTranslateSql("getAtlasAutomatedExposureControlData.sql",
+                                schema = config$rewardbResultsSchema,
+                                cem_schema = config$cemSchema,
+                                vocabulary = config$vocabularySchema,
+                                source_url = sourceUrl,
+                                atlas_ids = atlasIds)
+  DatabaseConnector::querySql(connection, sql)
+}
+
 getExposureControlConcepts <- function(connection, config, outcomeConceptIds) {
   sql <- "SELECT ingredient_concept_id as exposure_concept_id, condition_concept_id as outcome_concept_id FROM @cem_schema.matrix_summary
   WHERE evidence_exists = 0 and condition_concept_id IN (@outcome_concept_ids);"

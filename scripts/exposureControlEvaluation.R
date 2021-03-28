@@ -78,6 +78,13 @@ ohdsiControlsMapping <- data.frame(
 )
 
 
-manualNegativeData <- getConceptCohortDataFromAtlasOutcomes(connection, config, ohdsiControlsMapping)
-automatedExposureControls <- pass() # Map negative controls from ato the atlas outcomes
-automatedExposureControlData <- getConcetptCohortData(connection, config, automatedOutcomeControls)
+manualExposureControlData <- getConceptCohortDataFromAtlasOutcomes(connection, config, ohdsiControlsMapping)
+automatedExposureControlData <- getAtlasAutomatedExposureControlData(connection, config, atlasIds = 1:4, sourceUrl = sourceUrl)
+
+# Calibration plots
+
+# Z-score difference between automated and manual types, minimal detectable levels
+
+# Fraction of negative controls claassified as significant (manual and automated in both sets)
+
+# Fraction of remaining data classified as significant
