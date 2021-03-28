@@ -20,7 +20,7 @@ exposure_outcome_cohorts AS (
         oc.cohort_definition_id AS outcome_cohort_id
     FROM o_exp_pair eop
     INNER JOIN target_cohort tc ON tc.concept_id = eop.exposure_concept_id
-    INNER JOIN @results_schema.atlas_outcome_reference oc ON oc.atlas_id = eop.atlas_id
+    INNER JOIN @results_schema.atlas_outcome_reference oc ON oc.atlas_id = eop.atlas_id AND oc.atlas_url = eop.atlas_url
 )
 
 

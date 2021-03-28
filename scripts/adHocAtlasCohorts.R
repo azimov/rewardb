@@ -15,7 +15,7 @@ cdmConfigPaths <-c(
 
 
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds)
+  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds, sourceUrl = config$webApiUrl)
   # Copy files
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
@@ -29,7 +29,7 @@ for (cdmConfigPath in cdmConfigPaths) {
 atlasExposureId <- c(19177, 19178)
 resultsFiles <- c()
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasExposureId, exposure = TRUE)
+  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasExposureId, sourceUrl = config$webApiUrl, exposure = TRUE)
   # Copy files
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
