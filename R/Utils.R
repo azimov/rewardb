@@ -101,14 +101,14 @@ getConceptCohortDataFromAtlasOutcomes <- function(connection, config, outcomeExp
   data <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
 }
 
-getAtlasAutomatedExposureControlData <- function(connection, config, atlasIds, sourceUrl) {
+getAtlasAutomatedExposureControlData <- function(connection, config, atlasIds, sourceUrl, snakeCaseToCamelCase = TRUE) {
   sql <- loadRenderTranslateSql("getAtlasAutomatedExposureControlData.sql",
                                 schema = config$rewardbResultsSchema,
                                 cem_schema = config$cemSchema,
                                 vocabulary = config$vocabularySchema,
                                 source_url = sourceUrl,
                                 atlas_ids = atlasIds)
-  DatabaseConnector::querySql(connection, sql)
+  DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
 }
 
 getExposureControlConcepts <- function(connection, config, outcomeConceptIds) {

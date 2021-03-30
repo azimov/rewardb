@@ -4,8 +4,9 @@ with ingredient_evidence as (
    inner join @vocabulary.concept_ancestor ca on ca.descendant_concept_id = ms.condition_concept_id
    inner join @schema.atlas_outcome_concept aoc on aoc.concept_id = ca.ancestor_concept_id
    inner join @schema.atlas_outcome_reference aor on aoc.cohort_definition_id = aor.cohort_definition_id
-   where aor.atlas_url = @source_url
+   where aor.atlas_url = '@source_url'
    and aor.atlas_id in (@atlas_ids)
+   and aoc.is_excluded = 0
    group by ms.ingredient_concept_id, aor.atlas_id, aor.cohort_definition_id
 )
 
