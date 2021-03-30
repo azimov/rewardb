@@ -73,7 +73,7 @@ addCemEvidenceFiles <- function(appContext) {
   model <- DashboardDbModel(appContext)
 
   for (cohortId in names(appContext$cemEvidenceFiles)) {
-    file <- files[[cohortId]]
+    file <- appContext$cemEvidenceFiles[[cohortId]]
     cohortId <- as.integer(cohortId)
     data <- read.csv(file)
 
