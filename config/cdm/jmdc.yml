@@ -2,13 +2,13 @@ sourceId: 15
 database: jmdc
 name: "Japan Medical Data Center (JMDC)"
 
-exportPath: "export_pharmetrics"
+exportPath: "export_jmdc"
 referencePath: "reference_files"
 
 connectionDetails:
   extraSettings: "ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory"
   dbms: redshift
-  server: rhealth-prod-4.cldcoxyrkflo.us-east-1.redshift.amazonaws.com:5439/jmdc
+  server: rhealth-prod-4.cldcoxyrkflo.us-east-1.redshift.amazonaws.com/jmdc
   port: 5439
   user: jgilber2
 
