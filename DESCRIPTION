@@ -25,7 +25,8 @@ Imports:
     ParallelLogger,
     templates,
     meta,
-    dplyr
+    dplyr,
+    gt
 Suggests:
     doParallel,
     foreach,
