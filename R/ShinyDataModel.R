@@ -147,6 +147,10 @@ DbModel$methods(
             treatment = treatment,
             outcome = outcome
     )
+  },
+
+  getDataSourceInfo = function() {
+    queryDb(" SELECT * from @schema.data_source WHERE source_id > 0", snakeCaseToCamelCase = TRUE)
   }
 )
 
@@ -246,7 +250,9 @@ DashboardDbModel$methods(
       order_by = orderByCol,
       ascending = ascending,
       limit = limit,
-      offset = offset
+      offset = offset,
+      db_total_count = length(config$dataSources),
+      db_most_count = ceiling(length(config$dataSources)/2)
     )
     return(query)
   },

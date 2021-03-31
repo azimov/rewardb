@@ -115,6 +115,9 @@ dashboardUi <- function(request) {
       width = 6,
       title = paste("Contact")
     ),
+    box(width = 6,
+        title = "Data sources",
+        withSpinner(gt::gt_output(outputId = "dataSourceTable"))),
     box(
       p(appContext$description),
       p("Click the dashboard option to see the results. The sidebar options allow filtering of results based on risk and benift IRR thresholds"),

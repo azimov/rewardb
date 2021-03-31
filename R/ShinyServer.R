@@ -38,6 +38,9 @@ dashboardInstance <- function(input, output, session) {
     return(rs)
   })
 
+  dataSourceInfo <- model$getDataSourceInfo()
+  output$dataSourceTable <- gt::render_gt(dataSourceInfo)
+
   getMainTableParams <- reactive({
     outcomeCohortNames <- if (length(input$outcomeCohorts)) strQueryWrap(input$outcomeCohorts) else NULL
     targetCohortNames <- if (length(input$targetCohorts)) strQueryWrap(input$targetCohorts) else NULL
