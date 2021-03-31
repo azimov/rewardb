@@ -6,6 +6,7 @@ custom_exposure_cohort_ids: ~
 atlas_exposure_ids: [ 19177, 19178 ]
 target_concept_ids: ~
 useExposureControls: False
+dataSources: [10, 11, 12, 13]
 cemEvidenceFiles:
-    13735: "extra/controls/influenza_vaccine_controls_export.csv"
-    13734: "extra/controls/pneumenocccoal_vaccine_export.csv"
+    13731: "extra/controls/influenza_vaccine_controls_export.csv"
+    13732: "extra/controls/pneumenocccoal_vaccine_export.csv"

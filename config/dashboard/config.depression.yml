@@ -5,3 +5,4 @@ outcome_concept_ids: [4151170]
 custom_outcome_cohort_ids: [10357, 7543]
 target_concept_ids: ~
 useExposureControls: True
+dataSources: [10, 11, 12, 13]

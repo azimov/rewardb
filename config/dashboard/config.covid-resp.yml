@@ -5,4 +5,4 @@ outcome_concept_ids: [255848, 319049, 4266367, 312437] # These will be multiplie
 custom_outcome_cohort_ids: ~ # These will not be multiplied by 100
 target_concept_ids: ~
 useExposureControls: True
-
+dataSources: [10, 11, 12, 13]

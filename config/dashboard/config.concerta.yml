@@ -6,3 +6,4 @@ custom_outcome_cohort_ids: ~
 target_concept_ids: [ 705944, 21604753 ]
 custom_exposure_ids: ~
 useExposureControls: False
+dataSources: [10, 11, 12, 13]
