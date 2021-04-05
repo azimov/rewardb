@@ -1,4 +1,5 @@
 strQueryWrap <- function(vec) {
+  vec <- gsub("'", "''", vec)
   paste0("'", vec, "'", sep = "")
 }
 
@@ -74,7 +75,7 @@ dashboardInstance <- function(input, output, session) {
   output$mainTablePage <- renderUI({
     recordCount <- getMainTableCount()
     numPages <- ceiling(recordCount / as.integer(input$mainTablePageSize))
-    selectInput("mainTablePage", "Page", choices = 1:numPages)
+    selectInput("mainTablePage", "Page", choices = 1:numPages, server = TRUE)
   })
 
   getMainTablePage <- reactive({
