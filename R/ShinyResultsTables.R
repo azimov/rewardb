@@ -42,6 +42,11 @@ metaAnalysisTableServer <- function(id, model, selectedExposureOutcome) {
 
     fullResultsTable <- reactive({
       table3 <- metaAnalysisTbl()
+
+      if (length(table3) == 0) {
+        return(data.frame())
+      }
+
       if (nrow(table3) >= 1) {
         table3$RR[table3$RR > 100] <- NA
         table3$C_PT <- formatC(table3$C_PT, digits = 0, format = "f")
