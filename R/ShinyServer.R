@@ -42,6 +42,18 @@ dashboardInstance <- function(input, output, session) {
   dataSourceInfo <- model$getDataSourceInfo()
   output$dataSourceTable <- gt::render_gt(dataSourceInfo)
 
+  output$requiredDataSources <- renderUI({
+    pickerInput("requiredDataSources",
+                label = "Select required data sources for benefit:",
+                choices = dataSourceInfo$sourceName,
+                options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+                multiple = TRUE)
+  })
+
+  requiredBenefitSources <- reactive({
+      dataSourceInfo[dataSourceInfo$sourceName %in% input$requiredDataSources, ]$sourceId
+  })
+
   getMainTableParams <- reactive({
     outcomeCohortNames <- if (length(input$outcomeCohorts)) strQueryWrap(input$outcomeCohorts) else NULL
     targetCohortNames <- if (length(input$targetCohorts)) strQueryWrap(input$targetCohorts) else NULL
@@ -52,12 +64,13 @@ dashboardInstance <- function(input, output, session) {
       benefitThreshold = input$cutrange1,
       riskThreshold = input$cutrange2,
       pValueCut = input$pCut,
+      requiredBenefitSources = requiredBenefitSources(),
       filterByMeta = input$filterThreshold == "Meta analysis",
       outcomeCohortTypes = outcomeTypes,
       excludeIndications = input$excludeIndications,
       calibrated = input$calibrated,
-      benefitSelection = input$scBenefit,
-      riskSelection = input$scRisk,
+      benefitCount = input$scBenefit,
+      riskCount = input$scRisk,
       outcomeCohortNames = outcomeCohortNames,
       targetCohortNames = targetCohortNames,
       exposureClasses = exposureClassNames
@@ -75,7 +88,7 @@ dashboardInstance <- function(input, output, session) {
   output$mainTablePage <- renderUI({
     recordCount <- getMainTableCount()
     numPages <- ceiling(recordCount / as.integer(input$mainTablePageSize))
-    selectInput("mainTablePage", "Page", choices = 1:numPages, server = TRUE)
+    selectInput("mainTablePage", "Page", choices = 1:numPages)
   })
 
   getMainTablePage <- reactive({
@@ -159,8 +172,8 @@ dashboardInstance <- function(input, output, session) {
                                   pValueCut = input$pCut,
                                   filterByMeta = input$filterThreshold == "Meta analysis",
                                   calibrated = input$calibrated,
-                                  benefitSelection = input$scBenefit,
-                                  riskSelection = input$scRisk)
+                                  benefitCount = input$scBenefit,
+                                  riskCount = input$scRisk)
   })
 
   output$treatmentOutcomeStr <- renderText({

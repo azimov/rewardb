@@ -210,12 +210,13 @@ DashboardDbModel$methods(
   getFilteredTableResultsQuery = function(benefitThreshold = 0.5,
                                           riskThreshold = 2.0,
                                           pValueCut = 0.05,
+                                          requiredBenefitSources = NULL,
                                           filterByMeta = FALSE,
                                           outcomeCohortTypes = c(0, 1, 2),
                                           calibrated = TRUE,
                                           excludeIndications = TRUE,
-                                          benefitSelection = c('all', 'most'),
-                                          riskSelection = c('none', 'one'),
+                                          benefitCount = 1,
+                                          riskCount = 0,
                                           targetCohortNames = NULL,
                                           outcomeCohortNames = NULL,
                                           exposureClasses = NULL,
@@ -224,8 +225,6 @@ DashboardDbModel$methods(
                                           limit = NULL,
                                           offset = NULL) {
     calibrated <- ifelse(calibrated, 1, 0)
-    benefitSelection <- paste0("'", paste0(benefitSelection, sep = "'"))
-    riskSelection <- paste0("'", paste0(riskSelection, sep = "'"))
     filterOutcomes <- length(outcomeCohortTypes) > 0
 
     sql <- readr::read_file(system.file("sql/queries/", "mainTable.sql", package = "rewardb"))
@@ -237,8 +236,8 @@ DashboardDbModel$methods(
       exclude_indications = excludeIndications,
       filter_outcome_types = filterOutcomes,
       outcome_types = outcomeCohortTypes,
-      risk_selection = riskSelection,
-      benefit_selection = benefitSelection,
+      risk_count = riskCount,
+      benefit_count = benefitCount,
       calibrated = calibrated,
       show_exposure_classes = config$useExposureControls,
       filter_by_meta_analysis = filterByMeta,
@@ -247,12 +246,12 @@ DashboardDbModel$methods(
       target_cohort_name_length = length(targetCohortNames) > 0,
       target_cohort_names = targetCohortNames,
       exposure_classes = exposureClasses,
+      required_benefit_sources = requiredBenefitSources,
+      required_benefit_count = length(requiredBenefitSources),
       order_by = orderByCol,
       ascending = ascending,
       limit = limit,
-      offset = offset,
-      db_total_count = length(config$dataSources),
-      db_most_count = ceiling(length(config$dataSources)/2)
+      offset = offset
     )
     return(query)
   },

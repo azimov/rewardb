@@ -176,22 +176,17 @@ dashboardUi <- function(request) {
       sliderInput("pCut", "P-value cut off:", min = 0.0, max = 1.0, step = 0.01, value = 0.05),
       checkboxInput("calibrated", "Threshold with empirically calibrated IRR", TRUE),
       radioButtons("filterThreshold", "Threshold benefit by:", c("Data sources", "Meta analysis")),
-      pickerInput(
+      sliderInput(
         "scBenefit",
-        "Sources with self control benefit:",
-        choices = scBenefitRisk,
-        selected = c("all", "most"),
-        options = shinyWidgets::pickerOptions(actionsBox = TRUE),
-        multiple = TRUE
+        "Minimum sources with self control benefit:",
+        min = 0, max = 5, step = 1, value = 1
       ),
-      pickerInput(
+      sliderInput(
         "scRisk",
-        "Sources with self control risk:",
-        choices = scBenefitRisk,
-        selected = "none",
-        options = shinyWidgets::pickerOptions(actionsBox = TRUE),
-        multiple = TRUE
+        "Maximum sources with self control risk:",
+        min = 0, max = 5, step = 1, value = 0
       ),
+      withSpinner(uiOutput("requiredDataSources")),
       bookmarkButton()
     )
   )
