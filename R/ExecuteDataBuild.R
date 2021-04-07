@@ -46,7 +46,7 @@ getSccResults <- function(
     dir.create(configId)
   }
 
-  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc' AND analysis_id = 1"
+  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc'"
   sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
                                                                     getSccSettingsSql,
                                                                     reference_schema = config$referenceSchema,
@@ -84,7 +84,7 @@ getSccStats <- function(
   if (!dir.exists(configId)) {
     dir.create(configId)
   }
-  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc' AND analysis_id = 1"
+  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc'"
   sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
                                                                     getSccSettingsSql,
                                                                     reference_schema = config$referenceSchema,
