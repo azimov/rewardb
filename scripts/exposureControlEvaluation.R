@@ -6,7 +6,7 @@ config <- loadGlobalConfig("config/global-cfg.yml")
 connection <- DatabaseConnector::connect(config$connectionDetails)
 
 cdmConfigPaths <-c(
-  #"config/cdm/pharmetrics.yml",
+  "config/cdm/jmdc.yml",
   "config/cdm/mcdc.yml",
   "config/cdm/mcdr.yml",
   "config/cdm/ccae.yml",
@@ -99,14 +99,18 @@ getSetResults <- function(manualControlData, automatedControlsData, manualFilena
   z <- (mu1 - mu2) / sqrt(sd1**2 + sd2**2)
   p <- 2 * pnorm(-abs(z))
 
+  mErr <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(manualNullDist)
+  aErr <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(automatedNullDist)
+
   data.frame(manualMean = mu1,
              manualSd = sd1,
              automatedMean = mu2,
              automatedSd = sd2,
              z = z,
              p = p,
-             manualAbsErr = EmpiricalCalibration::computeExpectedAbsoluteSystematicError(manualNullDist),
-             automatedAbsErr = EmpiricalCalibration::computeExpectedAbsoluteSystematicError(automatedNullDist))
+             manualAbsErr = mErr,
+             automatedAbsErr = aErr,
+             absErrorDiff = abs(mErr - aErr))
 
 }
 
@@ -127,3 +131,33 @@ for (sourceId in c(10, 11, 12, 13)) {
   }
 }
 saveRDS(results, "extra/exposureControlEvaluationTable.rds")
+
+dataSources <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                          "SELECT * FROM @schema.data_source",
+                                                          schema=config$rewardbResultsSchema,
+                                                          snakeCaseToCamelCase = TRUE)
+
+cohortNames <- data.frame(name = c("Acute Pancreatitis", "GI Bleed", "Stroke", "ibd"), cohortId = c(1, 2, 3, 4))
+
+outputTable <- results %>% inner_join(dataSources, by="sourceId") %>%
+  inner_join(cohortNames, by=c("outcomeId" = "cohortId")) %>%
+  select(sourceName, name, manualMean, manualSd, automatedMean, automatedSd, manualAbsErr, automatedAbsErr, absErrorDiff, z, p) %>%
+  gt(groupname_col = "sourceName") %>%
+  fmt_number(3:11, decimals = 3) %>%
+  cols_label(
+    manualMean = "Mean",
+    automatedMean = "Mean*",
+    manualSd = "Sd",
+    automatedSd = "Sd*",
+    manualAbsErr = "Abs Error",
+    automatedAbsErr = "Abs Error*",
+    absErrorDiff = "Error difference",
+    z = "Z-score",
+    name = ""
+  ) %>%
+  tab_options(row_group.background.color = "lightgrey"
+  ) %>%
+  tab_header("Manual and Automated Null Distributions for exposures") %>%
+  tab_source_note("*Denotes automated method for selecting negative controls")
+
+outputTable
