@@ -391,7 +391,6 @@ runExposedOutcomeFetaureExtraction <- function(connectionDetails,
                                                              cohortId = exposureCohortId * 100000 + outcomeCohortId,
                                                              cohortTableIsTemp = FALSE,
                                                              rowIdField = "subject_id",
-                                                             aggregated = TRUE,
                                                              covariateSettings = covariateSettings)
     }
   }
@@ -412,7 +411,7 @@ runExposedOutcomeFetaureExtraction <- function(connectionDetails,
 #' @param targetCohortIds target cohort ids
 #' @param outcomeCohortIds outcome cohort ids
 #' @return data.frame of stats mapped for reward db
-getExposedOutcomeFetaures <- function(config, analysisOptions = list(), analysisId = NULL, exposureIds = NULL, outcomeIds = NULL) {
+getExposedOutcomeFetaures <- function(config, analysisOptions = list(), analysisId = NULL, exposureIds = NULL, outcomeIds = NULL, covariateSettings = NULL) {
   args <- list(
     connectionDetails = config$connectionDetails,
     cdmDatabaseSchema = config$cdmSchema,
@@ -421,7 +420,8 @@ getExposedOutcomeFetaures <- function(config, analysisOptions = list(), analysis
     exposureIds = exposureIds,
     outcomeIds = outcomeIds,
     exposureTable = config$tables$cohort,
-    outcomeTable = config$tables$outcomeCohort
+    outcomeTable = config$tables$outcomeCohort,
+    covariateSettings = covariateSettings
   )
 
   results <- do.call(runExposedOutcomeFetaureExtraction, c(args, analysisOptions))
