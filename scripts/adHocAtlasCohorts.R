@@ -9,8 +9,8 @@ config <- loadGlobalConfig("config/global-cfg.yml")
 
 configId <- paste("atlasRun-pre-existing")
 cdmConfigPaths <-c(
-  "config/cdm/mcdc.yml",
-  "config/cdm/mcdr.yml",
+  "config/cdm/mdcd.yml",
+  "config/cdm/mdcr.yml",
   "config/cdm/ccae.yml",
   "config/cdm/optum.yml",
   "config/cdm/jdmc.yml",
@@ -18,7 +18,7 @@ cdmConfigPaths <-c(
 
 
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds, sourceUrl = config$webApiUrl)
+  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds)
   # Copy files
   for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
@@ -30,13 +30,16 @@ for (cdmConfigPath in cdmConfigPaths) {
 
 ## Exposure cohorts
 atlasExposureId <- c()
-resultsFiles <- c()
+resultsFilesMas <- list()
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasExposureId, sourceUrl = config$webApiUrl, exposure = TRUE)
-  # Copy files
-  for (table in names(resultsFiles)) {
+  resultsFilesMas[cdmConfigPath] <- sccAdHocCohorts(cdmConfigPath, configId, atlasExposureId, exposure = TRUE)
+}
+# Copy files
+
+for (resultsFiles in Sys.glob("atlasRun-pre-existing/*time_on_treatment*")) {
+  #for (table in names(resultsFiles)) {
     for (file in resultsFiles[[table]]) {
-      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table)
+      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, "time_on_treatment")
     }
-  }
+  #}
 }
