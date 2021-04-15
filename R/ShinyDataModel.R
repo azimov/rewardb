@@ -302,16 +302,20 @@ DashboardDbModel$methods(
   },
 
   getTimeOnTreatmentStats = function(...) {
-    setSchemaName(config$globalConfig$rewardbResultsSchema)
+    if (!tableExists("time_on_treatment")) {
+      setSchemaName(config$globalConfig$rewardbResultsSchema)
+      on.exit(setSchemaName(config$short_name))
+    }
     dt <- callSuper(...)
-    setSchemaName(config$short_name)
     return(dt)
   },
 
   getTimeToOutcomeStats = function(...) {
-    setSchemaName(config$globalConfig$rewardbResultsSchema)
+    if (!tableExists("time_on_treatment")) {
+      setSchemaName(config$globalConfig$rewardbResultsSchema)
+      on.exit(setSchemaName(config$short_name))
+    }
     dt <- callSuper(...)
-    setSchemaName(config$short_name)
     return(dt)
   },
 
