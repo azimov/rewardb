@@ -18,8 +18,8 @@ useMppBulkLoad: True
 
 resultSchema: "scratch_jgilber2"
 referenceSchema: "scratch_jgilber2"
-cdmSchema: "cdm"
-vocabularySchema: "cdm"
+cdmSchema: "cdm_truven_ccae_v1479"
+vocabularySchema: "cdm_truven_ccae_v1479"
 drugEraSchema: "scratch_jgilber2"
 cdmVersionTable: "_version"
 
