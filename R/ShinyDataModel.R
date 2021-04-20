@@ -27,7 +27,7 @@ DbModel$methods(
 
   closeConnection = function() {
     if (!connectionActive) {
-      stop("Connection has not be initialized or has been closed. Call initalizeConnection")
+      warning("Connection has not be initialized or has been closed.")
     }
 
     if (DBI::dbIsValid(dbObj = dbConn)) {

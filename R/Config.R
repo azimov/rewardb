@@ -119,7 +119,7 @@ loadAppContext <- function(configPath, globalConfigPath, .env = .GlobalEnv) {
   appContext$globalConfig <- loadGlobalConfig(globalConfigPath)
   appContext$connectionDetails <- appContext$globalConfig$connectionDetails
 
-  class(appContext) <- append(class(appContext), "rewardb::appContext")
+  class(appContext) <- append(class(appContext), "appContext")
   return(appContext)
 }
 
@@ -153,13 +153,10 @@ loadGlobalConfig <- function(globalConfigPath) {
 #' @export
 #' @examples
 #' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
-loadReportContext <- function(globalConfigPath, exposureId = NULL, outcomeId = NULL) {
+loadReportContext <- function(globalConfigPath) {
   reportAppContext <- loadGlobalConfig(globalConfigPath)
-  reportAppContext$exposureId = exposureId
-  reportAppContext$outcomeId = outcomeId
   reportAppContext$useConnectionPool = TRUE
-
-  class(reportAppContext) <- append(class(reportAppContext), "rewardb::reportAppContext")
+  class(reportAppContext) <- append(class(reportAppContext), "reportAppContext")
   return(reportAppContext)
 }
 
