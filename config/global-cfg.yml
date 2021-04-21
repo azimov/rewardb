@@ -10,3 +10,5 @@ connectionDetails:
 rewardbResultsSchema: "rewardb_feb_2021"
 vocabularySchema: "vocabulary"
 cemSchema: "cem"
+
+cacheDir: "/Users/jamie/PycharmProjects/REWARD_B_dashboard/app-cache"

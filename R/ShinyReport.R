@@ -15,30 +15,29 @@ reportInstance <- function(input, output, session) {
   library(DT, warn.conflicts = FALSE)
   library(foreach, warn.conflicts = FALSE)
   library(dplyr, warn.conflicts = FALSE)
-  ParallelLogger::logDebug("init report dashboard")
 
-  getRequestParams <- reactive({
-    parseQueryString(session$clientData$url_search)
-  })
+  message("Init report dashboard")
 
-  exposureId <- getRequestParams()$exposure_id
-  outcomeId <- getRequestParams()$outcome_id
+  exposureCohorts <-  model$getExposureCohorts()
+  outcomeCohorts <- model$getOutcomeCohorts()
+
+  message("Loaded startup cache")
+
+  updateSelectizeInput(session, "outcomeCohorts", choices = outcomeCohorts$cohortDefinitionName, server = TRUE)
+  updateSelectizeInput(session, "targetCohorts", choices = exposureCohorts$cohortDefinitionName, server = TRUE)
+
+  message("Loaded  inputs")
 
   getExposureCohort <- reactive({
-    if (is.null(exposureId)) {
-      exposureId <-
-    }
-    df <- model$getExposureCohort(exposureId)
-    return(df)
+    exposureCohorts[exposureCohorts$cohortDefinitionName %in% input$targetCohorts, ]
   })
 
   getOutcomeCohort <- reactive({
-    outcomeId <- getRequestParams()$outcome_id
-    if (is.null(outcomeId)) {
-      outcomeId <-
-    }
+    outcomeCohorts[outcomeCohorts$cohortDefinitionName %in% input$outcomeCohorts, ]
+  })
 
-    return(model$getOutcomeCohort(outcomeId))
+  observeEvent(input$selectCohorts, {
+    output$selectedCohorts <- renderText("selected")
   })
 
   selectedExposureOutcome <- reactive({
@@ -48,14 +47,32 @@ reportInstance <- function(input, output, session) {
       return(NULL)
     }
     selected <- list(
-      TARGET_COHORT_ID = exposureCohort$COHORT_DEFINITION_ID,
-      TARGET_COHORT_NAME = exposureCohort$COHORT_DEFINITION_NAME,
-      OUTCOME_COHORT_ID = outcomeCohort$COHORT_DEFINITION_ID,
-      OUTCOME_COHORT_NAME = outcomeCohort$COHORT_DEFINITION_NAME
+      TARGET_COHORT_ID = exposureCohort$cohortDefinitionId,
+      TARGET_COHORT_NAME = exposureCohort$cohortDefinitionName,
+      OUTCOME_COHORT_ID = outcomeCohort$cohortDefinitionId,
+      OUTCOME_COHORT_NAME = outcomeCohort$cohortDefinitionName
     )
 
     return(selected)
   })
+
+  output$selectedExposureId <- renderText({
+    s <- selectedExposureOutcome()
+     if (is.null(s)) {
+      return("")
+    }
+    return(s$TARGET_COHORT_ID)
+  })
+
+  output$selectedOutcomeId <- renderText({
+    s <- selectedExposureOutcome()
+     if (is.null(s)) {
+      return("")
+    }
+    return(s$OUTCOME_COHORT_ID)
+  })
+
+
 
   output$treatmentOutcomeStr <- renderText({
     s <- selectedExposureOutcome()

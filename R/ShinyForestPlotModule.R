@@ -3,14 +3,14 @@ forestPlotUi <- function(id) {
     withSpinner(plotly::plotlyOutput(NS(id, "forestPlot"), height = 500)),
     hr(),
     fluidRow(
-      box(
+      shinydashboard::box(
         strong("Figure 1."),
         paste("Forest plot of effect estimates from each database"),
         br(),
         downloadButton(NS(id, "downloadForestPlot"), "Save Plot"),
         width = 6
       ),
-      box(
+      shinydashboard::box(
         pickerInput(
           NS(id, "forestPlotCalibrated"),
           "Display:",
@@ -37,7 +37,7 @@ forestPlotServer <- function(id, model, selectedExposureOutcome) {
       s <- selectedExposureOutcome()
       exposureId <- s$TARGET_COHORT_ID
       outcomeId <- s$OUTCOME_COHORT_ID
-      if (length(outcomeId)) {
+      if (length(outcomeId) & length(exposureId)) {
         updateTabsetPanel(session, "mainPanel", "Detail")
         calibOpts <- if (length(input$forestPlotCalibrated)) input$forestPlotCalibrated else c(0, 1)
         return(model$getForestPlotTable(exposureId, outcomeId, calibOpts))

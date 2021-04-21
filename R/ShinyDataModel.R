@@ -80,6 +80,28 @@ DbModel$methods(
     })
   },
 
+  cacheQuery = function(cacheKey, ...) {
+    cacheDir <- config$cacheDir
+    if (is.null(cacheDir)) {
+      cacheDir <- tempdir()
+    } else if (!dir.exists(cacheDir)) {
+      dir.create(cacheDir)
+    }
+
+    cacheFile <- file.path(cacheDir, paste0(cacheKey, ".rds"))
+
+    if (file.exists(cacheFile)) {
+      return(readRDS(cacheFile))
+    }
+
+    result <- queryDb(...)
+
+    if (is.data.frame(result)) {
+      saveRDS(result, file = cacheFile)
+    }
+    return(result)
+  },
+
   countQuery = function(query, ..., render = TRUE) {
     if (render) {
       query <- SqlRender::render(query, ...)
@@ -341,12 +363,40 @@ ReportDbModel$methods(
     getFirst("SELECT * FROM @schema.outcome_cohort_definition WHERE cohort_definition_id = @cohort_id", cohort_id = cohortId)
   },
 
+  getOutcomeCohorts = function() {
+    sql <- "
+    SELECT cd.* FROM @schema.outcome_cohort_definition cd
+    INNER JOIN (
+      SELECT outcome_cohort_id, count(*) FROM @schema.scc_result sr
+      WHERE t_cases + c_cases > 10
+      GROUP BY outcome_cohort_id
+    ) sq ON sq.outcome_cohort_id = cd.cohort_definition_id
+    ORDER BY cohort_definition_name"
+
+    result <- cacheQuery("outcomeCohortsCounted", sql, snakeCaseToCamelCase = TRUE)
+  },
+
+  getExposureCohorts = function() {
+    sql <- "
+    SELECT cd.* FROM @schema.cohort_definition cd
+    INNER JOIN (
+      SELECT target_cohort_id, count(*) FROM @schema.scc_result sr
+      WHERE t_cases + c_cases > 10
+      GROUP BY target_cohort_id
+    ) sq ON sq.target_cohort_id = cd.cohort_definition_id
+    ORDER BY cohort_definition_name"
+
+    result <- cacheQuery("exposureCohortsCounted", sql, snakeCaseToCamelCase = TRUE)
+  },
+
   getMetaAnalysisTable = function(exposureId, outcomeId, analysisId = 1) {
     sql <- "
      SELECT r.SOURCE_ID,
           ds.SOURCE_NAME,
           r.RR,
-          '-' AS CI_95,
+          CONCAT(round(r.LB_95, 2), '-', round(r.UB_95, 2)) AS CI_95,
+          r.LB_95,
+          r.UB_95,
           r.P_VALUE,
           '-' as Calibrated_RR,
           '-' AS CALIBRATED_CI_95,
@@ -369,10 +419,7 @@ ReportDbModel$methods(
   },
 
   getForestPlotTable = function(exposureId, outcomeId, calibrated) {
-    sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-    table <- queryDb(sql, treatment = exposureId, outcome = outcomeId, calibrated = 0, result = 'scc_result', use_calibration = FALSE)
-    table <- table[table$CALIBRATED == 0,]
-    return(table)
+    return(getMetaAnalysisTable(exposureId, outcomeId))
   },
 
   getExposureOutcomeDqd = function(exposureOutcomePairs, analysisId = 1) {
