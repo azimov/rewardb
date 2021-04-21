@@ -26,7 +26,8 @@ Imports:
     templates,
     meta,
     dplyr,
-    gt
+    gt,
+    keyring
 Suggests:
     doParallel,
     foreach,

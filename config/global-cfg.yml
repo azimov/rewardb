@@ -12,3 +12,5 @@ vocabularySchema: "vocabulary"
 cemSchema: "cem"
 
 cacheDir: "/Users/jamie/PycharmProjects/REWARD_B_dashboard/app-cache"
+
+keyringService: "reward-db"

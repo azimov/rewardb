@@ -132,7 +132,12 @@ loadGlobalConfig <- function(globalConfigPath) {
   config <- yaml::read_yaml(globalConfigPath)
 
   if (is.null(config$connectionDetails$password)) {
-    config$connectionDetails$password <- getPasswordSecurely()
+
+    if (!is.null(config$keyringService)) {
+      config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
+    } else {
+      config$connectionDetails$password <- getPasswordSecurely()
+    }
   }
 
   config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
@@ -184,7 +189,12 @@ loadCdmConfig <- function(cdmConfigPath) {
   config$tables <- .setDefaultOptions(config$tables, defaultTables)
 
   if (config$useSecurePassword) {
-    config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable, prompt = "Enter cdm database password")
+
+    if (!is.null(config$keyringService)) {
+      config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
+    } else {
+      config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable)
+    }
   }
   config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
 

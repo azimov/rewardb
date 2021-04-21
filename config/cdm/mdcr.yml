@@ -13,6 +13,7 @@ connectionDetails:
   user: jgilber2
 
 useSecurePassword: True
+keyringService: "rhealth-db"
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
 useMppBulkLoad: True
 
