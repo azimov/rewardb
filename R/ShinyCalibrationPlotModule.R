@@ -45,9 +45,9 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
       s <- selectedExposureOutcome()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
-      if (!is.na(treatment)) {
+      nulls <- data.frame()
+      if (length(treatment) & length(outcome)) {
         negatives <- getNegativeControlSubset(treatment, outcome)
-        nulls <- data.frame()
         for (source in unique(negatives$SOURCE_ID)) {
           subset <- negatives[negatives$SOURCE_ID == source,]
           null <- EmpiricalCalibration::fitNull(log(subset$RR), subset$SE_LOG_RR)

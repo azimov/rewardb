@@ -34,7 +34,7 @@ metaAnalysisTableServer <- function(id, model, selectedExposureOutcome) {
       s <- selectedExposureOutcome()
       exposureId <- s$TARGET_COHORT_ID
       outcomeId <- s$OUTCOME_COHORT_ID
-      if (length(outcomeId)) {
+      if (length(outcomeId) & length(exposureId)) {
         return(model$getMetaAnalysisTable(exposureId, outcomeId))
       }
       return(data.frame())

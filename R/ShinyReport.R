@@ -15,6 +15,24 @@ reportInstance <- function(input, output, session) {
   library(DT, warn.conflicts = FALSE)
   library(foreach, warn.conflicts = FALSE)
   library(dplyr, warn.conflicts = FALSE)
+  library(shinymanager)
+
+  # define some credentials
+  credentials <- data.frame(
+    user = c("reward_user", "jgilber2"), # mandatory
+    password = c("ohda-prod-1", "hangman252"), # mandatory
+    admin = c(FALSE,TRUE),
+    comment = "Simple and secure authentification mechanism
+    for single ‘Shiny’ applications."
+  )
+
+  res_auth <- secure_server(
+    check_credentials = check_credentials(credentials)
+  )
+
+  output$auth_output <- renderPrint({
+    reactiveValuesToList(res_auth)
+  })
 
   message("Init report dashboard")
 
@@ -28,6 +46,14 @@ reportInstance <- function(input, output, session) {
 
   message("Loaded  inputs")
 
+  output$outcomeCohortsTable <- DT::renderDataTable({
+    outcomeCohorts
+  })
+
+  output$exposureCohortsTable <- DT::renderDataTable({
+    exposureCohorts
+  })
+
   getExposureCohort <- reactive({
     exposureCohorts[exposureCohorts$cohortDefinitionName %in% input$targetCohorts, ]
   })
@@ -35,6 +61,8 @@ reportInstance <- function(input, output, session) {
   getOutcomeCohort <- reactive({
     outcomeCohorts[outcomeCohorts$cohortDefinitionName %in% input$outcomeCohorts, ]
   })
+
+  output$selectedCohorts <- renderText("not selected")
 
   observeEvent(input$selectCohorts, {
     output$selectedCohorts <- renderText("selected")
@@ -73,7 +101,6 @@ reportInstance <- function(input, output, session) {
   })
 
 
-
   output$treatmentOutcomeStr <- renderText({
     s <- selectedExposureOutcome()
     ParallelLogger::logDebug("selected")
@@ -100,7 +127,7 @@ reportInstance <- function(input, output, session) {
 launchReport <- function(globalConfigPath) {
   .GlobalEnv$reportAppContext <- loadReportContext(globalConfigPath)
   .GlobalEnv$model <- ReportDbModel(reportAppContext)
-  shiny::shinyApp(server = reportInstance, ui = reportUi, onStart = function() {
+  shiny::shinyApp(server = reportInstance, ui = shinymanager::secure_app(reportUi), onStart = function() {
     shiny::onStop(function() {
       writeLines("Closing connection")
       model$closeConnection()
