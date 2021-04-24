@@ -35,7 +35,8 @@ Suggests:
     testthat,
     ssh,
     knitr,
-    rmarkdown
+    rmarkdown,
+    shinymanager
 Remotes:
     OHDSI/CohortDiagnostics
 RoxygenNote: 7.1.1

@@ -13,26 +13,27 @@ reportInstance <- function(input, output, session) {
   library(shinyWidgets, warn.conflicts = FALSE)
   library(scales, warn.conflicts = FALSE)
   library(DT, warn.conflicts = FALSE)
-  library(foreach, warn.conflicts = FALSE)
   library(dplyr, warn.conflicts = FALSE)
   library(shinymanager)
 
-  # define some credentials
-  credentials <- data.frame(
-    user = c("reward_user", "jgilber2"), # mandatory
-    password = c("ohda-prod-1", "hangman252"), # mandatory
-    admin = c(FALSE,TRUE),
-    comment = "Simple and secure authentification mechanism
-    for single ‘Shiny’ applications."
-  )
+  secureApplication <- getOption("reward.secure", default = FALSE)
 
-  res_auth <- secure_server(
-    check_credentials = check_credentials(credentials)
-  )
+  if (secureApplication) {
+    # define some credentials
+    credentials <- data.frame(
+      user = c("reward_user", "jgilber2"), # mandatory
+      password = c("ohda-prod-1", "hangman252"), # mandatory
+      admin = c(FALSE,TRUE)
+    )
 
-  output$auth_output <- renderPrint({
-    reactiveValuesToList(res_auth)
-  })
+    res_auth <- secure_server(
+      check_credentials = check_credentials(credentials)
+    )
+
+    output$auth_output <- renderPrint({
+      reactiveValuesToList(res_auth)
+    })
+  }
 
   message("Init report dashboard")
 
@@ -52,6 +53,10 @@ reportInstance <- function(input, output, session) {
 
   output$exposureCohortsTable <- DT::renderDataTable({
     exposureCohorts
+  })
+
+  output$dataSourcesTable <- DT::renderDataTable({
+    model$getDataSourceInfo()
   })
 
   getExposureCohort <- reactive({
@@ -114,6 +119,16 @@ reportInstance <- function(input, output, session) {
   # Create sub modules
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
+
+
+  timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
+  tabPanelTimeOnTreatment <- tabPanel("Time on treatment", boxPlotModuleUi("timeOnTreatment"))
+  shiny::appendTab(inputId = "searchResults", tabPanelTimeOnTreatment)
+
+  timeToOutcomeServer("timeToOutcome", model, selectedExposureOutcome)
+  tabPanelTimeToOutcome <- tabPanel("Time to outcome", boxPlotModuleUi("timeToOutcome"))
+  shiny::appendTab(inputId = "searchResults", tabPanelTimeToOutcome)
+
 }
 
 #' @title
@@ -127,7 +142,15 @@ reportInstance <- function(input, output, session) {
 launchReport <- function(globalConfigPath) {
   .GlobalEnv$reportAppContext <- loadReportContext(globalConfigPath)
   .GlobalEnv$model <- ReportDbModel(reportAppContext)
-  shiny::shinyApp(server = reportInstance, ui = shinymanager::secure_app(reportUi), onStart = function() {
+
+  secureApplication <- getOption("reward.secure", default = FALSE)
+
+  if (secureApplication) {
+    ui <- shinymanager::secure_app(reportUi)
+  } else {
+    ui <- reportUi
+  }
+  shiny::shinyApp(server = reportInstance, ui = ui, onStart = function() {
     shiny::onStop(function() {
       writeLines("Closing connection")
       model$closeConnection()

@@ -394,7 +394,8 @@ ReportDbModel$methods(
      SELECT r.SOURCE_ID,
           ds.SOURCE_NAME,
           r.RR,
-          CONCAT(round(r.LB_95, 2), '-', round(r.UB_95, 2)) AS CI_95,
+          r.SE_LOG_RR,
+          CONCAT(round(r.LB_95, 2), ' - ', round(r.UB_95, 2)) AS CI_95,
           r.LB_95,
           r.UB_95,
           r.P_VALUE,
@@ -406,7 +407,8 @@ ReportDbModel$methods(
           r.C_CASES,
           r.T_AT_RISK,
           r.T_PT,
-          r.T_CASES
+          r.T_CASES,
+          '-' as I2
       FROM @schema.scc_result r
       INNER JOIN @schema.data_source ds ON ds.source_id = r.source_id
       WHERE r.target_cohort_id = @exposure_id
@@ -414,8 +416,18 @@ ReportDbModel$methods(
       AND r.analysis_id = @analysis_id
       ORDER BY r.SOURCE_ID
     "
-    data <- queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId)
-    return(data)
+    rows <- queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId)
+
+    if (nrow(rows)) {
+      meta <- metaAnalysis(rows)
+      meta$CI_95 <- paste(round(meta$LB_95,2), "-", round(meta$UB_95, 2))
+      meta$SOURCE_NAME <- "Meta Analysis"
+      meta$CALIBRATED_RR <- "-"
+      meta$CALIBRATED_CI_95 <- "-"
+      meta$CALIBRATED_P_VALUE <- "-"
+      return(rbind(rows, meta))
+    }
+    return(rows)
   },
 
   getForestPlotTable = function(exposureId, outcomeId, calibrated) {
