@@ -9,7 +9,7 @@ exposureNullDistsProc <- function(exposureIds, config, analysisId) {
                               cem = config$cemSchema,
                               results_schema = config$rewardbResultsSchema,
                               vocabulary_schema = config$vocabularySchema,
-                              exposure_ids = exposureIds,
+                              exposure_ids = exposureIds[!is.na(exposureIds)],
                               analysis_id = analysisId,
                               snakeCaseToCamelCase = TRUE)
 
