@@ -99,9 +99,9 @@ fullDataSet <- DatabaseConnector::renderTranslateQuerySql(connection, sql, outco
 percentSignificant <- function(nullDist, positives, rrThresh = 0.5, pThresh = 0.05) {
   # Get fraction of exposures signficant for causing or preventing outcome after calibration
 
-  pValues <- EmpiricalCalibration::calibrateP(nullDist, log(positives$RR), positives$SE_LOG_RR)
+  pValues <- EmpiricalCalibration::calibrateP(nullDist, log(positives$rr), positives$seLogRr)
   errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
-  ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(positives$RR), positives$SE_LOG_RR, errorModel)
+  ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(positives$rr), positives$seLogRr, errorModel)
   
   # confidence interval should not cross 1, signficant p value and rr value
   nSignificantPost <- sum((ci$logUb95Rr > 0 & ci$logLb95Rr > 0) | (ci$logUb95Rr < 0 & ci$logLb95Rr < 0) & ci$logRr < log(rrThresh) & pValues < pThresh)
@@ -131,12 +131,12 @@ getSetResults <- function(manualControlData, automatedControlsData, positives, m
              manualSd = sd1,
              automatedMean = mu2,
              automatedSd = sd2,
-             nAutoControls = nrow(automatedControlsData),
              z = z,
              p = p,
              manualAbsErr = mErr,
              automatedAbsErr = aErr,
              absErrorDiff = abs(mErr - aErr),
+             nAutoControls = nrow(automatedControlsData),
              nSignificantPre = sum((positives$ub95Rr > 1 & positives$lb95Rr > 1) | (positives$ub95Rr < 1 & positives$lb95Rr < 1) & positives$logRr < log(rrThresh) & positives$pValue < pThresh),
              nSignificantPostManual = percentSignificant(manualNullDist, positives),
              nSignificantPostAuto = percentSignificant(automatedNullDist, positives))

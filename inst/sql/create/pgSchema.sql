@@ -22,6 +22,7 @@ CREATE TABLE @schema.scc_result (
   I2 NUMERIC,
   PRIMARY KEY (source_id, analysis_id, outcome_cohort_id, target_cohort_id)
 );
+create index sccr_idx on @schema.scc_result(outcome_cohort_id, target_cohort_id)
 
 CREATE TABLE @schema.time_on_treatment (
     source_id INT NOT NULL,
@@ -48,7 +49,7 @@ CREATE TABLE @schema.time_on_treatment (
     max_tx_time NUMERIC,
     PRIMARY KEY (source_id, analysis_id, outcome_cohort_id, target_cohort_id)
 );
-
+create index tot_idx on @schema.time_on_treatment(outcome_cohort_id, target_cohort_id);
 
 CREATE TABLE @schema.data_source (
     source_id INT PRIMARY KEY,
@@ -58,3 +59,16 @@ CREATE TABLE @schema.data_source (
     db_id varchar,
     version_date date
 );
+
+CREATE TABLE @schema.exposure_null_distributions (
+    source_id INT NOT NULL,
+    analysis_id INT NOT NULL,
+    target_cohort_id BIGINT NOT NULL,
+    ingredient_concept_id INT not null,
+    null_dist_mean NUMERIC,
+    null_dist_sd NUMERIC,
+    absolute_error NUMERIC,
+    n_controls NUMERIC,
+    PRIMARY KEY (source_id, analysis_id, target_cohort_id)
+);
+create index exp_null_dist on @schema.exposure_null_distributions(ingredient_concept_id);
