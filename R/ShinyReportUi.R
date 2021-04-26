@@ -2,35 +2,55 @@ reportUi <- function(request) {
   library(shiny, warn.conflicts = FALSE)
   library(shinyWidgets, warn.conflicts = FALSE)
   library(shinycssloaders, warn.conflicts = FALSE)
+  library(shinydashboard)
   library(shinymanager)
 
   resultsDisplayCondition <- "output.selectedCohorts == 'selected'"
   riskEstimatesPanel <- tabsetPanel(id = "searchResults",
                                     tabPanel("Risk Estimates",
-                                             tags$h3("Datasource Results and Meta-analysis"),
+                                             tags$h4("Datasource Results and Meta-analysis"),
                                              metaAnalysisTableUi("metaTable"),
-                                             tags$h3("Forest plot"),
+                                             tags$h4("Forest plot"),
                                              forestPlotUi("forestPlot")))
 
-  searchPanel <- tabPanel("Search",
-                          fluidRow(column(6,
-                                          selectizeInput("targetCohorts", label = "Drug exposures:", choices = NULL, multiple = FALSE, width = 500)),
-                                   column(6,
-                                          selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = FALSE, width = 500))),
-                          conditionalPanel(condition = "output.selectedCohorts != 'selected'",
-                                           actionButton("selectCohorts", "Select")),
-                          conditionalPanel(condition = resultsDisplayCondition,
-                                           tags$h2(textOutput("treatmentOutcomeStr")), riskEstimatesPanel),
-                          textOutput("selectedCohorts"))
+  searchPanel <- tabItem("Search",
+                         shinydashboard::box(width = 12,
+                                             column(6,
+                                                    selectizeInput("targetCohorts", label = "Drug exposures:", choices = NULL, multiple = FALSE, width = 500)),
+                                             column(6,
+                                                    selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = FALSE, width = 500))),
+                         shinydashboard::box(width = 12,
+                                             conditionalPanel(condition = "output.selectedCohorts != 'selected'",
+                                                              actionButton("selectCohorts", "Select")),
+                                             conditionalPanel(condition = resultsDisplayCondition,
+                                                              tags$h3(textOutput("treatmentOutcomeStr")), riskEstimatesPanel),
 
-  fluidPage(tags$h1("REWARD Dashboard - all exposures and outcomes (Prototype)"),
-            tabsetPanel(searchPanel,
-                        tabPanel("Available Data Sources",
-                                 withSpinner(DT::dataTableOutput("dataSourcesTable"))),
-                        tabPanel("Available Exposure Cohorts",
-                                 withSpinner(DT::dataTableOutput("exposureCohortsTable"))),
-                        tabPanel("Available Outcome Cohorts",
-                                 withSpinner(DT::dataTableOutput("outcomeCohortsTable")))),
-            title = "REWARD")
+                                             conditionalPanel(condition = "output.selectedCohorts != 'selected'",
+                                                              textOutput("selectedCohorts"))))
+
+  aboutTab <- tabItem("About",
+                      shinydashboard::box(width = 12,
+                                          h1("REWARD - all by all explorer"),
+                                          p()))
+  body <- dashboardBody(tabItems(aboutTab,
+                                 searchPanel,
+                                 tabItem("sources",
+                                         shinydashboard::box(width = 12, withSpinner(DT::dataTableOutput("dataSourcesTable")))),
+                                 tabItem("exposureCohortsTab",
+                                         shinydashboard::box(width = 12, withSpinner(DT::dataTableOutput("exposureCohortsTable")))),
+                                 tabItem("outcomeCohortsTab",
+                                         shinydashboard::box(width = 12, withSpinner(DT::dataTableOutput("outcomeCohortsTable"))))))
+
+  sidebar <- dashboardSidebar(sidebarMenu(
+    menuItem("About", tabName = "About", icon = icon("list-alt")),
+    menuItem("Search", tabName = "Search", icon = icon("table")),
+    menuItem("Data Sources", tabName = "sources", icon = icon("table")),
+    menuItem("Available Exposures", tabName = "exposureCohortsTab", icon = icon("table")),
+    menuItem("Available outcomes", tabName = "outcomeCohortsTab", icon = icon("table"))))
+
+
+  dashboardPage(dashboardHeader(title = "REWARD: All Exposures by all outcomes"),
+                sidebar,
+                body)
 
 }
