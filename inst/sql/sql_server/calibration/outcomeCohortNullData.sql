@@ -1,6 +1,7 @@
 -- Get subset of outcomes for a given exposure that have no evidence associated with them
 SELECT ms.ingredient_concept_id as exposure_id,
-  sr.*
+  sr.*,
+  ocd.outcome_type
   FROM @cem.matrix_summary ms
   INNER JOIN @results_schema.cohort_definition cd ON cd.drug_conceptset_id = ms.ingredient_concept_id
   INNER JOIN @results_schema.scc_result sr ON sr.target_cohort_id = cd.cohort_definition_id
@@ -17,7 +18,8 @@ SELECT ms.ingredient_concept_id as exposure_id,
   UNION
 
 SELECT mssq.exposure_id,
-  sr.*
+  sr.*,
+  ocd.outcome_type
   FROM (
     SELECT
       cd.cohort_definition_id,

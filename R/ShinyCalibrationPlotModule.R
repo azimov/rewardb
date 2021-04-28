@@ -22,18 +22,13 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
   server <- moduleServer(id, function(input, output, session) {
     ParallelLogger::logInfo("Initialized calibration plot module for: ", model$schemaName)
 
-    dataSources <- model$queryDb("SELECT source_id, source_name FROM @schema.data_source;")
-
-    getOutcomeType <- function(outcome) {
-      res <- model$queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome = outcome)
-      return(res$TYPE_ID[[1]])
-    }
+    dataSources <- model$getDataSources()
 
     getNegativeControlSubset <- function(treatment, outcome) {
       if (model$config$useExposureControls) {
         negatives <- model$getExposureControls(outcomeIds = outcome)
       } else {
-        otype <- if (getOutcomeType(outcome) == 1) 1 else 0
+        otype <- if (model$getOutcomeType(outcome) == 1) 1 else 0
         negatives <- model$getOutcomeControls(targetIds = treatment)
         # Subset for outcome types
         negatives <- negatives[negatives$OUTCOME_TYPE == otype,]
@@ -92,8 +87,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
           validSourceIds <- dataSources$SOURCE_ID
         }
 
-        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-        positives <- model$queryDb(sql, treatment = treatment, outcome = outcome, calibrated = 0)
+        positives <- model$getExposureOutcomeRows(treatment, outcome, calibrated = 0)
         positives <- positives[positives$SOURCE_ID %in% validSourceIds,]
 
         negatives <- getNegativeControlSubset(treatment, outcome)

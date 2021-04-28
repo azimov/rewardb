@@ -57,28 +57,23 @@ DbModel$methods(
     sql <- SqlRender::render(query, schema = schemaName, warnOnMissingParameters = FALSE, ...)
     sql <- SqlRender::translate(sql, targetDialect = "postgresql")
 
-    tryCatch({
-      if (is(dbConn, "Pool")) {
-        data <- DatabaseConnector::dbGetQuery(dbConn, sql)
-        if (snakeCaseToCamelCase) {
-          colnames(data)  <- SqlRender::snakeCaseToCamelCase(colnames(data))
-        } else {
-          colnames(data) <- toupper(colnames(data))
-        }
+
+    if (is(dbConn, "Pool")) {
+      data <- DatabaseConnector::dbGetQuery(dbConn, sql)
+      if (snakeCaseToCamelCase) {
+        colnames(data) <- SqlRender::snakeCaseToCamelCase(colnames(data))
       } else {
+        colnames(data) <- toupper(colnames(data))
+      }
+    } else {
+      tryCatch({
         data <- DatabaseConnector::querySql(dbConn, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
-      }
-      return(data)
-    }, error = function(e, ...) {
-      ParallelLogger::logError(e)
-      # End current transaction to stop other queries being blocked
-      if (is(dbConn, "Pool")) {
-        writeLines(sql)
+      }, error = function(e, ...) {
+        ParallelLogger::logError(e)
         DatabaseConnector::dbExecute(dbConn, "ABORT;")
-      } else {
-        DatabaseConnector::executeSql(dbConn, "ABORT;")
-      }
-    })
+      })
+    }
+    return(data)
   },
 
   cacheQuery = function(cacheKey, ...) {
@@ -174,7 +169,12 @@ DbModel$methods(
 
   getDataSourceInfo = function() {
     queryDb(" SELECT * from @schema.data_source WHERE source_id > 0", snakeCaseToCamelCase = TRUE)
+  },
+
+  getDataSources = function() {
+    queryDb("SELECT source_id, source_name FROM @schema.data_source;")
   }
+
 )
 
 #' Dashboard models
@@ -342,10 +342,20 @@ DashboardDbModel$methods(
     return(dt)
   },
 
-  getFullDataSet = function(calibrated = c(0,1)) {
+  getFullDataSet = function(calibrated = c(0, 1)) {
     sql <- readr::read_file(system.file("sql/export/", "fullDashboardData.sql", package = "rewardb"))
     df <- queryDb(sql, calibrated = calibrated, show_exposure_classes = config$useExposureControls)
     return(df)
+  },
+
+  getOutcomeType = function(outcomeId) {
+    res <- queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome = outcomeId)
+    return(res$TYPE_ID[[1]])
+  },
+
+  getExposureOutcomeRows = function(exposure, outcome, calibrated) {
+    sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+    queryDb(sql, treatment = exposure, outcome = outcome, calibrated = calibrated)
   }
 )
 
@@ -428,7 +438,7 @@ ReportDbModel$methods(
     rows <- queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId)
     if (nrow(rows)) {
       meta <- metaAnalysis(rows)
-      meta$CI_95 <- paste(round(meta$LB_95,2), "-", round(meta$UB_95, 2))
+      meta$CI_95 <- paste(round(meta$LB_95, 2), "-", round(meta$UB_95, 2))
       meta$SOURCE_NAME <- "Meta Analysis"
       meta$CALIBRATED_RR <- "-"
       meta$CALIBRATED_CI_95 <- "-"
@@ -441,9 +451,9 @@ ReportDbModel$methods(
       for (i in 1:nrow(nullDists)) {
         nullDist <- nullDists[i,]
         calibratedRow <- getCalibratedValues(rows[rows$SOURCE_ID == nullDist$sourceId,], nullDist)
-        ci95 <- paste(round(exp(calibratedRow$logLb95Rr),2), "-", round(exp(calibratedRow$logUb95Rr),2))
+        ci95 <- paste(round(exp(calibratedRow$logLb95Rr), 2), "-", round(exp(calibratedRow$logUb95Rr), 2))
         rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_P_VALUE <- round(calibratedRow$p, 2)
-        rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_RR <- round(exp(calibratedRow$logRr),2)
+        rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_RR <- round(exp(calibratedRow$logRr), 2)
         rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_CI_95 <- ci95
       }
     }
@@ -499,7 +509,7 @@ ReportDbModel$methods(
     stopifnot("outcomeId" %in% colnames(exposureOutcomePairs))
     stopifnot(nrow(exposureOutcomePairs) > 0)
 
-    andStrings <- apply(exposureOutcomePairs, 1, function (item) {
+    andStrings <- apply(exposureOutcomePairs, 1, function(item) {
       SqlRender::render("(r.target_cohort_id = @exposure_id  AND r.outcome_cohort_id = @outcome_id)",
                         outcome_id = item["outcomeId"],
                         exposure_id = item["exposureId"])
@@ -508,5 +518,28 @@ ReportDbModel$methods(
     sql <- loadSqlFile("data_quality/getExposureOutcomeDqd.sql")
 
     queryDb(sql, analysis_id = analysisId, inner_query = innerQuery, snakeCaseToCamelCase = TRUE)
+  },
+
+  getOutcomeControls = function(targetIds, minCohortSize = 10, analysisId = 1) {
+    sql <- loadSqlFile("calibration/outcomeCohortNullData.sql")
+    return(queryDb(sql,
+                   exposure_ids = targetIds,
+                   cem = config$cemSchema,
+                   analysis_id = analysisId,
+                   results_schema = config$rewardbResultsSchema,
+                   vocabulary_schema = config$vocabularySchema))
+  },
+
+  getExposureControls = function(outcomeIds, minCohortSize = 10) {
+    return(data.frame())
+  },
+
+  getOutcomeType = function(outcomeId) {
+    getFirst("SELECT outcome_type FROM @schema.outcome_cohort_definition ocd WHERE ocd.cohort_definition_id = @outcome_id", outcome_id = outcomeId)
+  },
+
+  getExposureOutcomeRows = function(exposure, outcome, calibrated) {
+    sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+    queryDb(sql, treatment = exposure, outcome = outcome, calibrated = 0, use_calibration = FALSE, result = 'scc_result')
   }
 )

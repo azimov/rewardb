@@ -120,6 +120,8 @@ reportInstance <- function(input, output, session) {
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
 
+  model$config$useExposureControls <- FALSE
+  calibrationPlotServer("outcomeCalibrationPlot", model, selectedExposureOutcome)
 
   timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
   tabPanelTimeOnTreatment <- tabPanel("Time on treatment", boxPlotModuleUi("timeOnTreatment"))

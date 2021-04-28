@@ -11,7 +11,9 @@ reportUi <- function(request) {
                                              tags$h4("Datasource Results and Meta-analysis"),
                                              metaAnalysisTableUi("metaTable"),
                                              tags$h4("Forest plot"),
-                                             forestPlotUi("forestPlot")))
+                                             forestPlotUi("forestPlot")),
+                                    tabPanel("Outcome Calibration Plot",
+                                             calibrationPlotUi("outcomeCalibrationPlot")))
 
   searchPanel <- tabItem("Search",
                          shinydashboard::box(width = 12,
