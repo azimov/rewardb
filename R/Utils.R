@@ -40,6 +40,14 @@ loadRenderTranslateSql <- function(sqlFilename,
   return(renderedSql)
 }
 
+loadSqlFile <- function(sqlFilename) {
+  pathToSql <- system.file(paste("sql/sql_server"),
+                           sqlFilename,
+                           package = "rewardb",
+                           mustWork = TRUE)
+  sql <- SqlRender::readSql(pathToSql)
+}
+
 #' Load, render, translate and query a SQL file in this package.
 #'
 #' @description

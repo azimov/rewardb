@@ -1,17 +1,17 @@
 # Copyright Janssen Pharmacuiticals 2021 All rights reserved
 
-exposureNullDistsProc <- function(exposureIds, config, analysisId) {
+outcomeNullDistsProc <- function(exposureIds, config, analysisId) {
   devtools::load_all()
   connection <- DatabaseConnector::connect(config$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
   nullData <- loadRenderTranslateQuerySql(connection,
-                              "calibration/exposureCohortNullData.sql",
-                              cem = config$cemSchema,
-                              results_schema = config$rewardbResultsSchema,
-                              vocabulary_schema = config$vocabularySchema,
-                              exposure_ids = exposureIds[!is.na(exposureIds)],
-                              analysis_id = analysisId,
-                              snakeCaseToCamelCase = TRUE)
+                                          "calibration/outcomeCohortNullData.sql",
+                                          cem = config$cemSchema,
+                                          results_schema = config$rewardbResultsSchema,
+                                          vocabulary_schema = config$vocabularySchema,
+                                          exposure_ids = exposureIds[!is.na(exposureIds)],
+                                          analysis_id = analysisId,
+                                          snakeCaseToCamelCase = TRUE)
 
   exposureRefSet <- unique(data.frame(exposureId = nullData$exposureId, sourceId = nullData$sourceId, targetCohortId = nullData$targetCohortId))
 
@@ -42,28 +42,29 @@ exposureNullDistsProc <- function(exposureIds, config, analysisId) {
 #' Compute null exposure distributions
 #' @description
 #' Compute the null exposure distribution for all exposure cohorts (requires results and cem_matrix summary table)
-computeExposureNullDistributions <- function(connection, config, analysisId = 1, nThreads = 10) {
+computeOutcomeNullDistributions <- function(config, analysisId = 1, nThreads = 10) {
+  cluster <- ParallelLogger::makeCluster(nThreads)
+  connection <- DatabaseConnector::connect(config$connectionDetails)
+  on.exit({
+    DatabaseConnector::disconnect(connection)
+    ParallelLogger::stopCluster(cluster)
+  }, add = TRUE)
 
-  sql <- "SELECT drug_conceptset_id as id FROM @schema.cohort_definition"
+  sql <- "SELECT cohort_definition_id as id FROM @schema.cohort_definition"
   exposureIds <- DatabaseConnector::renderTranslateQuerySql(connection, sql, schema = config$rewardbResultsSchema)$ID
 
+  nCuts <- nThreads
   if (nThreads == 1) {
-    # Useful to have multipe lists for IDs
-    exposureIdGroups <- split(exposureIds, cut(seq_along(exposureIds), 2, labels = FALSE))
-  } else {
-    exposureIdGroups <- split(exposureIds, cut(seq_along(exposureIds), nThreads, labels = FALSE))
+    nCuts <- 2 # Useful to have multipe lists for IDs for testing logic
   }
+  exposureIdGroups <- split(exposureIds, cut(seq_along(exposureIds), nCuts, labels = FALSE))
 
-  cluster <- ParallelLogger::makeCluster(nThreads)
-  on.exit(ParallelLogger::stopCluster(cluster))
-
-  res <- ParallelLogger::clusterApply(cluster, exposureIdGroups, exposureNullDistsProc, config = config, analysisId = analysisId)
+  res <- ParallelLogger::clusterApply(cluster, exposureIdGroups, outcomeNullDistsProc, config = config, analysisId = analysisId)
 
   rows <- data.frame()
   for (row in res) {
-    rows <- rbind(rows, row)
+    rows <- unique(rbind(rows, row))
   }
   colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
-  readr::write_csv(rows, "exposure_null_distributions.csv") # TODO remove after testing is complete
-  pgCopyDataFrame(config$connectionDetails, rows, schema = config$rewardbResultsSchema, "exposure_null_distributions")
+  pgCopyDataFrame(config$connectionDetails, rows, schema = config$rewardbResultsSchema, "outcome_null_distributions")
 }

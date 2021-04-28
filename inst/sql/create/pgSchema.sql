@@ -60,7 +60,7 @@ CREATE TABLE @schema.data_source (
     version_date date
 );
 
-CREATE TABLE @schema.exposure_null_distributions (
+CREATE TABLE @schema.outcome_null_distributions (
     source_id INT NOT NULL,
     analysis_id INT NOT NULL,
     target_cohort_id BIGINT NOT NULL,
@@ -71,4 +71,4 @@ CREATE TABLE @schema.exposure_null_distributions (
     n_controls NUMERIC,
     PRIMARY KEY (source_id, analysis_id, target_cohort_id)
 );
-create index exp_null_dist on @schema.exposure_null_distributions(ingredient_concept_id);
+create index exp_null_dist on @schema.outcome_null_distributions(ingredient_concept_id);

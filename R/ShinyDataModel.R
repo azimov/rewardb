@@ -46,7 +46,8 @@ DbModel$methods(
 
   queryDb = function(query, ..., snakeCaseToCamelCase = FALSE) {
     if (!connectionActive) {
-      stop("Connection has not be initialized or has been closed. Call initalizeConnection")
+      initializeConnection()
+      on.exit(model$closeConnection())
     }
 
     if (is.null(schemaName)) {
@@ -68,7 +69,7 @@ DbModel$methods(
         data <- DatabaseConnector::querySql(dbConn, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
       }
       return(data)
-    }, error = function(e) {
+    }, error = function(e, ...) {
       ParallelLogger::logError(e)
       # End current transaction to stop other queries being blocked
       if (is(dbConn, "Pool")) {
@@ -389,7 +390,15 @@ ReportDbModel$methods(
     result <- cacheQuery("exposureCohortsCounted", sql, snakeCaseToCamelCase = TRUE)
   },
 
-  getMetaAnalysisTable = function(exposureId, outcomeId, analysisId = 1) {
+  getOutcomeNullDistributions = function(exposureId, analysisId) {
+    sql <- "SELECT * FROM @schema.outcome_null_distributions WHERE analysis_id = @analysis_id and target_cohort_id = @exposure_id"
+    queryDb(sql, exposure_id = exposureId, analysis_id = analysisId, snakeCaseToCamelCase = TRUE)
+  },
+
+  getMetaAnalysisTable = function(exposureId, outcomeId, analysisId = 1, calibrate = 'outcomes') {
+
+    checkmate::assert_choice(calibrate, c('outcomes', 'exposures', 'none'))
+
     sql <- "
      SELECT r.SOURCE_ID,
           ds.SOURCE_NAME,
@@ -417,7 +426,6 @@ ReportDbModel$methods(
       ORDER BY r.SOURCE_ID
     "
     rows <- queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId)
-
     if (nrow(rows)) {
       meta <- metaAnalysis(rows)
       meta$CI_95 <- paste(round(meta$LB_95,2), "-", round(meta$UB_95, 2))
@@ -425,13 +433,64 @@ ReportDbModel$methods(
       meta$CALIBRATED_RR <- "-"
       meta$CALIBRATED_CI_95 <- "-"
       meta$CALIBRATED_P_VALUE <- "-"
-      return(rbind(rows, meta))
+      rows <- rbind(rows, meta)
     }
+
+    if (calibrate == 'outcomes') {
+      nullDists <- getOutcomeNullDistributions(exposureId, analysisId)
+      for (i in 1:nrow(nullDists)) {
+        nullDist <- nullDists[i,]
+        calibratedRow <- getCalibratedValues(rows[rows$SOURCE_ID == nullDist$sourceId,], nullDist)
+        ci95 <- paste(round(exp(calibratedRow$logLb95Rr),2), "-", round(exp(calibratedRow$logUb95Rr),2))
+        rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_P_VALUE <- round(calibratedRow$p, 2)
+        rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_RR <- round(exp(calibratedRow$logRr),2)
+        rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_CI_95 <- ci95
+      }
+    }
+
     return(rows)
   },
 
-  getForestPlotTable = function(exposureId, outcomeId, calibrated) {
-    return(getMetaAnalysisTable(exposureId, outcomeId))
+  getCalibratedValues = function(rows, null) {
+    # TODO: checknames of inputs
+    nullDist <- null$nullDistMean
+    nullDist[2] <- null$nullDistSd
+    nullDist[3] <- null$sourceId
+    names(nullDist) <- c("mean", "sd", "sourceId")
+    class(nullDist) <- c("null")
+
+    errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
+    ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(rows$RR), rows$SE_LOG_RR, errorModel)
+    calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(rows$RR), rows$SE_LOG_RR)
+    df <- data.frame(logLb95Rr = ci$logLb95Rr, logUb95Rr = ci$logUb95Rr, p = calibratedPValue, logRr = ci$logRr)
+    return(df)
+  },
+
+  getForestPlotTable = function(exposureId, outcomeId, calibrated, analysisId = 1) {
+    #TODO: cleanup this function as its a mess
+    baseDf <- getMetaAnalysisTable(exposureId, outcomeId, calibrate = 'none')
+
+    if (!(1 %in% calibrated)) {
+      return(baseDf)
+    }
+
+    nullDists <- getOutcomeNullDistributions(exposureId, analysisId)
+    calibratedRows <- data.frame()
+    for (i in 1:nrow(nullDists)) {
+      nullDist <- nullDists[i,]
+      row <- baseDf[baseDf$SOURCE_ID == nullDist$sourceId,]
+      calibratedDt <- getCalibratedValues(row, nullDist)
+      row$RR <- exp(calibratedDt$logRr)
+      row$LB_95 <- exp(calibratedDt$logLb95Rr)
+      row$UB_95 <- exp(calibratedDt$logUb95Rr)
+      row$SOURCE_NAME <- paste(row$SOURCE_NAME, "Calibrated")
+      calibratedRows <- rbind(calibratedRows, row)
+    }
+
+    if (0 %in% calibrated) {
+      return(rbind(baseDf, calibratedRows))
+    }
+    return(calibratedRows)
   },
 
   getExposureOutcomeDqd = function(exposureOutcomePairs, analysisId = 1) {
@@ -446,33 +505,7 @@ ReportDbModel$methods(
                         exposure_id = item["exposureId"])
     })
     innerQuery <- paste(andStrings, collapse = " OR ")
-
-    sql <- "
-    SELECT cd.cohort_definition_name as exposure_cohort,
-           ocd.cohort_definition_name as outcome_cohort,
-           min(r.RR) as min_rr,
-           max(r.RR) as max_rr,
-           count(r.source_id) as num_data_sources,
-           min(r.P_VALUE) as min_p_value,
-           max(r.P_VALUE) as max_p_value,
-           min(r.C_AT_RISK) as min_c_at_risk,
-           max(r.C_AT_RISK) as max_c_at_risk,
-           min(r.C_CASES) as min_c_cases,
-           max(r.C_CASES) as max_c_cases,
-           min(r.T_AT_RISK) as min_t_at_risk,
-           max(r.T_AT_RISK) as max_t_at_risk,
-           min(r.T_CASES) as min_t_cases,
-           max(r.T_CASES) as max_t_cases
-      FROM @schema.scc_result r
-      INNER JOIN @schema.data_source ds ON ds.source_id = r.source_id
-      INNER JOIN @schema.outcome_cohort_definition ocd on r.outcome_cohort_id = ocd.cohort_definition_id
-      INNER JOIN @schema.cohort_definition cd on r.target_cohort_id = cd.cohort_definition_id
-      WHERE r.analysis_id = @analysis_id
-      AND r.source_id != -99
-      AND ( @inner_query )
-
-      group by cd.cohort_definition_name, ocd.cohort_definition_name, cd.cohort_definition_id, ocd.cohort_definition_id
-    "
+    sql <- loadSqlFile("data_quality/getExposureOutcomeDqd.sql")
 
     queryDb(sql, analysis_id = analysisId, inner_query = innerQuery, snakeCaseToCamelCase = TRUE)
   }
