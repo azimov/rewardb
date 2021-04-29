@@ -37,7 +37,12 @@ reportUi <- function(request) {
   body <- dashboardBody(tabItems(aboutTab,
                                  searchPanel,
                                  tabItem("sources",
-                                         shinydashboard::box(width = 12, withSpinner(DT::dataTableOutput("dataSourcesTable")))),
+                                         shinydashboard::box(width = 12,
+                                                             tags$h3("Registered data sources"),
+                                                             withSpinner(DT::dataTableOutput("dataSourcesTable"))),
+                                         shinydashboard::box(width = 12,
+                                                             tags$h3("Data quality Indicator Pairs"),
+                                                             withSpinner(gt::gt_output(outputId = "dataQaulityTable")))),
                                  tabItem("exposureCohortsTab",
                                          shinydashboard::box(width = 12, withSpinner(DT::dataTableOutput("exposureCohortsTable")))),
                                  tabItem("outcomeCohortsTab",
@@ -46,7 +51,7 @@ reportUi <- function(request) {
   sidebar <- dashboardSidebar(sidebarMenu(
     menuItem("About", tabName = "About", icon = icon("list-alt")),
     menuItem("Search", tabName = "Search", icon = icon("table")),
-    menuItem("Data Sources", tabName = "sources", icon = icon("table")),
+    menuItem("Data Source Quality", tabName = "sources", icon = icon("table")),
     menuItem("Available Exposures", tabName = "exposureCohortsTab", icon = icon("table")),
     menuItem("Available outcomes", tabName = "outcomeCohortsTab", icon = icon("table"))))
 

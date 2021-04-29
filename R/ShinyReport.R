@@ -1,4 +1,3 @@
-
 #' @title
 #' reportInstance
 #' @description
@@ -23,7 +22,7 @@ reportInstance <- function(input, output, session) {
     credentials <- data.frame(
       user = c("reward_user", "jgilber2"), # mandatory
       password = c("ohda-prod-1", "hangman252"), # mandatory
-      admin = c(FALSE,TRUE)
+      admin = c(FALSE, TRUE)
     )
 
     res_auth <- secure_server(
@@ -37,7 +36,7 @@ reportInstance <- function(input, output, session) {
 
   message("Init report dashboard")
 
-  exposureCohorts <-  model$getExposureCohorts()
+  exposureCohorts <- model$getExposureCohorts()
   outcomeCohorts <- model$getOutcomeCohorts()
 
   message("Loaded startup cache")
@@ -59,12 +58,28 @@ reportInstance <- function(input, output, session) {
     model$getDataSourceInfo()
   })
 
+  output$dataQaulityTable <- gt::render_gt({
+    exposureOutcomePairs <- data.frame(
+      exposureId = c(7869, 7869, 8163, 8163),
+      outcomeId = c(311525, 311526, 345050, 345074)
+    )
+
+    baseData <- model$getExposureOutcomeDqd(exposureOutcomePairs) %>%
+      gt::gt() %>%
+      fmt_number(decimals = 2, columns = c(3, 4, 7, 8)) %>%
+      tab_options(
+        table.font.size = "tiny"
+      )
+
+    return(baseData)
+  })
+
   getExposureCohort <- reactive({
-    exposureCohorts[exposureCohorts$cohortDefinitionName %in% input$targetCohorts, ]
+    exposureCohorts[exposureCohorts$cohortDefinitionName %in% input$targetCohorts,]
   })
 
   getOutcomeCohort <- reactive({
-    outcomeCohorts[outcomeCohorts$cohortDefinitionName %in% input$outcomeCohorts, ]
+    outcomeCohorts[outcomeCohorts$cohortDefinitionName %in% input$outcomeCohorts,]
   })
 
   output$selectedCohorts <- renderText("not selected")
@@ -91,7 +106,7 @@ reportInstance <- function(input, output, session) {
 
   output$selectedExposureId <- renderText({
     s <- selectedExposureOutcome()
-     if (is.null(s)) {
+    if (is.null(s)) {
       return("")
     }
     return(s$TARGET_COHORT_ID)
@@ -99,7 +114,7 @@ reportInstance <- function(input, output, session) {
 
   output$selectedOutcomeId <- renderText({
     s <- selectedExposureOutcome()
-     if (is.null(s)) {
+    if (is.null(s)) {
       return("")
     }
     return(s$OUTCOME_COHORT_ID)
