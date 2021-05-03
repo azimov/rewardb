@@ -36,7 +36,7 @@ metaAnalysisTableServer <- function(id, model, selectedExposureOutcome) {
       outcomeId <- s$OUTCOME_COHORT_ID
       calibrationType <- s$calibrationType
       if (length(outcomeId) & length(exposureId)) {
-        return(model$getMetaAnalysisTable(exposureId, outcomeId, calibrationType = calibrationType))
+        return(model$getMetaAnalysisTable(exposureId, outcomeId, calibrationType = calibrationType, sourceIds = s$usedDataSources))
       }
       return(data.frame())
     })

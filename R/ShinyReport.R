@@ -38,11 +38,13 @@ reportInstance <- function(input, output, session) {
 
   exposureCohorts <- model$getExposureCohorts()
   outcomeCohorts <- model$getOutcomeCohorts()
+  dataSources <-  model$getDataSourceInfo()
 
   message("Loaded startup cache")
 
   updateSelectizeInput(session, "outcomeCohorts", choices = outcomeCohorts$cohortDefinitionName, server = TRUE)
   updateSelectizeInput(session, "targetCohorts", choices = exposureCohorts$cohortDefinitionName, server = TRUE)
+  shinyWidgets::updatePickerInput(session, "dataSourcesUsed", choices = dataSources$sourceName, selected = dataSources$sourceName)
 
   message("Loaded  inputs")
 
@@ -99,7 +101,8 @@ reportInstance <- function(input, output, session) {
       TARGET_COHORT_NAME = exposureCohort$cohortDefinitionName,
       OUTCOME_COHORT_ID = outcomeCohort$cohortDefinitionId,
       OUTCOME_COHORT_NAME = outcomeCohort$cohortDefinitionName,
-      calibrationType = input$calibrationType
+      calibrationType = input$calibrationType,
+      usedDataSources = dataSources[dataSources$sourceName %in% input$dataSourcesUsed,]$sourceId
     )
 
     return(selected)

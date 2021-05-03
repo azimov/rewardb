@@ -36,3 +36,4 @@ SELECT sr.*
     AND sr.t_cases > 0
     AND sr.c_cases > 0
     AND sr.t_cases + sr.c_cases >= @min_cohort_size
+    {@source_ids != ''} ? {AND sr.source_id IN (@source_ids)}

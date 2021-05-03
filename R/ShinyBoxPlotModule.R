@@ -40,7 +40,7 @@ boxPlotModuleServer <- function(distStatsFunc, caption, selectedExposureOutcome)
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
 
-      data <- distStatsFunc(treatment, outcome)
+      data <- distStatsFunc(treatment, outcome, sourceIds = s$usedDataSources)
 
       return(data)
     })
