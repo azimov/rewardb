@@ -66,8 +66,8 @@ reportInstance <- function(input, output, session) {
 
     baseData <- model$getExposureOutcomeDqd(exposureOutcomePairs) %>%
       gt::gt() %>%
-      fmt_number(decimals = 2, columns = c(3, 4, 7, 8)) %>%
-      tab_options(
+      gt::fmt_number(decimals = 2, columns = c(3, 4, 7, 8)) %>%
+      gt::tab_options(
         table.font.size = "tiny"
       )
 
@@ -98,7 +98,8 @@ reportInstance <- function(input, output, session) {
       TARGET_COHORT_ID = exposureCohort$cohortDefinitionId,
       TARGET_COHORT_NAME = exposureCohort$cohortDefinitionName,
       OUTCOME_COHORT_ID = outcomeCohort$cohortDefinitionId,
-      OUTCOME_COHORT_NAME = outcomeCohort$cohortDefinitionName
+      OUTCOME_COHORT_NAME = outcomeCohort$cohortDefinitionName,
+      calibrationType = input$calibrationType
     )
 
     return(selected)
@@ -120,7 +121,6 @@ reportInstance <- function(input, output, session) {
     return(s$OUTCOME_COHORT_ID)
   })
 
-
   output$treatmentOutcomeStr <- renderText({
     s <- selectedExposureOutcome()
     ParallelLogger::logDebug("selected")
@@ -135,8 +135,8 @@ reportInstance <- function(input, output, session) {
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
 
-  model$config$useExposureControls <- FALSE
-  calibrationPlotServer("outcomeCalibrationPlot", model, selectedExposureOutcome)
+  calibrationPlotServer("outcomeCalibrationPlot", model, selectedExposureOutcome, FALSE)
+  calibrationPlotServer("exposureCalibrationPlot", model, selectedExposureOutcome, TRUE)
 
   timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
   tabPanelTimeOnTreatment <- tabPanel("Time on treatment", boxPlotModuleUi("timeOnTreatment"))

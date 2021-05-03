@@ -9,11 +9,11 @@ SELECT ms.ingredient_concept_id as exposure_id,
   WHERE cd.cohort_definition_id IN (@exposure_ids)
   AND cd.atc_flg = 0
   AND sr.analysis_id = @analysis_id
-  AND ocd.outcome_type = 0
   AND ms.evidence_exists = 0
   AND sr.rr IS NOT NULL
   AND sr.t_cases > 0
   AND sr.c_cases > 0
+  AND sr.t_cases + sr.c_cases >= @min_cohort_size
 
   UNION
 
@@ -39,7 +39,7 @@ SELECT mssq.exposure_id,
   )
   WHERE mssq.evidence_exists = 0
   AND sr.analysis_id = @analysis_id
-  AND ocd.outcome_type = 0
   AND sr.rr IS NOT NULL
   AND sr.t_cases > 0
   AND sr.c_cases > 0
+  AND sr.t_cases + sr.c_cases >= @min_cohort_size

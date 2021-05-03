@@ -63,12 +63,25 @@ CREATE TABLE @schema.data_source (
 CREATE TABLE @schema.outcome_null_distributions (
     source_id INT NOT NULL,
     analysis_id INT NOT NULL,
+    outcome_type INT NOT NULL,
     target_cohort_id BIGINT NOT NULL,
     ingredient_concept_id INT not null,
     null_dist_mean NUMERIC,
     null_dist_sd NUMERIC,
     absolute_error NUMERIC,
     n_controls NUMERIC,
-    PRIMARY KEY (source_id, analysis_id, target_cohort_id)
+    PRIMARY KEY (source_id, analysis_id, target_cohort_id, outcome_type)
 );
-create index exp_null_dist on @schema.outcome_null_distributions(ingredient_concept_id);
+create index idx_out_null_dist on @schema.outcome_null_distributions(ingredient_concept_id);
+
+CREATE TABLE @schema.outcome_null_distributions (
+    source_id INT NOT NULL,
+    analysis_id INT NOT NULL,
+    outcome_cohort_id BIGINT NOT NULL,
+    null_dist_mean NUMERIC,
+    null_dist_sd NUMERIC,
+    absolute_error NUMERIC,
+    n_controls NUMERIC,
+    PRIMARY KEY (source_id, analysis_id, outcome_cohort_id)
+);
+create index idx_exp_null_dist on @schema.outcome_null_distributions(outcome_cohort_id);

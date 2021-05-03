@@ -17,7 +17,7 @@ calibrationPlotUi <- function(id, figureTitle = "Figure.", figureText = CONST_CA
   )
 }
 
-calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
+calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposureControls) {
 
   server <- moduleServer(id, function(input, output, session) {
     ParallelLogger::logInfo("Initialized calibration plot module for: ", model$schemaName)
@@ -25,7 +25,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
     dataSources <- model$getDataSources()
 
     getNegativeControlSubset <- function(treatment, outcome) {
-      if (model$config$useExposureControls) {
+      if (useExposureControls) {
         negatives <- model$getExposureControls(outcomeIds = outcome)
       } else {
         otype <- if (model$getOutcomeType(outcome) == 1) 1 else 0

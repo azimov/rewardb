@@ -163,6 +163,7 @@ dashboardInstance <- function(input, output, session) {
     ids <- input$mainTable_rows_selected # This links the app components together
     filtered1 <- mainTableReac()
     filtered2 <- filtered1[ids,]
+    filtered2$calibrationType <- "none"
     return(filtered2)
   })
 
@@ -243,7 +244,7 @@ dashboardInstance <- function(input, output, session) {
 
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
-  calibrationPlotServer("calibrationPlot", model, selectedExposureOutcome)
+  calibrationPlotServer("calibrationPlot", model, selectedExposureOutcome, useExposureControls = model$config$useExposureControls)
 
   timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
   tabPanelTimeOnTreatment <- tabPanel("Time on treatment", boxPlotModuleUi("timeOnTreatment"))

@@ -48,14 +48,12 @@ getStudyControls <- function(connection,
                              targetCohortIds = NULL,
                              outcomeCohortIds = NULL) {
 
-  mappedControls <- getMappedControls(
-    connection,
-    targetCohortIds,
-    outcomeCohortIds,
-    schema,
-    cemSchema,
-    vocabularySchema
-  )
+  mappedControls <- getMappedControls(connection,
+                                      targetCohortIds,
+                                      outcomeCohortIds,
+                                      schema,
+                                      cemSchema,
+                                      vocabularySchema)
 
   if (length(targetCohortIds)) {
     mappedCounts <- data.frame(
