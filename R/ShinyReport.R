@@ -21,7 +21,7 @@ reportInstance <- function(input, output, session) {
     # define some credentials
     credentials <- data.frame(
       user = c("reward_user", "jgilber2"), # mandatory
-      password = c("ohda-prod-1", "hangman252"), # mandatory
+      password = c(model$config$connectionDetails$password(), "hangman252"), # mandatory
       admin = c(FALSE, TRUE)
     )
 
