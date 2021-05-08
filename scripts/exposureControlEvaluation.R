@@ -1,5 +1,6 @@
 devtools::load_all()
 library(MethodEvaluation)
+source("scripts/controlEvaluationFunctions.R")
 # Ad cohorts to results
 generateCohorts <- FALSE
 config <- loadGlobalConfig("config/global-cfg.yml")
@@ -75,7 +76,6 @@ if (generateCohorts) {
   }
 }
 
-
 # Get exposure controls for 4 outcomes
 data("ohdsiNegativeControls", package = 'MethodEvaluation')
 ohdsiNegativeControls <- ohdsiNegativeControls[ohdsiNegativeControls$type == "Exposure control",]
@@ -96,62 +96,24 @@ INNER JOIN @schema.atlas_outcome_reference aor on sr.outcome_cohort_id = aor.coh
 WHERE sr.outcome_cohort_id IN (@outcome_cohort_ids) AND sr.RR > 0 AND sr.t_cases + sr.c_cases > 10"
 fullDataSet <- DatabaseConnector::renderTranslateQuerySql(connection, sql, outcome_cohort_ids = outcomeCohortIds, schema = config$rewardbResultsSchema, snakeCaseToCamelCase = TRUE)
 
-percentSignificant <- function(nullDist, positives, rrThresh = 0.5, pThresh = 0.05) {
-  # Get fraction of exposures signficant for causing or preventing outcome after calibration
 
-  pValues <- EmpiricalCalibration::calibrateP(nullDist, log(positives$rr), positives$seLogRr)
-  errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
-  ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(positives$rr), positives$seLogRr, errorModel)
-  
-  # confidence interval should not cross 1, signficant p value and rr value
-  nSignificantPost <- sum((ci$logUb95Rr > 0 & ci$logLb95Rr > 0) | (ci$logUb95Rr < 0 & ci$logLb95Rr < 0) & ci$logRr < log(rrThresh) & pValues < pThresh)
-}
-
-getSetResults <- function(manualControlData, automatedControlsData, positives, manualFilename, automatedFilename) {
-
-  EmpiricalCalibration::plotCalibrationEffect(log(manualControlData$rr), manualControlData$seLogRr, fileName = manualFilename, showExpectedAbsoluteSystematicError = TRUE)
-  EmpiricalCalibration::plotCalibrationEffect(log(automatedControlsData$rr), automatedControlsData$seLogRr, fileName = automatedFilename, showExpectedAbsoluteSystematicError = TRUE)
-
-  manualNullDist <- EmpiricalCalibration::fitNull(logRr = log(manualControlData$rr), seLogRr = manualControlData$seLogRr)
-  automatedNullDist <- EmpiricalCalibration::fitNull(logRr = log(automatedControlsData$rr), seLogRr = automatedControlsData$seLogRr)
-  
-  mu1 <- exp(manualNullDist["mean"])
-  sd1 <- exp(manualNullDist["sd"])
-  mu2 <- exp(automatedNullDist["mean"])
-  sd2 <- exp(automatedNullDist["sd"])
-
-  z <- (mu1 - mu2) / sqrt(sd1**2 + sd2**2)
-  p <- 2 * pnorm(-abs(z))
-
-  mErr <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(manualNullDist)
-  aErr <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(automatedNullDist)
-  rrThresh <- 0.5
-  pThresh <- 0.05
-  data.frame(manualMean = mu1,
-             manualSd = sd1,
-             automatedMean = mu2,
-             automatedSd = sd2,
-             z = z,
-             p = p,
-             manualAbsErr = mErr,
-             automatedAbsErr = aErr,
-             absErrorDiff = abs(mErr - aErr),
-             nAutoControls = nrow(automatedControlsData),
-             nSignificantPre = sum((positives$ub95Rr > 1 & positives$lb95Rr > 1) | (positives$ub95Rr < 1 & positives$lb95Rr < 1) & positives$logRr < log(rrThresh) & positives$pValue < pThresh),
-             nSignificantPostManual = percentSignificant(manualNullDist, positives),
-             nSignificantPostAuto = percentSignificant(automatedNullDist, positives))
-
-}
-
+plotList <- list()
 
 results <- data.frame()
 for (sourceId in c(10, 11, 12, 13)) {
+
+  plotList[[sourceId]] <- list()
   for (outcomeId in 1:4) {
-    row <- getSetResults(manualControlData[manualControlData$sourceId == sourceId & manualControlData$atlasId == outcomeId,],
-                         automatedControlsData[automatedControlsData$sourceId == sourceId & automatedControlsData$atlasId == outcomeId,],
-                         fullDataSet[fullDataSet$sourceId == sourceId & fullDataSet$atlasId == outcomeId, ],
-                         paste0("extra/eval_results_exp/manual_plot_sid", sourceId, "-oid", outcomeId, ".png"),
-                         paste0("extra/eval_results_exp/auto_plot_sid", sourceId, "-oid", outcomeId, ".png"))
+
+    mData <- manualControlData[manualControlData$sourceId == sourceId & manualControlData$atlasId == outcomeId,]
+    autData <- automatedControlsData[automatedControlsData$sourceId == sourceId & automatedControlsData$atlasId == outcomeId,]
+    positives <- fullDataSet[fullDataSet$sourceId == sourceId & fullDataSet$atlasId == outcomeId,]
+    
+    plotList[[sourceId]][[outcomeId]] <- getCalibrationPlots(mData, autData, positives,
+                                 paste0("extra/eval_results_exp/manual_plot_sid", sourceId, "-oid", outcomeId, ".png"),
+                                 paste0("extra/eval_results_exp/auto_plot_sid", sourceId, "-oid", outcomeId, ".png"))
+    
+    row <- getSetResults(mData, autData, positives)
 
     row$outcomeId <- outcomeId
     row$sourceId <- sourceId
@@ -164,6 +126,15 @@ dataSources <- DatabaseConnector::renderTranslateQuerySql(connection,
                                                           "SELECT * FROM @schema.data_source",
                                                           schema = config$rewardbResultsSchema,
                                                           snakeCaseToCamelCase = TRUE)
+
+# Create fan plots
+for (sourceId  in c(10, 11, 12, 13)) {
+  name <- dataSources[dataSources$sourceId == sourceId, ]$sourceName
+  gridPlot <- exposureCalibrationPlotGrid(plotList[[sourceId]], name)
+  filename <- file.path("extra", "eval_results", paste0(name, "-exposure-calibration-plots.png"))
+  ggplot2::ggsave(filename, gridPlot)
+}
+
 
 cohortNames <- data.frame(name = c("Acute Pancreatitis", "GI Bleed", "Stroke", "ibd"), cohortId = c(1, 2, 3, 4))
 

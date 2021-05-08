@@ -31,12 +31,12 @@ reportUi <- function(request) {
                                                                    multiple = FALSE, width = 500)),
                                              column(6,
                                                     shinyWidgets::pickerInput("dataSourcesUsed",
-                                                                   label = "Data Sources:",
-                                                                   choices = NULL,
-                                                                   multiple = TRUE, width = 500)),
+                                                                              label = "Data Sources:",
+                                                                              choices = NULL,
+                                                                              multiple = TRUE, width = 500)),
                                              column(12,
                                                     conditionalPanel(condition = "output.selectedCohorts != 'selected'",
-                                                              actionButton("selectCohorts", "Select")))),
+                                                                     actionButton("selectCohorts", "Select")))),
                          shinydashboard::box(width = 12,
                                              conditionalPanel(condition = resultsDisplayCondition,
                                                               tags$h3(textOutput("treatmentOutcomeStr")), riskEstimatesPanel),
@@ -62,12 +62,11 @@ reportUi <- function(request) {
                                  tabItem("outcomeCohortsTab",
                                          shinydashboard::box(width = 12, withSpinner(DT::dataTableOutput("outcomeCohortsTable"))))))
 
-  sidebar <- dashboardSidebar(sidebarMenu(
-    menuItem("About", tabName = "About", icon = icon("list-alt")),
-    menuItem("Search", tabName = "Search", icon = icon("table")),
-    menuItem("Data Source Quality", tabName = "sources", icon = icon("table")),
-    menuItem("Available Exposures", tabName = "exposureCohortsTab", icon = icon("table")),
-    menuItem("Available outcomes", tabName = "outcomeCohortsTab", icon = icon("table"))))
+  sidebar <- dashboardSidebar(sidebarMenu(menuItem("About", tabName = "About", icon = icon("list-alt")),
+                                          menuItem("Search", tabName = "Search", icon = icon("table")),
+                                          menuItem("Data Source Quality", tabName = "sources", icon = icon("table")),
+                                          menuItem("Available Exposures", tabName = "exposureCohortsTab", icon = icon("table")),
+                                          menuItem("Available outcomes", tabName = "outcomeCohortsTab", icon = icon("table"))))
 
 
   dashboardPage(dashboardHeader(title = "REWARD: All Exposures by all outcomes"),
