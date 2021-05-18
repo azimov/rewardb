@@ -6,15 +6,11 @@ library(dplyr)
 config <- loadGlobalConfig("config/global-cfg.yml")
 
 cdmConfigPaths <- c(
-  "config/cdm/mdcd.yml",
-  "config/cdm/mdcr.yml",
-  "config/cdm/ccae.yml",
-  "config/cdm/optum.yml",
   "config/cdm/jmdc.yml"
 )
 
-exposureCohortIds <- c(7869)
-outcomeCohortIds <- c(183402, 344960, 285527)
+exposureCohortIds <- c(4618)
+outcomeCohortIds <- c(344400)
 
 jsonFile <- system.file("settings/default.json", package = "rewardb")
 sccAnalysisSettings <- RJSONIO::fromJSON(jsonFile)[[1]]
@@ -58,14 +54,14 @@ for (cdmConfigPath in cdmConfigPaths) {
 }
 
 cohortIdMap <- data.frame(
-  cohortPair = c("7869-183402", "7869-344960", "7869-285527"),
-  cohortName = c("Incident outcome of Allergic rhinitis", "Atopic dermatitis referent incident cohort", "Incident outcome of Neoplasm of colon")
+  cohortPair = c("4618-344400"),
+  cohortName = c("Parkinson's Disease [NS PL Definition]")
 )
 
-ageResults[ageResults$dataSource != "Japan Medical Data Center (JMDC)", ] %>% inner_join(cohortIdMap, by="cohortPair") %>%
-  select(cohortName, dataSource, countValue, minValue, maxValue, averageValue, standardDeviation, medianValue, p10Value, p25Value, p75Value, p90Value) %>%
-  gt(groupname_col = "dataSource") %>%
-  fmt_number(5:11, decimals = 3) %>%
+ageResults %>% inner_join(cohortIdMap, by="cohortPair") %>%
+  select(cohortName, sourceName, countValue, minValue, maxValue, averageValue, standardDeviation, medianValue, p10Value, p25Value, p75Value, p90Value) %>%
+  gt(groupname_col = "sourceName") %>%
+  fmt_number(6:7, decimals = 2) %>%
   cols_label(cohortName = "") %>%
   tab_options(row_group.background.color = "lightgrey") %>%
   tab_header("") %>%
