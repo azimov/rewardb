@@ -10,7 +10,21 @@ percentSignificant <- function(nullDist, positives, pThresh = 0.05) {
 }
 
 
-getCalibrationPlots <- function(manualControlData, automatedControlsData, positives, manualFilename, automatedFilename) {
+calibratedRows <- function(nullDist, uncalibratedData) {
+  pValues <- EmpiricalCalibration::calibrateP(nullDist, log(uncalibratedData$rr), uncalibratedData$seLogRr)
+  errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
+  ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(uncalibratedData$rr), uncalibratedData$seLogRr, errorModel)
+
+  calibratedData <- data.frame(uncalibratedData)
+  calibratedData$pValue <- pValues
+  calibratedData$logLb95Rr <- ci$logLb95Rr
+  calibratedData$logUb95Rr <- ci$logUb95Rr
+
+  return(calibratedData)
+}
+
+
+getCalibrationPlots <- function(manualControlData, automatedControlsData, manualFilename, automatedFilename) {
   list(
     manualPlot = EmpiricalCalibration::plotCalibrationEffect(log(manualControlData$rr), manualControlData$seLogRr, fileName = manualFilename, showExpectedAbsoluteSystematicError = TRUE),
     autoPlot = EmpiricalCalibration::plotCalibrationEffect(log(automatedControlsData$rr), automatedControlsData$seLogRr, fileName = automatedFilename, showExpectedAbsoluteSystematicError = TRUE)
@@ -36,29 +50,78 @@ exposureCalibrationPlotGrid <- function(plots, title) {
                           grid::textGrob(""),
                           grid::textGrob("Manual"),
                           grid::textGrob("Automatic"),
-                          ncol = 3, nrow = 5, widths = c(1, 3, 3), heights = c(4,4,4,4, 1), bottom = paste(title, "Exposure controls"))
+                          ncol = 3, nrow = 5, widths = c(1, 3, 3), heights = c(4, 4, 4, 4, 1), bottom = paste(title, "Exposure controls"))
 }
 
-# False positive rate
-typeIerrorRateCount <- function(goldStandard, comparator) {
-  truePositives <- goldStandard[(goldStandard$ub95Rr > 1 & goldStandard$lb95Rr > 1) | (goldStandard$ub95Rr < 1 & goldStandard$lb95Rr < 1) & goldStandard$pValue <= 0.05, ]$exposureId
-  testPositives <- comparator[((comparator$ub95Rr > 1 & comparator$lb95Rr > 1) | (comparator$ub95Rr < 1 & comparator$lb95Rr < 1) & comparator$pValue <= 0.05), ]$exposureId
+outcomeCalibrationPlotGrid <- function(plots, title) {
+  gridExtra::grid.arrange(grid::textGrob("diclofenac"),
+                          plots$diclofenac$manualPlot,
+                          plots$diclofenac$autoPlot,
 
-  sum(!(testPositives %in% truePositives))
+                          grid::textGrob("ciprofloxacin"),
+                          plots$ciprofloxacin$manualPlot,
+                          plots$ciprofloxacin$autoPlot,
+
+                          grid::textGrob("metformin"),
+                          plots$metformin$manualPlot,
+                          plots$metformin$autoPlot,
+
+                          grid::textGrob("sertraline"),
+                          plots$sertraline$manualPlot,
+                          plots$sertraline$autoPlot,
+
+                          grid::textGrob(""),
+                          grid::textGrob("Manual"),
+                          grid::textGrob("Automatic"),
+                          ncol = 3, nrow = 5, widths = c(1, 3, 3), heights = c(4, 4, 4, 4, 1), bottom = paste(title, "Outcome controls"))
 }
 
-# False negative rate
-typeIIerrorCount <- function(goldStandard, comparator) {
-  trueNegatives <- goldStandard[!((goldStandard$ub95Rr > 1 & goldStandard$lb95Rr > 1) | (goldStandard$ub95Rr < 1 & goldStandard$lb95Rr < 1) & goldStandard$pValue <= 0.05), ]$exposureId
-  testNegatives <- comparator[!((comparator$ub95Rr > 1 & comparator$lb95Rr > 1) | (comparator$ub95Rr < 1 & comparator$lb95Rr < 1) & comparator$pValue <= 0.05), ]$exposureId
 
-  sum(!(testNegatives %in% trueNegatives))
+outcomeByDbCalibrationPlots <- function(plots, exposure) {
+  gridExtra::grid.arrange(grid::textGrob("Manual"),
+                          plots[[10]][[exposure]]$manualPlot,
+                          plots[[11]][[exposure]]$manualPlot,
+                          plots[[12]][[exposure]]$manualPlot,
+                          plots[[13]][[exposure]]$manualPlot,
+
+                          grid::textGrob("Auto"),
+                          plots[[10]][[exposure]]$autoPlot,
+                          plots[[11]][[exposure]]$autoPlot,
+                          plots[[12]][[exposure]]$autoPlot,
+                          plots[[13]][[exposure]]$autoPlot,
+
+                          grid::textGrob(""),
+                          grid::textGrob("Optum SES"),
+                          grid::textGrob("IBM CCAE"),
+                          grid::textGrob("IBM MDCD"),
+                          grid::textGrob("IBM MDCR"),
+                          ncol = 5, nrow = 3, widths=c(1, 4,4,4,4), heights=c(5,5,1), bottom = paste(exposure, "outcome controls"))
 }
 
-getSetResults <- function(manualControlData, automatedControlsData, positives) {
+setEvaluation <- function(goldStandard, comparator, uIdField) {
 
-  manualNullDist <- EmpiricalCalibration::fitNull(logRr = log(manualControlData$rr), seLogRr = manualControlData$seLogRr)
-  automatedNullDist <- EmpiricalCalibration::fitNull(logRr = log(automatedControlsData$rr), seLogRr = automatedControlsData$seLogRr)
+  gsPositives <- goldStandard[(goldStandard$logUb95Rr > 0 & goldStandard$logLb95Rr > 0) | (goldStandard$logUb95Rr < 0 & goldStandard$logLb95Rr < 0) & goldStandard$pValue <= 0.05,][[uIdField]]
+  gsNegatives <- goldStandard[!((goldStandard$logUb95Rr > 0 & goldStandard$logLb95Rr > 0) | (goldStandard$logUb95Rr < 0 & goldStandard$logLb95Rr < 0) & goldStandard$pValue <= 0.05),][[uIdField]]
+  comparatorPositives <- comparator[(comparator$logUb95Rr > 0 & comparator$logLb95Rr > 0) | (comparator$logUb95Rr < 0 & comparator$logLb95Rr < 0) & comparator$pValue <= 0.05,][[uIdField]]
+  comparatorNegatives <- comparator[!((comparator$logUb95Rr > 0 & comparator$logLb95Rr > 0) | (comparator$logUb95Rr < 0 & comparator$logLb95Rr < 0) & comparator$pValue <= 0.05),][[uIdField]]
+
+  tp <- sum(comparatorPositives %in% gsPositives)
+  fp <- sum(!(comparatorPositives %in% gsPositives))
+  tn <- sum(comparatorNegatives %in% gsNegatives)
+  fn <- sum(!(comparatorNegatives %in% gsNegatives))
+
+  data.frame(sensetivity = tp / (tp + fn),
+             specificity = tn / (tn + fp),
+             ppv = tp / (tp + fp),
+             npv = tn / (tn + fn),
+             recall = tp/ (tp + fn),
+             fnr = fn/(tn + fn),
+             fp = fp,
+             tn = tn,
+             tp = tp)
+}
+
+getSetResults <- function(manualNullDist, automatedNullDist, automatedControlsData) {
 
   mu1 <- exp(manualNullDist["mean"])
   sd1 <- exp(manualNullDist["sd"])
@@ -70,8 +133,6 @@ getSetResults <- function(manualControlData, automatedControlsData, positives) {
 
   mErr <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(manualNullDist)
   aErr <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(automatedNullDist)
-  pThresh <- 0.05
-
 
   data.frame(manualMean = mu1,
              manualSd = sd1,
@@ -82,9 +143,6 @@ getSetResults <- function(manualControlData, automatedControlsData, positives) {
              manualAbsErr = mErr,
              automatedAbsErr = aErr,
              absErrorDiff = abs(mErr - aErr),
-             nAutoControls = nrow(automatedControlsData),
-             nSignificantPre = sum((positives$ub95Rr > 1 & positives$lb95Rr > 1) | (positives$ub95Rr < 1 & positives$lb95Rr < 1) & positives$pValue < pThresh),
-             nSignificantPostManual = percentSignificant(manualNullDist, positives),
-             nSignificantPostAuto = percentSignificant(automatedNullDist, positives))
+             nAutoControls = nrow(automatedControlsData))
 
 }

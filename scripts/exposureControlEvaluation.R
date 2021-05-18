@@ -95,11 +95,14 @@ sql <- "SELECT sr.*, aor.atlas_id FROM @schema.scc_result sr
 INNER JOIN @schema.atlas_outcome_reference aor on sr.outcome_cohort_id = aor.cohort_definition_id
 WHERE sr.outcome_cohort_id IN (@outcome_cohort_ids) AND sr.RR > 0 AND sr.t_cases + sr.c_cases > 10"
 fullDataSet <- DatabaseConnector::renderTranslateQuerySql(connection, sql, outcome_cohort_ids = outcomeCohortIds, schema = config$rewardbResultsSchema, snakeCaseToCamelCase = TRUE)
-
+fullDataSet$logUb95Rr <- log(fullDataSet$ub95)
+fullDataSet$logLb95Rr <- log(fullDataSet$lb95)
 
 plotList <- list()
-
 results <- data.frame()
+errorRates <- data.frame()
+
+
 for (sourceId in c(10, 11, 12, 13)) {
 
   plotList[[sourceId]] <- list()
@@ -108,16 +111,39 @@ for (sourceId in c(10, 11, 12, 13)) {
     mData <- manualControlData[manualControlData$sourceId == sourceId & manualControlData$atlasId == outcomeId,]
     autData <- automatedControlsData[automatedControlsData$sourceId == sourceId & automatedControlsData$atlasId == outcomeId,]
     positives <- fullDataSet[fullDataSet$sourceId == sourceId & fullDataSet$atlasId == outcomeId,]
-    
-    plotList[[sourceId]][[outcomeId]] <- getCalibrationPlots(mData, autData, positives,
+
+    manualNullDist <- EmpiricalCalibration::fitNull(logRr = log(mData$rr), seLogRr = mData$seLogRr)
+    automatedNullDist <- EmpiricalCalibration::fitNull(logRr = log(autData$rr), seLogRr = autData$seLogRr)
+
+    plotList[[sourceId]][[outcomeId]] <- getCalibrationPlots(mData, autData,
                                  paste0("extra/eval_results_exp/manual_plot_sid", sourceId, "-oid", outcomeId, ".png"),
                                  paste0("extra/eval_results_exp/auto_plot_sid", sourceId, "-oid", outcomeId, ".png"))
     
-    row <- getSetResults(mData, autData, positives)
+    row <- getSetResults(manualNullDist, automatedNullDist, autData)
+
+
+    autoCalibratedRows <- calibratedRows(automatedNullDist, positives)
+    manualCalibratedRows <- calibratedRows(manualNullDist, positives)
 
     row$outcomeId <- outcomeId
     row$sourceId <- sourceId
     results <- rbind(results, row)
+
+    setEvalUncalibrated <- setEvaluation(manualCalibratedRows, positives, "targetCohortId")
+    setEvalCalibrated <- setEvaluation(manualCalibratedRows, autoCalibratedRows, "targetCohortId")
+
+    setEvalCalibrated$outcomeId <- outcomeId
+    setEvalCalibrated$sourceId <- sourceId
+    setEvalCalibrated$type <- "Calibrated"
+    setEvalCalibrated$manualAbsErr <- row$manualAbsErr
+
+    setEvalUncalibrated$outcomeId <- outcomeId
+    setEvalUncalibrated$sourceId <- sourceId
+    setEvalUncalibrated$type <- "Uncalibrated"
+    setEvalUncalibrated$manualAbsErr <- row$manualAbsErr
+    
+    print(paste(sourceId, outcomeId))
+    errorRates <- rbind(errorRates, setEvalCalibrated, setEvalUncalibrated)
   }
 }
 saveRDS(results, "extra/exposureControlEvaluationTable.rds")
