@@ -1,6 +1,6 @@
 Package: rewardb
 Title: REWARD-B
-Version: 0.1.0
+Version: 0.2.0
 Encoding: UTF-8
 Authors@R: person("James", "Gilbert", email = "jgilber2@its.jnj.com",
                   role = c("aut", "cre"))
