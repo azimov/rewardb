@@ -56,7 +56,7 @@ DbModel$methods(
 
     sql <- SqlRender::render(query, schema = schemaName, warnOnMissingParameters = FALSE, ...)
     sql <- SqlRender::translate(sql, targetDialect = "postgresql")
-
+    data <- NULL
 
     if (is(dbConn, "Pool")) {
       data <- DatabaseConnector::dbGetQuery(dbConn, sql)
