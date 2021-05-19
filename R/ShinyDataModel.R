@@ -202,7 +202,7 @@ DashboardDbModel$methods(
     return(queryDb(sql, outcome_cohort_ids = outcomeIds, min_cohort_size = minCohortSize))
   },
 
-  getOutcomeControls = function(targetIds, minCohortSize = 10, source_ids = NULL) {
+  getOutcomeControls = function(targetIds, minCohortSize = 10, sourceIds = NULL) {
     sql <- "
       SELECT r.*, o.type_id as outcome_type
       FROM @schema.result r

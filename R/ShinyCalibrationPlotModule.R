@@ -24,7 +24,11 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
 
     dataSources <- model$getDataSources()
 
-    getNegativeControlSubset <- function(treatment, outcome, sourceIds) {
+    getNegativeControlSubset <- function(treatment, outcome, sourceIds = NULL) {
+      if (is.null(sourceIds)) {
+        sourceIds <- dataSources$SOURCE_ID
+      }
+
       if (useExposureControls) {
         negatives <- model$getExposureControls(outcomeIds = outcome, sourceIds = sourceIds)
       } else {
