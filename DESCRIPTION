@@ -8,13 +8,19 @@ Description: Package for REal-World Assessment and Research of Drug Performance 
 Depends: R (>= 3.5.0)
 License: Copyright Janssen Research & Development 2020 all rights reserved
 Imports:
+    magrittr,
+    DT,
+    shiny,
+    shinyWidgets,
+    shinydashboard,
+    shinycssloaders
+Requires:
     DatabaseConnector,
     pool,
     shiny,
     shinyWidgets,
     shinydashboard,
     shinycssloaders,
-    shinymanager,
     ggplot2,
     scales,
     DT,
@@ -34,7 +40,6 @@ Suggests:
     foreach,
     withr,
     testthat,
-    ssh,
     knitr,
     rmarkdown,
     shinymanager

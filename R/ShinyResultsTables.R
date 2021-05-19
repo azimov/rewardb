@@ -1,8 +1,8 @@
 metaAnalysisTableUi <- function(id) {
-  tagList(
-    withSpinner(DT::dataTableOutput(NS(id, "fullResultsTable"))),
-    hr(),
-    downloadButton(NS(id, "downloadSubTable"), "Download table")
+  shiny::tagList(
+    shinycssloaders::withSpinner(DT::dataTableOutput(NS(id, "fullResultsTable"))),
+    shiny::hr(),
+    shiny::downloadButton(NS(id, "downloadSubTable"), "Download table")
   )
 }
 

@@ -40,7 +40,7 @@ outcomeNullDistsProc <- function(exposureIds, config, analysisId, minCohortSize 
   return(rows)
 }
 
-#'@tilte
+#' @title
 #' Compute null exposure distributions
 #' @description
 #' Compute the null exposure distribution for all exposure cohorts (requires results and cem_matrix summary table)
@@ -102,7 +102,7 @@ exposureNullDistsProc <- function(outcomeIds, config, analysisId, minCohortSize 
   return(rows)
 }
 
-#'@tilte
+#' @title
 #' Compute null exposure distributions
 #' @description
 #' Compute the null exposure distribution for all exposure cohorts (requires results and cem_matrix summary table)

@@ -6,20 +6,20 @@
 CONST_CALIBRATION_PLOT_TXT <- "Plot of calibration of effect estimates. Blue dots are negative controls, yellow diamonds are uncalibrated effect estimates"
 
 calibrationPlotUi <- function(id, figureTitle = "Figure.", figureText = CONST_CALIBRATION_PLOT_TXT) {
-  tagList(
-    withSpinner(plotly::plotlyOutput(NS(id, "calibrationPlot"), height = 500)),
-    div(
-      strong(figureTitle),
+  shiny::tagList(
+    shinycssloaders::withSpinner(plotly::plotlyOutput(NS(id, "calibrationPlot"), height = 500)),
+    shiny::div(
+      shiny::strong(figureTitle),
       paste(figureText),
-      downloadButton(NS(id, "downloadCalibrationPlot"), "Save")
+      shiny::downloadButton(shiny::NS(id, "downloadCalibrationPlot"), "Save")
     ),
-    withSpinner(DT::dataTableOutput(NS(id, "nullDistribution")))
+    shinycssloaders::withSpinner(DT::dataTableOutput(shiny::NS(id, "nullDistribution")))
   )
 }
 
 calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposureControls) {
 
-  server <- moduleServer(id, function(input, output, session) {
+  server <- shiny::moduleServer(id, function(input, output, session) {
     ParallelLogger::logInfo("Initialized calibration plot module for: ", model$schemaName)
 
     dataSources <- model$getDataSources()
@@ -54,7 +54,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
           )
           nulls <- rbind(nulls, df)
         }
-        nulls <- inner_join(dataSources, nulls, by = "SOURCE_ID")
+        nulls <- dplyr::inner_join(dataSources, nulls, by = "SOURCE_ID")
       }
       return(nulls)
     })

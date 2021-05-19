@@ -6,14 +6,14 @@ strQueryWrap <- function(vec) {
 #' Wrapper around boxplot module
 timeOnTreatmentServer <- function(id, model, selectedExposureOutcome) {
   caption <- "Table: Shows time on treatment for population od patients exposed to medication that experience the outcome of interest."
-  server <- moduleServer(id, boxPlotModuleServer(model$getTimeOnTreatmentStats, caption, selectedExposureOutcome))
+  server <- shiny::moduleServer(id, boxPlotModuleServer(model$getTimeOnTreatmentStats, caption, selectedExposureOutcome))
   return(server)
 }
 
 #' Wrapper around boxplot module
 timeToOutcomeServer <- function(id, model, selectedExposureOutcome) {
   caption <- "Table: shows distribution of absolute difference of time between exposure and outcome for population of patients exposed to medication that expeirence the outcome."
-  server <- moduleServer(id, boxPlotModuleServer(model$getTimeToOutcomeStats, caption, selectedExposureOutcome))
+  server <- shiny::moduleServer(id, boxPlotModuleServer(model$getTimeToOutcomeStats, caption, selectedExposureOutcome))
   return(server)
 }
 
@@ -35,7 +35,7 @@ dashboardInstance <- function(input, output, session) {
 
   getOutcomeCohortTypes <- reactive({
     cohortTypeMapping <- list("ATLAS defined" = 2, "Inpatient" = 1, "Two diagnosis codes" = 0)
-    rs <- foreach(i = input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
+    rs <- foreach::foreach(i = input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
     return(rs)
   })
 
