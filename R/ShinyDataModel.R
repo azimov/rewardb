@@ -58,21 +58,22 @@ DbModel$methods(
     sql <- SqlRender::translate(sql, targetDialect = "postgresql")
     data <- NULL
 
-    if (is(dbConn, "Pool")) {
-      data <- DatabaseConnector::dbGetQuery(dbConn, sql)
-      if (snakeCaseToCamelCase) {
-        colnames(data) <- SqlRender::snakeCaseToCamelCase(colnames(data))
+    tryCatch({
+      if (is(dbConn, "Pool")) {
+        data <- DatabaseConnector::dbGetQuery(dbConn, sql)
+        if (snakeCaseToCamelCase) {
+          colnames(data) <- SqlRender::snakeCaseToCamelCase(colnames(data))
+        } else {
+          colnames(data) <- toupper(colnames(data))
+        }
       } else {
-        colnames(data) <- toupper(colnames(data))
-      }
-    } else {
-      tryCatch({
         data <- DatabaseConnector::querySql(dbConn, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
-      }, error = function(e, ...) {
-        ParallelLogger::logError(e)
-        DatabaseConnector::dbExecute(dbConn, "ABORT;")
-      })
-    }
+      }
+    }, error = function(e, ...) {
+      ParallelLogger::logError(e)
+      DatabaseConnector::dbExecute(dbConn, "ABORT;")
+      stop(e)
+    })
     return(data)
   },
 

@@ -159,9 +159,15 @@ dashboardInstance <- function(input, output, session) {
       })
   })
 
+  # This links the app components together
   selectedExposureOutcome <- reactive({
-    ids <- input$mainTable_rows_selected # This links the app components together
+    ids <- input$mainTable_rows_selected
     filtered1 <- mainTableReac()
+
+    if (!length(ids)) {
+      return(NULL)
+    }
+
     filtered2 <- filtered1[ids,]
     filtered2$calibrationType <- "none"
     return(filtered2)
