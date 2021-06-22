@@ -22,10 +22,8 @@ for (cdmConfigPath in cdmConfigPaths) {
 for (cdmConfigPath in cdmConfigPaths) {
   cdmConfig <- loadCdmConfig(cdmConfigPath)
   connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
-  
-  #createCohorts(connection, cdmConfig)
-  #createOutcomeCohorts(connection, cdmConfig)
-  computeAtlasCohorts(connection, cdmConfig)
+  createCohorts(connection, cdmConfig)
+  createOutcomeCohorts(connection, cdmConfig)
   DatabaseConnector::disconnect(connection)
 }
 
