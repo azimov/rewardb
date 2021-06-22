@@ -15,7 +15,7 @@ connectionDetails:
 useSecurePassword: True
 keyringService: "rhealth-db"
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
-useMppBulkLoad: True
+bulkUpload: True
 
 resultSchema: "scratch_reward_jmdc"
 referenceSchema: "scratch_reward_jmdc"

@@ -10,6 +10,17 @@ refFolder <- "reference_test_folder"
 unlink(zipFilePath)
 unlink(refFolder)
 
+# Cleanup test dir
+withr::defer({
+  unlink(zipFilePath, recursive = TRUE, force = TRUE)
+  unlink(refFolder, recursive = TRUE, force = TRUE)
+  unlink(cdmConfig$referenceFolder, recursive = TRUE, force = TRUE)
+  unlink("reference_files", recursive = TRUE, force = TRUE)
+  unlink("export", recursive = TRUE, force = TRUE)
+  unlink("rb-import", recursive = TRUE, force = TRUE)
+  DatabaseConnector::disconnect(connection)
+}, testthat::teardown_env())
+
 appContextFile <- system.file("tests", "test.dashboard.yml", package = "rewardb")
 
 pgDbSetup <- function () {
@@ -53,13 +64,3 @@ runDataBuild <- function() {
   }
 }
 
-# Cleanup test dir
-withr::defer({
-  unlink(zipFilePath, recursive = TRUE, force = TRUE)
-  unlink(refFolder, recursive = TRUE, force = TRUE)
-  unlink(cdmConfig$referenceFolder, recursive = TRUE, force = TRUE)
-  unlink("reference_files", recursive = TRUE, force = TRUE)
-  unlink("export", recursive = TRUE, force = TRUE)
-  unlink("rb-import", recursive = TRUE, force = TRUE)
-  DatabaseConnector::disconnect(connection)
-}, testthat::teardown_env())

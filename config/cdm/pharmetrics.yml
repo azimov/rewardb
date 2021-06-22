@@ -15,7 +15,7 @@ connectionDetails:
 useSecurePassword: True
 keyringService: "rhealth-db"
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
-useMppBulkLoad: True
+bulkUpload: True
 
 resultSchema: "scratch_reward_pharmetric_feb_2021"
 referenceSchema: "scratch_reward_pharmetric_feb_2021"

@@ -380,12 +380,12 @@ sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, sourceUrl, exposu
     targetCohortTable <- cdmConfig$tables$outcomeCohort
   }
 
-  connection <- DatabaseConnector::connect(cdmConfig$connection)
+  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
   # Create the cohort
   atlasCohorts <- read.csv(file.path(cdmConfig$referencePath, referenceFile))
   atlasCohorts <- atlasCohorts[atlasCohorts$ATLAS_ID %in% atlasIds & atlasCohorts$ATLAS_URL == sourceUrl,]
 
-  if (length(atlasCohorts)) {
+  if (nrow(atlasCohorts)) {
     # Generate each cohort
     apply(atlasCohorts, 1, function(cohortReference) {
       ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])

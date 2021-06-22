@@ -122,7 +122,7 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
           data = data,
           progressBar = TRUE,
           dropTableIfExists = TRUE,
-          useMppBulkLoad = cdmConfig$useMppBulkLoad,
+          bulkLoad = cdmConfig$bulkUpload,
           oracleTempSchema = cdmConfig$oracleTempSchema
         )
       }
