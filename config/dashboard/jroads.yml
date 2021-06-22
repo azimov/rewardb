@@ -9,7 +9,7 @@ target_concept_ids: [
     1794280, # Mebendazole
     1758536, # etravirine
     911735, # rebeprazole
-    1373458 # Canagliflozin
+    43526465 # Canagliflozin
 ]
 useExposureControls: False
 dataSources: [10, 11, 12, 13]

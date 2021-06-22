@@ -22,7 +22,7 @@ CREATE TABLE @schema.scc_result (
   I2 NUMERIC,
   PRIMARY KEY (source_id, analysis_id, outcome_cohort_id, target_cohort_id)
 );
-create index sccr_idx on @schema.scc_result(outcome_cohort_id, target_cohort_id)
+create index sccr_idx on @schema.scc_result(outcome_cohort_id, target_cohort_id);
 
 CREATE TABLE @schema.time_on_treatment (
     source_id INT NOT NULL,
@@ -74,7 +74,7 @@ CREATE TABLE @schema.outcome_null_distributions (
 );
 create index idx_out_null_dist on @schema.outcome_null_distributions(ingredient_concept_id);
 
-CREATE TABLE @schema.outcome_null_distributions (
+CREATE TABLE @schema.exposure_null_distributions (
     source_id INT NOT NULL,
     analysis_id INT NOT NULL,
     outcome_cohort_id BIGINT NOT NULL,
@@ -84,4 +84,4 @@ CREATE TABLE @schema.outcome_null_distributions (
     n_controls NUMERIC,
     PRIMARY KEY (source_id, analysis_id, outcome_cohort_id)
 );
-create index idx_exp_null_dist on @schema.outcome_null_distributions(outcome_cohort_id);
+create index idx_exp_null_dist on @schema.exposure_null_distributions(outcome_cohort_id);
