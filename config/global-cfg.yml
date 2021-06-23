@@ -1,4 +1,4 @@
-webApiUrl: "https://awsagunva1011.jnj.com:8443/WebAPI"
+webApiUrl: "https://epi.jnj.com:8443/WebAPI"
 exportPath: "export"
 
 connectionDetails:
