@@ -85,7 +85,7 @@ INSERT INTO @schema.outcome_cohort_definition
 select
     DISTINCT
     'Incident outcome of ' + c1.concept_name + ' - first occurence of diagnosis which is observed in hospital in future' as cohort_definition_name
-  , 'Incident outcome of ' + c1.concept_name + ' WITH INP' as short_name
+  , 'Incident outcome of ' + c1.concept_name + '- WITH INP' as short_name
   ,	c1.concept_id as CONCEPTSET_ID
   , 1 as outcome_type
 from
@@ -104,10 +104,30 @@ INSERT INTO @schema.outcome_cohort_definition
 )
 select
   DISTINCT
-  'Incident outcome of ' + c1.concept_name + ' - first occurence of diagnosis' as cohort_definition_name
-  , 'Incident outcome of ' + c1.concept_name + ' TWO DX' as short_name
+  'Incident outcome of ' + c1.concept_name + ' - first occurence of diagnosis with 2 diagnosis codes' as cohort_definition_name
+  , 'Incident outcome of ' + c1.concept_name + '- TWO DX' as short_name
   ,	c1.concept_id as CONCEPTSET_ID
   , 0 as outcome_type
+from
+#cpt_anc_grp ca1
+inner join @vocabulary_schema.concept c1
+  on ca1.ancestor_concept_id = c1.concept_id
+;
+
+--incident outcomes - requring 1 diagnosis code
+INSERT INTO @schema.outcome_cohort_definition
+(
+  cohort_definition_name
+  ,	short_name
+  , CONCEPTSET_ID
+  , outcome_type
+)
+select
+    DISTINCT
+    'Incident outcome of ' + c1.concept_name + ' - first occurence of diagnosis' as cohort_definition_name
+  , 'Incident outcome of ' + c1.concept_name + '- ONE DX' as short_name
+  ,	c1.concept_id as CONCEPTSET_ID
+  , 2 as outcome_type
 from
 #cpt_anc_grp ca1
 inner join @vocabulary_schema.concept c1
