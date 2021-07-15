@@ -1,0 +1,9 @@
+name: levetiracetam
+description: levetiracetam outcomes dashboard
+short_name: levetiracetam
+outcome_concept_ids: ~
+custom_exposure_cohort_ids: ~
+atlas_exposure_ids: ~
+target_concept_ids: [ 711584 ]
+useExposureControls: False
+dataSources: [10, 11, 12, 13, 15]

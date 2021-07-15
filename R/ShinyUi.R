@@ -10,12 +10,12 @@ dashboardUi <- function(request) {
   # This hides the outcome exporues/result pairing
   metaDisplayCondtion <- "typeof input.mainTable_rows_selected  !== 'undefined' && input.mainTable_rows_selected.length > 0"
 
-  filterBox <- box(
-    box(
+  filterBox <- shinydashboard::box(
+    shinydashboard::box(
       selectizeInput("targetCohorts", label = "Drug exposures:", choices = NULL, multiple = TRUE),
       selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = TRUE)
     ),
-    box(
+    shinydashboard::box(
       selectizeInput("exposureClass", label = "Drug exposure classes:", choices = NULL, multiple = TRUE),
       pickerInput(
         "outcomeCohortTypes",
@@ -37,7 +37,7 @@ dashboardUi <- function(request) {
     collapsible = TRUE
   )
 
-  mainResults <- box(
+  mainResults <- shinydashboard::box(
     fluidRow(
       column(2,
              uiOutput("mainTablePage")
@@ -82,7 +82,7 @@ dashboardUi <- function(request) {
 
   rPanel <- conditionalPanel(
     condition = metaDisplayCondtion,
-    box(
+    shinydashboard::box(
       HTML(paste("<h4 id='mainR'>", textOutput("treatmentOutcomeStr"), "</h4>")),
       tabsetPanel(
         id = "outcomeResultsTabs",
@@ -104,21 +104,21 @@ dashboardUi <- function(request) {
   )
 
   aboutTab <- fluidRow(
-    box(
+    shinydashboard::box(
       p("Mission:"),
       includeHTML(system.file("static_html", "about_rewardb.html", package = "rewardb")),
       width = 6,
       title = paste("Real World Assessment and Research of Drug performance (REWARD)")
     ),
-    box(
+    shinydashboard::box(
       includeHTML(system.file("static_html", "contact.html", package = "rewardb")),
       width = 6,
       title = paste("Contact")
     ),
-    box(width = 6,
+    shinydashboard::box(width = 6,
         title = "Data sources",
         withSpinner(gt::gt_output(outputId = "dataSourceTable"))),
-    box(
+    shinydashboard::box(
       p(appContext$description),
       p("Click the dashboard option to see the results. The sidebar options allow filtering of results based on risk and benift IRR thresholds"),
       downloadButton(
@@ -132,7 +132,7 @@ dashboardUi <- function(request) {
       width = 6,
       title = paste("About this dashboard -", appContext$name)
     ),
-    box(
+    shinydashboard::box(
       p("Negative controls are used in this study to perform empirical calibration.
       These are selected automatically using the common evidence model. Indication mapping is used to filter results.
       Inidcations are based on ingredient labels, spontaneous adverse events reports and pubmed literature searches"),
@@ -199,24 +199,4 @@ dashboardUi <- function(request) {
     body
   )
   return(ui)
-}
-
-reportUi <- function(request) {
-
-  library(shiny, warn.conflicts = FALSE)
-  library(shinyWidgets, warn.conflicts = FALSE)
-  library(shinycssloaders, warn.conflicts = FALSE)
-
-  fluidPage(
-    tags$h1(textOutput("treatmentOutcomeStr")),
-    tagList(
-      tags$h2("Datasource Results and Meta-analysis"),
-      metaAnalysisTableUi("metaTable"),
-      tags$h2("Forest plot"),
-      forestPlotUi("forestPlot"),
-      tags$h2("Calibration plot"),
-      calibrationPlotUi("calibrationPlot", figureTitle = "Figure 2.")
-    ),
-    title = "REWARD"
-  )
 }

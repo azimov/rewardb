@@ -1,8 +1,8 @@
 metaAnalysisTableUi <- function(id) {
-  tagList(
-    withSpinner(DT::dataTableOutput(NS(id, "fullResultsTable"))),
-    hr(),
-    downloadButton(NS(id, "downloadSubTable"), "Download table")
+  shiny::tagList(
+    shinycssloaders::withSpinner(DT::dataTableOutput(NS(id, "fullResultsTable"))),
+    shiny::hr(),
+    shiny::downloadButton(NS(id, "downloadSubTable"), "Download table")
   )
 }
 
@@ -34,8 +34,9 @@ metaAnalysisTableServer <- function(id, model, selectedExposureOutcome) {
       s <- selectedExposureOutcome()
       exposureId <- s$TARGET_COHORT_ID
       outcomeId <- s$OUTCOME_COHORT_ID
-      if (length(outcomeId)) {
-        return(model$getMetaAnalysisTable(exposureId, outcomeId))
+      calibrationType <- s$calibrationType
+      if (length(outcomeId) & length(exposureId)) {
+        return(model$getMetaAnalysisTable(exposureId, outcomeId, calibrationType = calibrationType, sourceIds = s$usedDataSources))
       }
       return(data.frame())
     })

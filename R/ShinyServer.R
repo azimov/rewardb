@@ -6,14 +6,14 @@ strQueryWrap <- function(vec) {
 #' Wrapper around boxplot module
 timeOnTreatmentServer <- function(id, model, selectedExposureOutcome) {
   caption <- "Table: Shows time on treatment for population od patients exposed to medication that experience the outcome of interest."
-  server <- moduleServer(id, boxPlotModuleServer(model$getTimeOnTreatmentStats, caption, selectedExposureOutcome))
+  server <- shiny::moduleServer(id, boxPlotModuleServer(model$getTimeOnTreatmentStats, caption, selectedExposureOutcome))
   return(server)
 }
 
 #' Wrapper around boxplot module
 timeToOutcomeServer <- function(id, model, selectedExposureOutcome) {
   caption <- "Table: shows distribution of absolute difference of time between exposure and outcome for population of patients exposed to medication that expeirence the outcome."
-  server <- moduleServer(id, boxPlotModuleServer(model$getTimeToOutcomeStats, caption, selectedExposureOutcome))
+  server <- shiny::moduleServer(id, boxPlotModuleServer(model$getTimeToOutcomeStats, caption, selectedExposureOutcome))
   return(server)
 }
 
@@ -35,7 +35,7 @@ dashboardInstance <- function(input, output, session) {
 
   getOutcomeCohortTypes <- reactive({
     cohortTypeMapping <- list("ATLAS defined" = 2, "Inpatient" = 1, "Two diagnosis codes" = 0)
-    rs <- foreach(i = input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
+    rs <- foreach::foreach(i = input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
     return(rs)
   })
 
@@ -159,10 +159,17 @@ dashboardInstance <- function(input, output, session) {
       })
   })
 
+  # This links the app components together
   selectedExposureOutcome <- reactive({
-    ids <- input$mainTable_rows_selected # This links the app components together
+    ids <- input$mainTable_rows_selected
     filtered1 <- mainTableReac()
+
+    if (!length(ids)) {
+      return(NULL)
+    }
+
     filtered2 <- filtered1[ids,]
+    filtered2$calibrationType <- "none"
     return(filtered2)
   })
 
@@ -243,7 +250,7 @@ dashboardInstance <- function(input, output, session) {
 
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
-  calibrationPlotServer("calibrationPlot", model, selectedExposureOutcome)
+  calibrationPlotServer("calibrationPlot", model, selectedExposureOutcome, useExposureControls = model$config$useExposureControls)
 
   timeOnTreatmentServer("timeOnTreatment", model, selectedExposureOutcome)
   tabPanelTimeOnTreatment <- tabPanel("Time on treatment", boxPlotModuleUi("timeOnTreatment"))
@@ -253,105 +260,6 @@ dashboardInstance <- function(input, output, session) {
   tabPanelTimeToOutcome <- tabPanel("Time to outcome", boxPlotModuleUi("timeToOutcome"))
   shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeToOutcome)
 
-}
-
-#' @title
-#' reportInstance
-#' @description
-#' Requires a server appContext instance to be loaded in environment see scoping of launchDashboard
-#' This can be obtained with rewardb::loadAppContext(...)
-#' UNDER DEVELOPMENT
-#' @param input shiny input object
-#' @param output shiny output object
-#' @param session shiny session object
-reportInstance <- function(input, output, session) {
-  library(shiny, warn.conflicts = FALSE)
-  library(shinyWidgets, warn.conflicts = FALSE)
-  library(scales, warn.conflicts = FALSE)
-  library(DT, warn.conflicts = FALSE)
-  library(foreach, warn.conflicts = FALSE)
-  library(dplyr, warn.conflicts = FALSE)
-
-  ParallelLogger::logDebug("init")
-
-  ParallelLogger::logDebug("loaded model")
-  shiny::onStop(function() {
-    writeLines("Closing database connection")
-    model$closeConnection()
-  })
-
-
-  getRequestParams <- reactive({
-    parseQueryString(session$clientData$url_search)
-  })
-
-  getExposureCohort <- reactive({
-    param <- getRequestParams()$exposure_id
-    if (is.null(param)) {
-      param <- reportAppContext$exposureId
-    }
-    df <- model$getExposureCohort(param)
-    return(df)
-  })
-
-  getOutcomeCohort <- reactive({
-    param <- getRequestParams()$outcome_id
-
-    if (is.null(param)) {
-      param <- reportAppContext$outcomeId
-    }
-
-    return(model$getOutcomeCohort(param))
-  })
-
-  selectedExposureOutcome <- reactive({
-    exposureCohort <- getExposureCohort()
-    outcomeCohort <- getOutcomeCohort()
-    if (is.null(exposureCohort) || is.null(outcomeCohort)) {
-      return(NULL)
-    }
-    selected <- list(
-      TARGET_COHORT_ID = exposureCohort$COHORT_DEFINITION_ID,
-      TARGET_COHORT_NAME = exposureCohort$COHORT_DEFINITION_NAME,
-      OUTCOME_COHORT_ID = outcomeCohort$COHORT_DEFINITION_ID,
-      OUTCOME_COHORT_NAME = outcomeCohort$COHORT_DEFINITION_NAME
-    )
-
-    return(selected)
-  })
-
-  output$treatmentOutcomeStr <- renderText({
-    s <- selectedExposureOutcome()
-    ParallelLogger::logDebug("selected")
-    if (is.null(s)) {
-      return("No cohorts selected")
-    }
-    return(paste("Exposure of", s$TARGET_COHORT_NAME, "for outcome of", s$OUTCOME_COHORT_NAME))
-  })
-
-  ParallelLogger::logDebug("init modules")
-  # Create sub modules
-  metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
-  forestPlotServer("forestPlot", model, selectedExposureOutcome)
-}
-
-#' @title
-#' Launch the REWARD Shiny app report
-#' @description
-#' Launches a Shiny app for a given configuration file
-#' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
-#' @param exposureId exposure cohort id
-#' @param outcomeId outcome cohort id
-#' @export
-launchReport <- function(globalConfigPath, exposureId = NULL, outcomeId = NULL) {
-  .GlobalEnv$reportAppContext <- loadReportContext(globalConfigPath, exposureId = exposureId, outcomeId = outcomeId)
-  .GlobalEnv$model <- ReportDbModel(reportAppContext)
-  shiny::shinyApp(server = reportInstance, ui = reportUi, onStart = function() {
-    shiny::onStop(function() {
-      writeLines("Closing connection")
-      model$closeConnection()
-    })
-  })
 }
 
 #' @title

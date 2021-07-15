@@ -21,3 +21,12 @@ rbDataBuild.log
 /tests/testthat/reference_files/*.csv
 /tests/testthat/export-*.zip
 inst/doc
+/extra/exposureControlEvaluationTable.rds
+/extra/outcomeControlEvaluationAutomatedControlsDt.rds
+/extra/outcomeControlEvaluationManualControlsDt.rds
+/extra/outcomeControlEvaluationTable.rds
+/app-cache/
+/renv.lock
+/renv/settings.dcf
+/.Rprofile
+/renv/.gitignore

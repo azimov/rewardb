@@ -6,35 +6,34 @@
 CONST_CALIBRATION_PLOT_TXT <- "Plot of calibration of effect estimates. Blue dots are negative controls, yellow diamonds are uncalibrated effect estimates"
 
 calibrationPlotUi <- function(id, figureTitle = "Figure.", figureText = CONST_CALIBRATION_PLOT_TXT) {
-  tagList(
-    withSpinner(plotly::plotlyOutput(NS(id, "calibrationPlot"), height = 500)),
-    div(
-      strong(figureTitle),
+  shiny::tagList(
+    shinycssloaders::withSpinner(plotly::plotlyOutput(NS(id, "calibrationPlot"), height = 500)),
+    shiny::div(
+      shiny::strong(figureTitle),
       paste(figureText),
-      downloadButton(NS(id, "downloadCalibrationPlot"), "Save")
+      shiny::downloadButton(shiny::NS(id, "downloadCalibrationPlot"), "Save")
     ),
-    DT::dataTableOutput(NS(id, "nullDistribution"))
+    shinycssloaders::withSpinner(DT::dataTableOutput(shiny::NS(id, "nullDistribution")))
   )
 }
 
-calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
+calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposureControls) {
 
-  server <- moduleServer(id, function(input, output, session) {
+  server <- shiny::moduleServer(id, function(input, output, session) {
     ParallelLogger::logInfo("Initialized calibration plot module for: ", model$schemaName)
 
-    dataSources <- model$queryDb("SELECT source_id, source_name FROM @schema.data_source;")
+    dataSources <- model$getDataSources()
 
-    getOutcomeType <- function(outcome) {
-      res <- model$queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome = outcome)
-      return(res$TYPE_ID[[1]])
-    }
+    getNegativeControlSubset <- function(treatment, outcome, sourceIds = NULL) {
+      if (is.null(sourceIds)) {
+        sourceIds <- dataSources$SOURCE_ID
+      }
 
-    getNegativeControlSubset <- function(treatment, outcome) {
-      if (model$config$useExposureControls) {
-        negatives <- model$getExposureControls(outcomeIds = outcome)
+      if (useExposureControls) {
+        negatives <- model$getExposureControls(outcomeIds = outcome, sourceIds = sourceIds)
       } else {
-        otype <- if (getOutcomeType(outcome) == 1) 1 else 0
-        negatives <- model$getOutcomeControls(targetIds = treatment)
+        otype <- if (model$getOutcomeType(outcome) == 1) 1 else 0
+        negatives <- model$getOutcomeControls(targetIds = treatment, sourceIds = sourceIds)
         # Subset for outcome types
         negatives <- negatives[negatives$OUTCOME_TYPE == otype,]
       }
@@ -45,9 +44,9 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
       s <- selectedExposureOutcome()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
-      if (!is.na(treatment)) {
-        negatives <- getNegativeControlSubset(treatment, outcome)
-        nulls <- data.frame()
+      nulls <- data.frame()
+      if (length(treatment) & length(outcome)) {
+        negatives <- getNegativeControlSubset(treatment, outcome, s$usedDataSources)
         for (source in unique(negatives$SOURCE_ID)) {
           subset <- negatives[negatives$SOURCE_ID == source,]
           null <- EmpiricalCalibration::fitNull(log(subset$RR), subset$SE_LOG_RR)
@@ -59,7 +58,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
           )
           nulls <- rbind(nulls, df)
         }
-        nulls <- inner_join(dataSources, nulls, by = "SOURCE_ID")
+        nulls <- dplyr::inner_join(dataSources, nulls, by = "SOURCE_ID")
       }
       return(nulls)
     })
@@ -92,11 +91,10 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome) {
           validSourceIds <- dataSources$SOURCE_ID
         }
 
-        sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-        positives <- model$queryDb(sql, treatment = treatment, outcome = outcome, calibrated = 0)
+        positives <- model$getExposureOutcomeRows(treatment, outcome, calibrated = 0)
         positives <- positives[positives$SOURCE_ID %in% validSourceIds,]
 
-        negatives <- getNegativeControlSubset(treatment, outcome)
+        negatives <- getNegativeControlSubset(treatment, outcome, s$usedDataSources)
         negatives <- negatives[negatives$SOURCE_ID %in% validSourceIds,]
 
         if (length(negatives)) {

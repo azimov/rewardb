@@ -40,6 +40,85 @@ loadRenderTranslateSql <- function(sqlFilename,
   return(renderedSql)
 }
 
+loadSqlFile <- function(sqlFilename) {
+  pathToSql <- system.file(paste("sql/sql_server"),
+                           sqlFilename,
+                           package = "rewardb",
+                           mustWork = TRUE)
+  sql <- SqlRender::readSql(pathToSql)
+}
+
+#' Load, render, translate and query a SQL file in this package.
+#'
+#' @description
+#' NOTE: This function does not support dialect-specific SQL translation
+#' at this time.
+#'
+#' @param sqlFilename               The source SQL file
+#' @param dbms                      The target dialect. Currently 'sql server', 'oracle', 'postgres',
+#'                                  and 'redshift' are supported
+#' @param ...                       Parameter values used for \code{render}
+#' @param tempEmulationSchema       Some database platforms like Oracle and Impala do not truly support
+#'                                  temp tables. To emulate temp tables, provide a schema with write
+#'                                  privileges where temp tables can be created.
+#' @param warnOnMissingParameters   Should a warning be raised when parameters provided to this
+#'                                  function do not appear in the parameterized SQL that is being
+#'                                  rendered? By default, this is TRUE.
+#'
+#' @return
+#' Returns a string containing the rendered SQL.
+loadRenderTranslateQuerySql <- function(connection,
+                                        sqlFilename,
+                                        dbms = "sql server",
+                                        ...,
+                                        snakeCaseToCamelCase = FALSE,
+                                        tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
+                                        warnOnMissingParameters = TRUE) {
+
+
+  sql <- loadRenderTranslateSql(sqlFilename = sqlFilename,
+                                dbms = dbms, ...,
+                                tempEmulationSchema = tempEmulationSchema,
+                                warnOnMissingParameters = warnOnMissingParameters)
+  DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
+}
+
+#' Load, render, translate and execute a SQL file in this package.
+#'
+#' @description
+#' NOTE: This function does not support dialect-specific SQL translation
+#' at this time.
+#'
+#' @param sqlFilename               The source SQL file
+#' @param dbms                      The target dialect. Currently 'sql server', 'oracle', 'postgres',
+#'                                  and 'redshift' are supported
+#' @param ...                       Parameter values used for \code{render}
+#' @param tempEmulationSchema       Some database platforms like Oracle and Impala do not truly support
+#'                                  temp tables. To emulate temp tables, provide a schema with write
+#'                                  privileges where temp tables can be created.
+#' @param warnOnMissingParameters   Should a warning be raised when parameters provided to this
+#'                                  function do not appear in the parameterized SQL that is being
+#'                                  rendered? By default, this is TRUE.
+#'
+#' @return
+#' Returns a string containing the rendered SQL.
+loadRenderTranslateExecuteSql <- function(connection,
+                                          sqlFilename,
+                                          dbms = "sql server",
+                                          ...,
+                                          snakeCaseToCamelCase = FALSE,
+                                          tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
+                                          warnOnMissingParameters = TRUE) {
+
+
+  sql <- loadRenderTranslateSql(sqlFilename = sqlFilename,
+                                dbms = dbms, ...,
+                                tempEmulationSchema = tempEmulationSchema,
+                                warnOnMissingParameters = warnOnMissingParameters)
+  DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
+}
+
+
 #' From pairs of exposure, outcomes get dataframe of assocaited RR values from reward data
 #' @description
 #' Function to get cohorts from outcome/exposure pairs. Will get any cohorts results for cohorts
@@ -101,14 +180,30 @@ getConceptCohortDataFromAtlasOutcomes <- function(connection, config, outcomeExp
   data <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
 }
 
-getAtlasAutomatedExposureControlData <- function(connection, config, atlasIds, sourceUrl, snakeCaseToCamelCase = TRUE) {
+getAtlasAutomatedExposureControlData <- function(connection, config, atlasIds, sourceUrl, snakeCaseToCamelCase = TRUE, extraEvidence = NULL) {
+  data <- data.frame()
+  if (!is.null(extraEvidence)) {
+    DatabaseConnector::insertTable(connection = connection,
+                                   tableName = "extra_evidence",
+                                   databaseSchema = "scratch",
+                                   data = extraEvidence,
+                                   tempTable = FALSE,
+                                   dropTableIfExists = TRUE)
+
+    sql <- loadRenderTranslateSql("getAtlasAutomatedExposureControlDataExtraEvidence.sql",
+                                  schema = config$rewardbResultsSchema)
+
+    data <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
+  }
+
   sql <- loadRenderTranslateSql("getAtlasAutomatedExposureControlData.sql",
                                 schema = config$rewardbResultsSchema,
                                 cem_schema = config$cemSchema,
                                 vocabulary = config$vocabularySchema,
                                 source_url = sourceUrl,
                                 atlas_ids = atlasIds)
-  DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
+  ndata <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
+  return(rbind(ndata, data))
 }
 
 getExposureControlConcepts <- function(connection, config, outcomeConceptIds) {

@@ -12,3 +12,5 @@ connectionDetails:
 rewardbResultsSchema: "rewardb_2020_Nov_12"
 vocabularySchema: "vocabulary"
 cemSchema: "cem"
+
+keyringService: "reward-db"

@@ -70,10 +70,6 @@ dropTestSchema <- function(connection, schemaName) {
 }
 
 test_that("import copy functions", {
-  config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
-  connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
-  on.exit(DatabaseConnector::disconnect(connection))
-
   schemaName <- createTestSchema(connection)
   tmp <- tempdir()
   folder <- file.path(tmp, stringi::stri_rand_strings(1, 5))
@@ -94,7 +90,6 @@ test_that("import copy functions", {
   ParallelLogger::logInfo(paste("Testing insert", schemaName))
   rewardb::importResultsFiles(config$connectionDetails, schemaName, zipFilePath, unzipPath = unzipPath, .checkTables = FALSE)
 
-  connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   results <- DatabaseConnector::renderTranslateQuerySql(
     connection = connection,
     sql = "SELECT * FROM @schema.test_file",

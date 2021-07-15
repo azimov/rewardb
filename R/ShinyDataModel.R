@@ -27,7 +27,7 @@ DbModel$methods(
 
   closeConnection = function() {
     if (!connectionActive) {
-      stop("Connection has not be initialized or has been closed. Call initalizeConnection")
+      warning("Connection has not be initialized or has been closed.")
     }
 
     if (DBI::dbIsValid(dbObj = dbConn)) {
@@ -46,7 +46,8 @@ DbModel$methods(
 
   queryDb = function(query, ..., snakeCaseToCamelCase = FALSE) {
     if (!connectionActive) {
-      stop("Connection has not be initialized or has been closed. Call initalizeConnection")
+      initializeConnection()
+      on.exit(model$closeConnection())
     }
 
     if (is.null(schemaName)) {
@@ -55,29 +56,47 @@ DbModel$methods(
 
     sql <- SqlRender::render(query, schema = schemaName, warnOnMissingParameters = FALSE, ...)
     sql <- SqlRender::translate(sql, targetDialect = "postgresql")
+    data <- NULL
 
     tryCatch({
       if (is(dbConn, "Pool")) {
         data <- DatabaseConnector::dbGetQuery(dbConn, sql)
         if (snakeCaseToCamelCase) {
-          colnames(data)  <- SqlRender::snakeCaseToCamelCase(colnames(data))
+          colnames(data) <- SqlRender::snakeCaseToCamelCase(colnames(data))
         } else {
           colnames(data) <- toupper(colnames(data))
         }
       } else {
         data <- DatabaseConnector::querySql(dbConn, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
       }
-      return(data)
-    }, error = function(e) {
+    }, error = function(e, ...) {
       ParallelLogger::logError(e)
-      # End current transaction to stop other queries being blocked
-      if (is(dbConn, "Pool")) {
-        writeLines(sql)
-        DatabaseConnector::dbExecute(dbConn, "ABORT;")
-      } else {
-        DatabaseConnector::executeSql(dbConn, "ABORT;")
-      }
+      DatabaseConnector::dbExecute(dbConn, "ABORT;")
+      stop(e)
     })
+    return(data)
+  },
+
+  cacheQuery = function(cacheKey, ...) {
+    cacheDir <- config$cacheDir
+    if (is.null(cacheDir)) {
+      cacheDir <- tempdir()
+    } else if (!dir.exists(cacheDir)) {
+      dir.create(cacheDir)
+    }
+
+    cacheFile <- file.path(cacheDir, paste0(cacheKey, ".rds"))
+
+    if (file.exists(cacheFile)) {
+      return(readRDS(cacheFile))
+    }
+
+    result <- queryDb(...)
+
+    if (is.data.frame(result)) {
+      saveRDS(result, file = cacheFile)
+    }
+    return(result)
   },
 
   countQuery = function(query, ..., render = TRUE) {
@@ -106,7 +125,7 @@ DbModel$methods(
     return(row)
   },
 
-  getTimeToOutcomeStats = function(treatment, outcome) {
+  getTimeToOutcomeStats = function(treatment, outcome, sourceIds = NULL) {
     queryDb("
           SELECT
             ds.source_name,
@@ -122,13 +141,14 @@ DbModel$methods(
 
           FROM @schema.time_on_treatment tts
           LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
-          WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",
+          WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome
+          {@source_ids != ''} ? {AND ds.source_id IN (@source_ids)}",
             treatment = treatment,
-            outcome = outcome
-    )
+            outcome = outcome,
+            source_ids = sourceIds)
   },
 
-  getTimeOnTreatmentStats = function(treatment, outcome) {
+  getTimeOnTreatmentStats = function(treatment, outcome, sourceIds = NULL) {
     queryDb("
       SELECT
         ds.source_name,
@@ -143,15 +163,21 @@ DbModel$methods(
         max_tx_time as max
       FROM @schema.time_on_treatment tts
       LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
-      WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome",
+      WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome
+      {@source_ids != ''} ? {AND ds.source_id IN (@source_ids)}",
             treatment = treatment,
-            outcome = outcome
-    )
+            outcome = outcome,
+            source_ids = sourceIds)
   },
 
   getDataSourceInfo = function() {
     queryDb(" SELECT * from @schema.data_source WHERE source_id > 0", snakeCaseToCamelCase = TRUE)
+  },
+
+  getDataSources = function() {
+    queryDb("SELECT source_id, source_name FROM @schema.data_source;")
   }
+
 )
 
 #' Dashboard models
@@ -162,7 +188,7 @@ DashboardDbModel$methods(
     setSchemaName(config$short_name)
   },
 
-  getExposureControls = function(outcomeIds, minCohortSize = 10) {
+  getExposureControls = function(outcomeIds, minCohortSize = 10, sourceIds = NULL) {
     sql <- "
       SELECT r.*, o.type_id as outcome_type
       FROM @schema.result r
@@ -177,7 +203,7 @@ DashboardDbModel$methods(
     return(queryDb(sql, outcome_cohort_ids = outcomeIds, min_cohort_size = minCohortSize))
   },
 
-  getOutcomeControls = function(targetIds, minCohortSize = 10) {
+  getOutcomeControls = function(targetIds, minCohortSize = 10, sourceIds = NULL) {
     sql <- "
       SELECT r.*, o.type_id as outcome_type
       FROM @schema.result r
@@ -278,12 +304,12 @@ DashboardDbModel$methods(
     return(df)
   },
 
-  getMetaAnalysisTable = function(exposureId, outcomeId) {
+  getMetaAnalysisTable = function(exposureId, outcomeId, calibrationType = NULL, sourceIds = NULL) {
     sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRowsGrouped.sql", package = "rewardb"))
     return(queryDb(sql, treatment = exposureId, outcome = outcomeId))
   },
 
-  getForestPlotTable = function(exposureId, outcomeId, calibrated) {
+  getForestPlotTable = function(exposureId, outcomeId, calibrated, calibrationType = NULL, sourceIds = NULL) {
     sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
     table <- queryDb(sql, treatment = exposureId, outcome = outcomeId, calibrated = calibrated)
     calibratedTable <- table[table$CALIBRATED == 1,]
@@ -319,10 +345,20 @@ DashboardDbModel$methods(
     return(dt)
   },
 
-  getFullDataSet = function(calibrated = c(0,1)) {
+  getFullDataSet = function(calibrated = c(0, 1)) {
     sql <- readr::read_file(system.file("sql/export/", "fullDashboardData.sql", package = "rewardb"))
     df <- queryDb(sql, calibrated = calibrated, show_exposure_classes = config$useExposureControls)
     return(df)
+  },
+
+  getOutcomeType = function(outcomeId) {
+    res <- queryDb("SELECT type_id FROM @schema.outcome where outcome_cohort_id = @outcome", outcome = outcomeId)
+    return(res$TYPE_ID[[1]])
+  },
+
+  getExposureOutcomeRows = function(exposure, outcome, calibrated) {
+    sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+    queryDb(sql, treatment = exposure, outcome = outcome, calibrated = calibrated)
   }
 )
 
@@ -341,12 +377,59 @@ ReportDbModel$methods(
     getFirst("SELECT * FROM @schema.outcome_cohort_definition WHERE cohort_definition_id = @cohort_id", cohort_id = cohortId)
   },
 
-  getMetaAnalysisTable = function(exposureId, outcomeId, analysisId = 1) {
+  getOutcomeCohorts = function() {
+    sql <- "
+    SELECT cd.* FROM @schema.outcome_cohort_definition cd
+    INNER JOIN (
+      SELECT outcome_cohort_id, count(*) FROM @schema.scc_result sr
+      WHERE t_cases + c_cases > 10
+      GROUP BY outcome_cohort_id
+    ) sq ON sq.outcome_cohort_id = cd.cohort_definition_id
+    ORDER BY cohort_definition_name"
+
+    result <- cacheQuery("outcomeCohortsCounted", sql, snakeCaseToCamelCase = TRUE)
+  },
+
+  getExposureCohorts = function() {
+    sql <- "
+    SELECT cd.* FROM @schema.cohort_definition cd
+    INNER JOIN (
+      SELECT target_cohort_id, count(*) FROM @schema.scc_result sr
+      WHERE t_cases + c_cases > 10
+      GROUP BY target_cohort_id
+    ) sq ON sq.target_cohort_id = cd.cohort_definition_id
+    ORDER BY cohort_definition_name"
+
+    result <- cacheQuery("exposureCohortsCounted", sql, snakeCaseToCamelCase = TRUE)
+  },
+
+  getOutcomeNullDistributions = function(exposureId, analysisId, outcomeType = 0, sourceIds = NULL) {
+    sql <- "
+    SELECT * FROM @schema.outcome_null_distributions
+    WHERE analysis_id = @analysis_id
+    AND target_cohort_id = @exposure_id AND outcome_type = @outcome_type
+    {@source_ids != ''} ? {AND source_id IN (@source_ids)}"
+    queryDb(sql, exposure_id = exposureId, analysis_id = analysisId, outcome_type = outcomeType, source_ids = sourceIds, snakeCaseToCamelCase = TRUE)
+  },
+
+  getExposureNullDistributions = function(outcomeId, analysisId, sourceIds = NULL) {
+    sql <- "
+    SELECT * FROM @schema.exposure_null_distributions
+    WHERE analysis_id = @analysis_id AND outcome_cohort_id = @outcome_id
+    {@source_ids != ''} ? {AND source_id IN (@source_ids)}"
+    queryDb(sql, outcome_id = outcomeId, analysis_id = analysisId, source_ids = sourceIds, snakeCaseToCamelCase = TRUE)
+  },
+
+
+  getExposureOutcomeData = function(exposureId, outcomeId, analysisId = 1, sourceIds = NULL) {
     sql <- "
      SELECT r.SOURCE_ID,
           ds.SOURCE_NAME,
           r.RR,
-          '-' AS CI_95,
+          r.SE_LOG_RR,
+          CONCAT(round(r.LB_95, 2), ' - ', round(r.UB_95, 2)) AS CI_95,
+          r.LB_95,
+          r.UB_95,
           r.P_VALUE,
           '-' as Calibrated_RR,
           '-' AS CALIBRATED_CI_95,
@@ -356,23 +439,112 @@ ReportDbModel$methods(
           r.C_CASES,
           r.T_AT_RISK,
           r.T_PT,
-          r.T_CASES
+          r.T_CASES,
+          '-' as I2
       FROM @schema.scc_result r
       INNER JOIN @schema.data_source ds ON ds.source_id = r.source_id
       WHERE r.target_cohort_id = @exposure_id
       AND r.outcome_cohort_id = @outcome_id
       AND r.analysis_id = @analysis_id
+      {@source_ids != ''} ? {AND r.SOURCE_ID IN (@source_ids)}
       ORDER BY r.SOURCE_ID
     "
-    data <- queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId)
-    return(data)
+    queryDb(sql, exposure_id = exposureId, outcome_id = outcomeId, analysis_id = analysisId, source_ids = sourceIds)
   },
 
-  getForestPlotTable = function(exposureId, outcomeId, calibrated) {
-    sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
-    table <- queryDb(sql, treatment = exposureId, outcome = outcomeId, calibrated = 0, result = 'scc_result', use_calibration = FALSE)
-    table <- table[table$CALIBRATED == 0,]
-    return(table)
+  getMetaAnalysisTable = function(exposureId, outcomeId, analysisId = 1, calibrationType = 'outcomes', sourceIds = NULL) {
+    checkmate::assert_choice(calibrationType, c('outcomes', 'exposures', 'none'))
+    rows <- getExposureOutcomeData(exposureId, outcomeId, analysisId, sourceIds = sourceIds)
+    if (nrow(rows)) {
+      meta <- metaAnalysis(rows)
+      meta$CI_95 <- paste(round(meta$LB_95, 2), "-", round(meta$UB_95, 2))
+
+      meta$SOURCE_NAME <- "Meta Analysis"
+      meta$CALIBRATED_RR <- "-"
+      meta$CALIBRATED_CI_95 <- "-"
+      meta$CALIBRATED_P_VALUE <- "-"
+      rows <- rbind(rows, meta)
+    }
+
+    nullDists <- data.frame()
+    if (calibrationType == 'outcomes') {
+      outcomeType <- getOutcomeType(outcomeId)
+      nullDists <- getOutcomeNullDistributions(exposureId, analysisId, ifelse(outcomeType == 1, 1, 0), sourceIds = sourceIds)
+    }
+
+    if (calibrationType == 'exposures') {
+      nullDists <- getExposureNullDistributions(outcomeId, analysisId, sourceIds = sourceIds)
+    }
+
+    if (nrow(nullDists)) {
+      for (i in 1:nrow(nullDists)) {
+        nullDist <- nullDists[i,]
+        calibratedRow <- getCalibratedValues(rows[rows$SOURCE_ID == nullDist$sourceId,], nullDist)
+        ci95 <- paste(round(exp(calibratedRow$logLb95Rr), 2), "-", round(exp(calibratedRow$logUb95Rr), 2))
+        rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_P_VALUE <- round(calibratedRow$p, 2)
+        rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_RR <- round(exp(calibratedRow$logRr), 2)
+        rows[rows$SOURCE_ID == nullDist$sourceId,]$CALIBRATED_CI_95 <- ci95
+      }
+    }
+
+
+    return(rows)
+  },
+
+  getCalibratedValues = function(rows, null) {
+    # TODO: checknames of inputs
+    nullDist <- null$nullDistMean
+    nullDist[2] <- null$nullDistSd
+    nullDist[3] <- null$sourceId
+    names(nullDist) <- c("mean", "sd", "sourceId")
+    class(nullDist) <- c("null")
+
+    errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
+    ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(rows$RR), rows$SE_LOG_RR, errorModel)
+    calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(rows$RR), rows$SE_LOG_RR)
+    df <- data.frame(logLb95Rr = ci$logLb95Rr, logUb95Rr = ci$logUb95Rr, p = calibratedPValue, logRr = ci$logRr)
+    return(df)
+  },
+
+  getForestPlotTable = function(exposureId, outcomeId, calibrated, calibrationType = "outcomes", analysisId = 1, sourceIds = NULL) {
+
+    checkmate::assert_choice(calibrationType, c('outcomes', 'exposures', 'none'))
+    baseDf <- getMetaAnalysisTable(exposureId, outcomeId, analysisId = analysisId, calibrationType = 'none', sourceIds = sourceIds)
+
+    if (!(1 %in% calibrated) | calibrationType == 'none') {
+      return(baseDf)
+    }
+
+    nullDists <- data.frame()
+    if (calibrationType == "outcomes") {
+      outcomeType <- getOutcomeType(outcomeId)
+      nullDists <- getOutcomeNullDistributions(exposureId, analysisId, ifelse(outcomeType == 1, 1, 0), sourceIds = sourceIds)
+    }
+
+    if (calibrationType == 'exposures') {
+      nullDists <- getExposureNullDistributions(outcomeId, analysisId, sourceIds = sourceIds)
+    }
+
+    if (!nrow(nullDists)) {
+      return(baseDf)
+    }
+
+    calibratedRows <- data.frame()
+    for (i in 1:nrow(nullDists)) {
+      nullDist <- nullDists[i,]
+      row <- baseDf[baseDf$SOURCE_ID == nullDist$sourceId,]
+      calibratedDt <- getCalibratedValues(row, nullDist)
+      row$RR <- exp(calibratedDt$logRr)
+      row$LB_95 <- exp(calibratedDt$logLb95Rr)
+      row$UB_95 <- exp(calibratedDt$logUb95Rr)
+      row$SOURCE_NAME <- paste(row$SOURCE_NAME, "Calibrated")
+      calibratedRows <- rbind(calibratedRows, row)
+    }
+
+    if (0 %in% calibrated) {
+      return(rbind(baseDf, calibratedRows))
+    }
+    return(calibratedRows)
   },
 
   getExposureOutcomeDqd = function(exposureOutcomePairs, analysisId = 1) {
@@ -381,40 +553,47 @@ ReportDbModel$methods(
     stopifnot("outcomeId" %in% colnames(exposureOutcomePairs))
     stopifnot(nrow(exposureOutcomePairs) > 0)
 
-    andStrings <- apply(exposureOutcomePairs, 1, function (item) {
+    andStrings <- apply(exposureOutcomePairs, 1, function(item) {
       SqlRender::render("(r.target_cohort_id = @exposure_id  AND r.outcome_cohort_id = @outcome_id)",
                         outcome_id = item["outcomeId"],
                         exposure_id = item["exposureId"])
     })
     innerQuery <- paste(andStrings, collapse = " OR ")
-
-    sql <- "
-    SELECT cd.cohort_definition_name as exposure_cohort,
-           ocd.cohort_definition_name as outcome_cohort,
-           min(r.RR) as min_rr,
-           max(r.RR) as max_rr,
-           count(r.source_id) as num_data_sources,
-           min(r.P_VALUE) as min_p_value,
-           max(r.P_VALUE) as max_p_value,
-           min(r.C_AT_RISK) as min_c_at_risk,
-           max(r.C_AT_RISK) as max_c_at_risk,
-           min(r.C_CASES) as min_c_cases,
-           max(r.C_CASES) as max_c_cases,
-           min(r.T_AT_RISK) as min_t_at_risk,
-           max(r.T_AT_RISK) as max_t_at_risk,
-           min(r.T_CASES) as min_t_cases,
-           max(r.T_CASES) as max_t_cases
-      FROM @schema.scc_result r
-      INNER JOIN @schema.data_source ds ON ds.source_id = r.source_id
-      INNER JOIN @schema.outcome_cohort_definition ocd on r.outcome_cohort_id = ocd.cohort_definition_id
-      INNER JOIN @schema.cohort_definition cd on r.target_cohort_id = cd.cohort_definition_id
-      WHERE r.analysis_id = @analysis_id
-      AND r.source_id != -99
-      AND ( @inner_query )
-
-      group by cd.cohort_definition_name, ocd.cohort_definition_name, cd.cohort_definition_id, ocd.cohort_definition_id
-    "
+    sql <- loadSqlFile("data_quality/getExposureOutcomeDqd.sql")
 
     queryDb(sql, analysis_id = analysisId, inner_query = innerQuery, snakeCaseToCamelCase = TRUE)
+  },
+
+  getOutcomeControls = function(targetIds, sourceIds = NULL, minCohortSize = 10, analysisId = 1) {
+    sql <- loadSqlFile("calibration/outcomeCohortNullData.sql")
+    return(queryDb(sql,
+                   exposure_ids = targetIds,
+                   source_ids = sourceIds,
+                   cem = config$cemSchema,
+                   analysis_id = analysisId,
+                   min_cohort_size = minCohortSize,
+                   results_schema = config$rewardbResultsSchema,
+                   vocabulary_schema = config$vocabularySchema))
+  },
+
+  getExposureControls = function(outcomeIds, sourceIds = NULL, minCohortSize = 10, analysisId = 1) {
+    sql <- loadSqlFile("calibration/exposureCohortNullData.sql")
+    return(queryDb(sql,
+                   outcome_ids = outcomeIds,
+                   source_ids = sourceIds,
+                   cem = config$cemSchema,
+                   analysis_id = analysisId,
+                   min_cohort_size = minCohortSize,
+                   results_schema = config$rewardbResultsSchema,
+                   vocabulary = config$vocabularySchema))
+  },
+
+  getOutcomeType = function(outcomeId) {
+    getFirst("SELECT outcome_type FROM @schema.outcome_cohort_definition ocd WHERE ocd.cohort_definition_id = @outcome_id", outcome_id = outcomeId)
+  },
+
+  getExposureOutcomeRows = function(exposure, outcome, calibrated) {
+    sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
+    queryDb(sql, treatment = exposure, outcome = outcome, calibrated = 0, use_calibration = FALSE, result = 'scc_result')
   }
 )

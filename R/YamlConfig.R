@@ -1,10 +1,4 @@
-#' @title
-#' Get password securely
-#' @description
-#' Gets password from user. Ignored if REWARD_B_PASSWORD system env variable is set (e.g. in .Rprofile)
-#' @param envVar environment variable to store password in
-#' @param promt text prompt when loading askpass prompt
-#' @returns string from prompt or environment variable
+
 getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the reward database password") {
   pass <- Sys.getenv(envVar)
   if (pass == "") {
@@ -16,14 +10,7 @@ getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the 
   return(pass)
 }
 
-#' @title
-#' Set default list option
-#' @description
-#' Sets the default options to the app context.
-#' Will be more widely used in future iterations
-#' @param config list of configuration options
-#' @param defaults list of default values to check and set if null
-#' @returns updated list
+
 .setDefaultOptions <- function(config, defaults) {
   for (n in names(defaults)) {
     if (is.null(config[[n]])) {
@@ -34,13 +21,7 @@ getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the 
   return(config)
 }
 
-#' @title
-#' getOutcomeCohortIds
-#' @description
-#' Get cohorts used on dashboard
-#' @param appContext application context
-#' @param defaults list of default values to check and set if null
-#' @returns updated list
+
 getOutcomeCohortIds <- function(appContext, connection) {
   if (!length(appContext$outcome_concept_ids) & !length(appContext$custom_outcome_cohort_ids)) {
     return(NULL)
@@ -61,13 +42,6 @@ getOutcomeCohortIds <- function(appContext, connection) {
   return(result$ID)
 }
 
-#' @title
-#' getTargetCohortIds
-#' @description
-#' Get cohorts used on dashboard
-#' @param appContext application context
-#' @param defaults list of default values to check and set if null
-#' @returns updated list
 getTargetCohortIds <- function(appContext, connection) {
   if (!length(appContext$target_concept_ids) &
     !length(appContext$custom_exposure_ids) &
@@ -103,10 +77,6 @@ getTargetCohortIds <- function(appContext, connection) {
 #' @param configPath is a yaml file for the application configuration
 #' @param globalConfigPath path to global yaml
 #' @param .env environment to load variable in to
-#' @keywords appContext
-#' @export
-#' @examples
-#'      appContext <- loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
 loadAppContext <- function(configPath, globalConfigPath, .env = .GlobalEnv) {
 
   defaults <- list(
@@ -119,20 +89,25 @@ loadAppContext <- function(configPath, globalConfigPath, .env = .GlobalEnv) {
   appContext$globalConfig <- loadGlobalConfig(globalConfigPath)
   appContext$connectionDetails <- appContext$globalConfig$connectionDetails
 
-  class(appContext) <- append(class(appContext), "rewardb::appContext")
+  class(appContext) <- append(class(appContext), "appContext")
   return(appContext)
 }
 
 #' @title
 #' Loads global config
 #' @description
+#' Load reward global config yaml file
 #' @param globalConfigPath path to global yaml
-#' @export
 loadGlobalConfig <- function(globalConfigPath) {
   config <- yaml::read_yaml(globalConfigPath)
 
   if (is.null(config$connectionDetails$password)) {
-    config$connectionDetails$password <- getPasswordSecurely()
+
+    if (!is.null(config$keyringService)) {
+      config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
+    } else {
+      config$connectionDetails$password <- getPasswordSecurely()
+    }
   }
 
   config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
@@ -149,17 +124,10 @@ loadGlobalConfig <- function(globalConfigPath) {
 #' @param .env environment to load variable in to
 #' @param exposureId exposure cohort id
 #' @param outcomeId outcome cohort id
-#' @keywords reportAppContext
-#' @export
-#' @examples
-#' loadAppContext('config/config.dev.yml', 'config/global-cfg.yml')
-loadReportContext <- function(globalConfigPath, exposureId = NULL, outcomeId = NULL) {
+loadReportContext <- function(globalConfigPath) {
   reportAppContext <- loadGlobalConfig(globalConfigPath)
-  reportAppContext$exposureId = exposureId
-  reportAppContext$outcomeId = outcomeId
   reportAppContext$useConnectionPool = TRUE
-
-  class(reportAppContext) <- append(class(reportAppContext), "rewardb::reportAppContext")
+  class(reportAppContext) <- append(class(reportAppContext), "reportAppContext")
   return(reportAppContext)
 }
 
@@ -169,12 +137,11 @@ loadReportContext <- function(globalConfigPath, exposureId = NULL, outcomeId = N
 #' Loads config and prompt user for db password
 #' Password can be set in envrionment variable passwordEnvironmentVariable of yaml file
 #' @param cdmConfigPath cdmConfigPath
-#' @export
 loadCdmConfig <- function(cdmConfigPath) {
   defaults <- list(
     passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",
     useSecurePassword = FALSE,
-    useMppBulkLoad = FALSE
+    bulkUpload = FALSE
   )
   config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)
 
@@ -187,7 +154,12 @@ loadCdmConfig <- function(cdmConfigPath) {
   config$tables <- .setDefaultOptions(config$tables, defaultTables)
 
   if (config$useSecurePassword) {
-    config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable, prompt = "Enter cdm database password")
+
+    if (!is.null(config$keyringService)) {
+      config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
+    } else {
+      config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable)
+    }
   }
   config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
 

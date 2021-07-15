@@ -116,31 +116,30 @@ insertAtlasCohortRef <- function(
                                      values ('@name', '@name', 99999999, 2) RETURNING cohort_definition_id"
   }
 
+  # Null is mainly used for test purposes only
+  if (is.null(cohortDefinition)) {
+    ParallelLogger::logInfo(paste("pulling", atlasId))
+    cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, webApiUrl)
+  }
+
+  if (is.null(sqlDefinition)) {
+    sqlDefinition <- ROhdsiWebApi::getCohortSql(cohortDefinition, webApiUrl, generateStats = FALSE)
+  }
+
+  encodedFormDefinition <- base64enc::base64encode(charToRaw(RJSONIO::toJSON(cohortDefinition)))
+  encodedFormSql <- base64enc::base64encode(charToRaw(sqlDefinition))
 
   ParallelLogger::logInfo(paste("Checking if cohort already exists", atlasId))
-  count <- DatabaseConnector::renderTranslateQuerySql(
+  existingDt <- DatabaseConnector::renderTranslateQuerySql(
     connection,
-    "SELECT COUNT(*) FROM @schema.@reference_table
-        WHERE atlas_id = @atlas_id
-        AND atlas_url = '@atlas_url'
-        ",
+    "SELECT atlas_id, atlas_url FROM @schema.@reference_table
+        WHERE definition = '@encoded_definition';",
     schema = config$rewardbResultsSchema,
-    atlas_id = atlasId,
-    atlas_url = webApiUrl,
+    encoded_definition = encodedFormDefinition,
     reference_table = referenceTable
   )
 
-  if (count == 0) {
-    ParallelLogger::logInfo(paste("pulling", atlasId))
-    # Null is mainly used for test purposes only
-    if (is.null(cohortDefinition)) {
-      cohortDefinition <- ROhdsiWebApi::getCohortDefinition(atlasId, webApiUrl)
-    }
-
-    if (is.null(sqlDefinition)) {
-      sqlDefinition <- ROhdsiWebApi::getCohortSql(cohortDefinition, webApiUrl, generateStats = FALSE)
-    }
-
+  if (nrow(existingDt) == 0) {
     ParallelLogger::logInfo(paste("inserting", atlasId))
     # Create reference and Get last insert as referent ID from sequence
     newEntry <- DatabaseConnector::renderTranslateQuerySql(
@@ -153,9 +152,6 @@ insertAtlasCohortRef <- function(
 
     cohortDefinitionId <- newEntry$COHORT_DEFINITION_ID[[1]]
 
-    encodedFormDescription <- base64enc::base64encode(charToRaw(RJSONIO::toJSON(cohortDefinition)))
-    encodedFormSql <- base64enc::base64encode(charToRaw(sqlDefinition))
-
     DatabaseConnector::renderTranslateExecuteSql(
       connection,
       sql = "INSERT INTO @schema.@reference_table
@@ -165,7 +161,7 @@ insertAtlasCohortRef <- function(
       cohort_definition_id = cohortDefinitionId,
       atlas_id = atlasId,
       atlas_url = gsub("'", "''", webApiUrl),
-      definition = encodedFormDescription,
+      definition = encodedFormDefinition,
       sql_definition = encodedFormSql,
       reference_table = referenceTable
     )
@@ -384,12 +380,12 @@ sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, sourceUrl, exposu
     targetCohortTable <- cdmConfig$tables$outcomeCohort
   }
 
-  connection <- DatabaseConnector::connect(cdmConfig$connection)
+  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
   # Create the cohort
   atlasCohorts <- read.csv(file.path(cdmConfig$referencePath, referenceFile))
   atlasCohorts <- atlasCohorts[atlasCohorts$ATLAS_ID %in% atlasIds & atlasCohorts$ATLAS_URL == sourceUrl,]
 
-  if (length(atlasCohorts)) {
+  if (nrow(atlasCohorts)) {
     # Generate each cohort
     apply(atlasCohorts, 1, function(cohortReference) {
       ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])

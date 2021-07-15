@@ -10,15 +10,13 @@
 #' @param vocabularySchema vocabulary schema
 #' @param summaryTable schma for summary of CEM results - probably matrix summary
 #' @return data.frame of negative controlls mapped by concept
-getMappedControls <- function(
-  connection,
-  targetCohortIds,
-  outcomeCohortIds,
-  schema,
-  cemSchema,
-  vocabularySchema,
-  summaryTable = "matrix_summary"
-) {
+getMappedControls <- function(connection,
+                              targetCohortIds,
+                              outcomeCohortIds,
+                              schema,
+                              cemSchema,
+                              vocabularySchema,
+                              summaryTable = "matrix_summary") {
   sql <- SqlRender::readSql(system.file("sql/queries", "negativeControlsCem.sql", package = "rewardb"))
   evidenceConcepts <- DatabaseConnector::renderTranslateQuerySql(
     connection,
@@ -43,23 +41,19 @@ getMappedControls <- function(
 #' @param cemSchema CEM schema
 #' @param vocabularySchema vocabulary schema
 #' @return data.frame of negative controlls mapped by concept
-getStudyControls <- function(
-  connection,
-  schema,
-  cemSchema,
-  vocabularySchema,
-  targetCohortIds = NULL,
-  outcomeCohortIds = NULL
-) {
+getStudyControls <- function(connection,
+                             schema,
+                             cemSchema,
+                             vocabularySchema,
+                             targetCohortIds = NULL,
+                             outcomeCohortIds = NULL) {
 
-  mappedControls <- getMappedControls(
-    connection,
-    targetCohortIds,
-    outcomeCohortIds,
-    schema,
-    cemSchema,
-    vocabularySchema
-  )
+  mappedControls <- getMappedControls(connection,
+                                      targetCohortIds,
+                                      outcomeCohortIds,
+                                      schema,
+                                      cemSchema,
+                                      vocabularySchema)
 
   if (length(targetCohortIds)) {
     mappedCounts <- data.frame(

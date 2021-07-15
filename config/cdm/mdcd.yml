@@ -13,8 +13,9 @@ connectionDetails:
   user: jgilber2
 
 useSecurePassword: True
+keyringService: "rhealth-db"
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
-useMppBulkLoad: True
+bulkUpload: True
 
 resultSchema: "scratch_reward_mdcd_feb2021"
 referenceSchema: "scratch_reward_mdcd_feb2021"

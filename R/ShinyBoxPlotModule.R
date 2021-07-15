@@ -31,16 +31,16 @@ boxPlotDist <- function(data) {
 #' Returns a reference to a server function
 #'
 #' @param distStatsFunc call to model that takes treament id and outcome id and returns stats dataframe
-#' @param caption
-#' @param selectedExposureOutcome
+#' @param caption text caption string
+#' @param selectedExposureOutcome exposure outcome reactive
 boxPlotModuleServer <- function(distStatsFunc, caption, selectedExposureOutcome) {
   serverFunction <- function(input, output, session) {
-    getDistStats <- reactive({
+    getDistStats <- shiny::reactive({
       s <- selectedExposureOutcome()
       treatment <- s$TARGET_COHORT_ID
       outcome <- s$OUTCOME_COHORT_ID
 
-      data <- distStatsFunc(treatment, outcome)
+      data <- distStatsFunc(treatment, outcome, sourceIds = s$usedDataSources)
 
       return(data)
     })
@@ -61,7 +61,7 @@ boxPlotModuleServer <- function(distStatsFunc, caption, selectedExposureOutcome)
       return(output)
     })
 
-    output$distPlot <- renderPlot({
+    output$distPlot <- shiny::renderPlot({
       dt <- getDistStats()
       plot <- boxPlotDist(dt)
       return(plot)
@@ -72,7 +72,7 @@ boxPlotModuleServer <- function(distStatsFunc, caption, selectedExposureOutcome)
 
 
 boxPlotModuleUi <- function(id) {
-  tagList(
+  shiny::tagList(
     shinycssloaders::withSpinner(shiny::plotOutput(NS(id, "distPlot"))),
     shinycssloaders::withSpinner(DT::dataTableOutput(NS(id, "statsTable")))
   )

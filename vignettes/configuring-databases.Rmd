@@ -189,7 +189,7 @@ connectionDetails:
 
 useSecurePassword: FALSE
 passwordEnvironmentVariable: "PASS"
-useMppBulkLoad: FALSE
+bulkUpload: FALSE
 
 resultSchema: "reward"
 referenceSchema: "reward"
@@ -236,12 +236,12 @@ Note, that changing these directories or removing them will stop reward from run
 ```
 useSecurePassword: FALSE
 passwordEnvironmentVariable: "PASS"
-useMppBulkLoad: FALSE
+bulkUpload: FALSE
 ```
 
 `useSecurePassword` using a secure password allows the prompt for a password when the CDM config is loaded.
 `passwordEnvironmentVariable` Environment variable where this can be stored with `Sys.setenv`.
-`useMppBulkLoad` this option is desirable to be TRUE where possible as it prevents DatabaseConnector from doing bulk inserts.
+`bulkUpload` this option is desirable to be TRUE where possible as it prevents DatabaseConnector from doing bulk inserts.
 
 
 ```
