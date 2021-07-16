@@ -1,5 +1,5 @@
 name: JROADS
-short_name: jroadsjro
+short_name: jroads
 description: 'JROADS Established JNJ products'
 outcome_concept_ids: ~
 custom_exposure_cohort_ids: ~
@@ -8,7 +8,7 @@ target_concept_ids: [
     19037833, # Domperidone
     1794280, # Mebendazole
     1758536, # etravirine
-    911735, # rebeprazole
+    911735, # rabeprazole
     43526465 # Canagliflozin
 ]
 useExposureControls: False
