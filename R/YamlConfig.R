@@ -98,6 +98,7 @@ loadAppContext <- function(configPath, globalConfigPath, .env = .GlobalEnv) {
 #' @description
 #' Load reward global config yaml file
 #' @param globalConfigPath path to global yaml
+#' @export
 loadGlobalConfig <- function(globalConfigPath) {
   config <- yaml::read_yaml(globalConfigPath)
 
@@ -124,6 +125,7 @@ loadGlobalConfig <- function(globalConfigPath) {
 #' @param .env environment to load variable in to
 #' @param exposureId exposure cohort id
 #' @param outcomeId outcome cohort id
+#' @export
 loadReportContext <- function(globalConfigPath) {
   reportAppContext <- loadGlobalConfig(globalConfigPath)
   reportAppContext$useConnectionPool = TRUE
@@ -137,6 +139,7 @@ loadReportContext <- function(globalConfigPath) {
 #' Loads config and prompt user for db password
 #' Password can be set in envrionment variable passwordEnvironmentVariable of yaml file
 #' @param cdmConfigPath cdmConfigPath
+#' @export
 loadCdmConfig <- function(cdmConfigPath) {
   defaults <- list(
     passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",

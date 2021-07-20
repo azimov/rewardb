@@ -28,7 +28,6 @@ addPhenotypeLibrary <- function(connection,
   }
 
   definitions <- Sys.glob(file.path(system.file("", package = packageName), "*", "*.json"))
-
   failures <- list()
 
   for (jsonDefinition in definitions) {

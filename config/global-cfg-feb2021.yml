@@ -1,6 +1,4 @@
 webApiUrl: "https://epi.jnj.com:8443/WebAPI"
-testMode: false
-resultsTablePrefix: reward_results_dev
 exportPath: "export"
 
 connectionDetails:
@@ -9,8 +7,10 @@ connectionDetails:
   port: 5432
   user: "reward_admin"
 
-rewardbResultsSchema: "rewardb_2020_Nov_12"
+rewardbResultsSchema: "rewardb_feb_2021"
 vocabularySchema: "vocabulary"
 cemSchema: "cem"
+
+cacheDir: "/Users/jamie/PycharmProjects/REWARD_B_dashboard/app-cache"
 
 keyringService: "reward-db"

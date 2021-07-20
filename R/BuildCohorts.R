@@ -6,6 +6,7 @@
 #' @param connection DatabaseConnector connection to cdm
 #' @param config cdm config
 #' @param deleteExisting delete any existing computed cohorts
+#' @export
 createCohorts <- function(connection, config, deleteExisting = FALSE) {
   sql <- SqlRender::readSql(system.file("sql/cohorts", "createCohortTable.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
@@ -108,6 +109,7 @@ getUncomputedAtlasCohorts <- function(connection, config, exposureCohorts = FALS
 #' @param connection DatabaseConnector connection to cdm
 #' @param config cdm config
 #' @param deleteExisting remove existing data
+#' @export
 createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
 
   ParallelLogger::logInfo("Creating concept ancestor grouping and table")
@@ -221,6 +223,7 @@ computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
 #' repeat perscriptions). Could be something like a vaccine where exposed time is non trivial.
 #' deprecated It is now best to use atlas cohort definitions, will be removed in future version
 #' @param configPath path to cdm config
+#' @export
 createCustomDrugEras <- function(configPath) {
 
   config <- rewardb::loadCdmConfig(configPath)

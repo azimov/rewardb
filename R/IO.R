@@ -9,6 +9,7 @@ CONST_META_FILE_NAME <- "rb-meta.json"
 #' @param exportZipFilePath zip file to inflate
 #' @param unzipPath path to create
 #' @param overwrite overwrite any existing
+#' @export
 unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   ParallelLogger::logInfo("Inflating zip archive")
   if (!dir.exists(unzipPath)) {
@@ -46,7 +47,7 @@ unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   }
 }
 
-
+#' @export
 pgCopyDataFrame <- function(connectionDetails, data, schema, tableName, .echoCommand = FALSE) {
 
   if (!length(data)) {
@@ -64,6 +65,7 @@ pgCopyDataFrame <- function(connectionDetails, data, schema, tableName, .echoCom
   pgCopy(connectionDetails = connectionDetails, csvFileName = csvFileName, schema = schema, tableName = tableName, .echoCommand = .echoCommand)
 }
 
+#' @export
 pgCopy <- function(connectionDetails,
                    csvFileName,
                    schema,
@@ -137,6 +139,7 @@ pgCopy <- function(connectionDetails,
   writeLines(paste("Uploading data took", signif(delta, 3), attr(delta, "units")))
 }
 
+#' @export
 importVocabularyZip <- function(connectionDetails, vocabularyPath, vocabularySchema = "vocabulary") {
   unzipPath <- tempfile()
   dir.create(unzipPath)

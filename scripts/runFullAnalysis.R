@@ -1,38 +1,10 @@
-devtools::load_all()
-
+library(rewardb)
 config <- loadGlobalConfig("config/global-cfg.yml")
+exportReferenceTables(config, exportPath = "rewardb-references.zip")
 
-exportReferenceTables(config)
-
-cdmConfigPaths <- c(
-
-  "config/cdm/mdcd.yml",
-  "config/cdm/mdcr.yml",
-  "config/cdm/ccae.yml",
-  "config/cdm/optum.yml",
-  "config/cdm/pharmetrics.yml"
-)
-
-for (cdmConfigPath in cdmConfigPaths) {
-  cdmConfig <- loadCdmConfig(cdmConfigPath)
-  importReferenceTables(cdmConfig, "rewardb-references.zip")
-  createCustomDrugEras(cdmConfigPath)
-}
-
-for (cdmConfigPath in cdmConfigPaths) {
-  cdmConfig <- loadCdmConfig(cdmConfigPath)
-  connection <- DatabaseConnector::connect(cdmConfig$connectionDetails)
-  createCohorts(connection, cdmConfig)
-  createOutcomeCohorts(connection, cdmConfig)
-  DatabaseConnector::disconnect(connection)
-}
-
-for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- generateSccResults(cdmConfigPath, .createExposureCohorts = FALSE, .createOutcomeCohorts = FALSE)
-  # Copy files
-  for (table in names(resultsFiles)) {
-    for (file in resultsFiles[[table]]) {
-      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
-    }
-  }
-}
+rstudioapi::jobRunScript("scripts/runFullAnalysisMdcd.R", name = "MDCD - reward full set", workingDir = ".")
+rstudioapi::jobRunScript("scripts/runFullAnalysisMdcr.R", name = "MDCR - reward full set", workingDir = ".")
+rstudioapi::jobRunScript("scripts/runFullAnalysisJmdc.R", name = "JMDC - reward full set", workingDir = ".")
+rstudioapi::jobRunScript("scripts/runFullAnalysisOptum.R", name = "Optum - reward full set", workingDir = ".")
+rstudioapi::jobRunScript("scripts/runFullAnalysisCcae.R", name = "CCAE - reward full set", workingDir = ".")
+rstudioapi::jobRunScript("scripts/runFullAnalysisPharmetics.R", name = "Pharmetrics - reward full set", workingDir = ".")

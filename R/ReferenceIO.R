@@ -1,4 +1,3 @@
-
 CONST_REFERENCE_TABLES <- c(
   "concept_set_definition",
   "cohort_definition",
@@ -24,11 +23,10 @@ CONST_EXCLUDE_REF_COLS <- list(
 #' @param config global reward config
 #' @param exportPath path to export files to before zipping
 #' @param exportZipPath resulting zip files
-exportReferenceTables <- function(
-  config,
-  exportPath = tempdir(),
-  exportZipFile = "rewardb-references.zip"
-) {
+#' @export
+exportReferenceTables <- function(config,
+                                  exportPath = tempdir(),
+                                  exportZipFile = "rewardb-references.zip") {
   scipen <- getOption("scipen")
   options(scipen = 999)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
@@ -74,6 +72,7 @@ exportReferenceTables <- function(
 #' @param cdmConfig cdmConfig object
 #' @param zipFilePath zip file path
 #' @param usePgCopy Use postgre copy function (not included in database connector)
+#' @export
 importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
   unzipAndVerify(zipFilePath, cdmConfig$referencePath, TRUE)
   connection <- DatabaseConnector::connect(connectionDetails = cdmConfig$connectionDetails)
@@ -144,6 +143,7 @@ importReferenceTables <- function(cdmConfig, zipFilePath, usePgCopy = FALSE) {
 #' String containing version number or Unknown
 #' @param connection DatabaseConnector connection
 #' @param config reward cdmConfig loaded with cdmConfig
+#' @export
 getCdmVersion <- function(cdmConfig) {
   if ("cdmVersion" %in% names(cdmConfig)) {
     return(cdmConfig$cdmVersion)
@@ -170,7 +170,7 @@ getCdmVersion <- function(cdmConfig) {
 getDatabaseId <- function(cdmConfig) {
 
   if (is.list(cdmConfig$cdmVersionDate)) {
-    if("versionId" %in% names(cdmConfig$cdmVersionDate) & "versionDate" %in% names(cdmConfig$cdmVersionDate)){
+    if ("versionId" %in% names(cdmConfig$cdmVersionDate) & "versionDate" %in% names(cdmConfig$cdmVersionDate)) {
       return(cdmConfig$cdmVersionDate)
     }
     warning("Incorrect format for cdm version date in config")
@@ -195,6 +195,7 @@ getDatabaseId <- function(cdmConfig) {
 #' @param connection DatabaseConnector connection
 #' @param globalConfig globak reward config
 #' @param cdmConfig reward cdmConfig loaded with cdmConfig
+#' @export
 registerCdm <- function(connection, globalConfig, cdmConfig) {
   # Check if CDM ID is in table
   # Check if source key is a match
