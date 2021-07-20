@@ -2,24 +2,42 @@
 
 DROP TABLE IF EXISTS @schema.result;
 CREATE TABLE @schema.result (
-  source_id INT NOT NULL,
-  analysis_id INT,
-  outcome_cohort_id BIGINT NOT NULL,
-  target_cohort_id BIGINT NOT NULL,
-  calibrated INT NOT NULL DEFAULT 0, -- is the result calibrated with empirical calibration?
-  study_design VARCHAR, -- SCC or SCCS
-  rr NUMERIC,
-  se_log_rr NUMERIC,
-  c_pt NUMERIC,
-  t_pt NUMERIC,
-  t_at_risk NUMERIC,
-  c_at_risk NUMERIC,
-  t_cases NUMERIC,
-  c_cases NUMERIC,
-  lb_95 NUMERIC,
-  ub_95 NUMERIC,
-  p_value NUMERIC,
-  I2 NUMERIC
+    source_id INT NOT NULL,
+    analysis_id INT,
+    outcome_cohort_id BIGINT NOT NULL,
+    target_cohort_id BIGINT NOT NULL,
+    calibrated INT NOT NULL DEFAULT 0, -- is the result calibrated with empirical calibration?
+    study_design VARCHAR, -- SCC or SCCS
+    rr NUMERIC,
+    se_log_rr NUMERIC,
+    c_pt NUMERIC,
+    t_pt NUMERIC,
+    t_at_risk NUMERIC,
+    c_at_risk NUMERIC,
+    t_cases NUMERIC,
+    c_cases NUMERIC,
+    lb_95 NUMERIC,
+    ub_95 NUMERIC,
+    p_value NUMERIC,
+    I2 NUMERIC,
+    mean_time_to_outcome NUMERIC,
+    sd_time_to_outcome NUMERIC,
+    min_time_to_outcome NUMERIC,
+    p10_time_to_outcome NUMERIC,
+    p25_time_to_outcome NUMERIC,
+    median_time_to_outcome NUMERIC,
+    p75_time_to_outcome NUMERIC,
+    p90_time_to_outcome NUMERIC,
+    max_time_to_outcome NUMERIC,
+    mean_tx_time NUMERIC,
+    sd_tx_time NUMERIC,
+    min_tx_time NUMERIC,
+    p10_tx_time NUMERIC,
+    p25_tx_time NUMERIC,
+    median_tx_time NUMERIC,
+    p75_tx_time NUMERIC,
+    p90_tx_time NUMERIC,
+    max_tx_time NUMERIC
 );
 
 DROP TABLE IF EXISTS @schema.target;
@@ -73,7 +91,8 @@ CREATE TABLE @schema.cohort_type (
 
 INSERT INTO @schema.cohort_type (cohort_type_id, description) values (0, 'Incident of outcome with inpatient visit');
 INSERT INTO @schema.cohort_type (cohort_type_id, description) values (1, 'Incident of outcome with two diagnosis codes');
-INSERT INTO @schema.cohort_type (cohort_type_id, description) values (2, 'ATLAS cohort');
+INSERT INTO @schema.cohort_type (cohort_type_id, description) values (2, 'Incident of outcome with one diagnosis codes\');
+INSERT INTO @schema.cohort_type (cohort_type_id, description) values (3, 'ATLAS cohort');
 
 DROP TABLE IF EXISTS @schema.data_source;
 CREATE TABLE @schema.data_source (
@@ -94,7 +113,7 @@ create table @schema.reward_version(
    CONSTRAINT uni CHECK (id)
 );
 
-INSERT INTO @schema.reward_version (version) values ('0.0.2');
+INSERT INTO @schema.reward_version (version) values ('0.0.3');
 
 -- Valid negative controls target,outcome pairs
 DROP TABLE IF EXISTS @schema.negative_control;

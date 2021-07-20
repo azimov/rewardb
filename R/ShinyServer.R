@@ -30,13 +30,11 @@ dashboardInstance <- function(input, output, session) {
   library(shinyWidgets, warn.conflicts = FALSE)
   library(scales, warn.conflicts = FALSE)
   library(DT, warn.conflicts = FALSE)
-  library(foreach, warn.conflicts = FALSE)
   library(dplyr, warn.conflicts = FALSE)
 
   getOutcomeCohortTypes <- reactive({
-    cohortTypeMapping <- list("ATLAS defined" = 2, "Inpatient" = 1, "Two diagnosis codes" = 0)
-    rs <- foreach::foreach(i = input$outcomeCohortTypes) %do% { cohortTypeMapping[[i]] }
-    return(rs)
+    cohortTypeMapping <- list("ATLAS defined" = 3, "Inpatient" = 0, "Two diagnosis codes" = 1, "One Diagnosis Code" = 2)
+    lapply(input$outcomeCohortTypes, function(x) cohortTypeMapping[[x]])
   })
 
   dataSourceInfo <- model$getDataSourceInfo()
@@ -51,7 +49,7 @@ dashboardInstance <- function(input, output, session) {
   })
 
   requiredBenefitSources <- reactive({
-      dataSourceInfo[dataSourceInfo$sourceName %in% input$requiredDataSources, ]$sourceId
+    dataSourceInfo[dataSourceInfo$sourceName %in% input$requiredDataSources,]$sourceId
   })
 
   getMainTableParams <- reactive({
@@ -60,21 +58,19 @@ dashboardInstance <- function(input, output, session) {
     exposureClassNames <- if (appContext$useExposureControls & length(input$exposureClass)) strQueryWrap(input$exposureClass) else NULL
     outcomeTypes <- getOutcomeCohortTypes()
 
-    params <- list(
-      benefitThreshold = input$cutrange1,
-      riskThreshold = input$cutrange2,
-      pValueCut = input$pCut,
-      requiredBenefitSources = requiredBenefitSources(),
-      filterByMeta = input$filterThreshold == "Meta analysis",
-      outcomeCohortTypes = outcomeTypes,
-      excludeIndications = input$excludeIndications,
-      calibrated = input$calibrated,
-      benefitCount = input$scBenefit,
-      riskCount = input$scRisk,
-      outcomeCohortNames = outcomeCohortNames,
-      targetCohortNames = targetCohortNames,
-      exposureClasses = exposureClassNames
-    )
+    params <- list(benefitThreshold = input$cutrange1,
+                   riskThreshold = input$cutrange2,
+                   pValueCut = input$pCut,
+                   requiredBenefitSources = requiredBenefitSources(),
+                   filterByMeta = input$filterThreshold == "Meta analysis",
+                   outcomeCohortTypes = outcomeTypes,
+                   excludeIndications = input$excludeIndications,
+                   calibrated = input$calibrated,
+                   benefitCount = input$scBenefit,
+                   riskCount = input$scRisk,
+                   outcomeCohortNames = outcomeCohortNames,
+                   targetCohortNames = targetCohortNames,
+                   exposureClasses = exposureClassNames)
 
     return(params)
   })
@@ -152,7 +148,7 @@ dashboardInstance <- function(input, output, session) {
       )
       return(table)
     },
-    # Handles messy response
+      # Handles messy response
       error = function(e) {
         ParallelLogger::logError(paste(e))
         return(data.frame())

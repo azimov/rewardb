@@ -19,13 +19,4 @@ test_that("Full data generation and export", {
   )
 
   expect_true(qdf$RESULTS_COUNT[[1]] > 0)
-
-  qdf <- DatabaseConnector::renderTranslateQuerySql(
-    connection,
-    "SELECT count(*) as results_count FROM @results_schema.time_on_treatment WHERE ANALYSIS_ID = 1",
-    results_schema = config$rewardbResultsSchema
-  )
-  # Outcome cohorts should be created
-  expect_true(qdf$RESULTS_COUNT[[1]] > 0)
-
 })

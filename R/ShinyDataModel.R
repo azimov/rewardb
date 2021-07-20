@@ -125,7 +125,7 @@ DbModel$methods(
     return(row)
   },
 
-  getTimeToOutcomeStats = function(treatment, outcome, sourceIds = NULL) {
+  getTimeToOutcomeStats = function(treatment, outcome, sourceIds = NULL, tableName = "scc_result") {
     queryDb("
           SELECT
             ds.source_name,
@@ -139,16 +139,17 @@ DbModel$methods(
             p90_time_to_outcome as p90,
             max_time_to_outcome as max
 
-          FROM @schema.time_on_treatment tts
+          FROM @schema.@table_name tts
           LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
           WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome
           {@source_ids != ''} ? {AND ds.source_id IN (@source_ids)}",
+            table_name = tableName,
             treatment = treatment,
             outcome = outcome,
             source_ids = sourceIds)
   },
 
-  getTimeOnTreatmentStats = function(treatment, outcome, sourceIds = NULL) {
+  getTimeOnTreatmentStats = function(treatment, outcome, sourceIds = NULL, tableName = "scc_result") {
     queryDb("
       SELECT
         ds.source_name,
@@ -161,10 +162,11 @@ DbModel$methods(
         p75_tx_time as p75,
         p90_tx_time as p90,
         max_tx_time as max
-      FROM @schema.time_on_treatment tts
+      FROM @schema.@table_name tts
       LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
       WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome
       {@source_ids != ''} ? {AND ds.source_id IN (@source_ids)}",
+            table_name = tableName,
             treatment = treatment,
             outcome = outcome,
             source_ids = sourceIds)
@@ -328,20 +330,12 @@ DashboardDbModel$methods(
   },
 
   getTimeOnTreatmentStats = function(...) {
-    if (!tableExists("time_on_treatment")) {
-      setSchemaName(config$globalConfig$rewardbResultsSchema)
-      on.exit(setSchemaName(config$short_name))
-    }
-    dt <- callSuper(...)
+    dt <- callSuper(..., tableName = "result")
     return(dt)
   },
 
   getTimeToOutcomeStats = function(...) {
-    if (!tableExists("time_on_treatment")) {
-      setSchemaName(config$globalConfig$rewardbResultsSchema)
-      on.exit(setSchemaName(config$short_name))
-    }
-    dt <- callSuper(...)
+    dt <- callSuper(..., tableName = "result")
     return(dt)
   },
 

@@ -73,44 +73,6 @@ getSccResults <- function(
   return(filesGenerated)
 }
 
-getSccStats <- function(
-  config,
-  connection,
-  configId,
-  outcomeCohortIds = NULL,
-  targetCohortIds = NULL
-) {
-
-  if (!dir.exists(configId)) {
-    dir.create(configId)
-  }
-  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc'"
-  sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
-                                                                    getSccSettingsSql,
-                                                                    reference_schema = config$referenceSchema,
-                                                                    analysis_setting = config$tables$analysisSetting)
-
-  filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
-    analysisId <- analysis[["ANALYSIS_ID"]]
-    analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
-    ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
-    timeOnTreatment <- getAverageTimeOnTreatment(config, analysisSettings, analysisId = analysisId, targetCohortIds = targetCohortIds, outcomeCohortIds = outcomeCohortIds)
-
-    if (nrow(timeOnTreatment) > 0) {
-      statsFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, "-time_on_treatment_stats", ".csv"))
-      suppressWarnings({
-        write.csv(timeOnTreatment, statsFileName, na = "", row.names = FALSE, fileEncoding = "ascii")
-      })
-      return(statsFileName)
-    } else {
-      ParallelLogger::logInfo("No data to export, no file written")
-      return(NULL)
-    }
-  })
-
-  return(filesGenerated)
-}
-
 
 #' @title
 #' Full reward execution
@@ -153,8 +115,7 @@ generateSccResults <- function(
   }
 
   resultsFiles <- list(
-    scc_result = c(),
-    time_on_treatment = c()
+    scc_result = c()
   )
   if (.runSCC) {
     resultsFiles$scc_result <- getSccResults(config,
@@ -164,13 +125,6 @@ generateSccResults <- function(
                                              targetCohortIds = NULL)
   }
 
-  if (.generateCohortStats) {
-    resultsFiles$time_on_treatment <- getSccStats(config,
-                                                  connection,
-                                                  configId = config$exportPath,
-                                                  outcomeCohortIds = NULL,
-                                                  targetCohortIds = NULL)
-  }
   ParallelLogger::unregisterLogger(logger)
   return(resultsFiles)
 }
@@ -211,13 +165,6 @@ runAdHocScc <- function(
                                            outcomeCohortIds = outcomeCohortIds,
                                            targetCohortIds = targetCohortIds)
 
-  if (.generateCohortStats) {
-    resultsFiles$time_on_treatment <- getSccStats(config,
-                                                  connection,
-                                                  configId = configId,
-                                                  outcomeCohortIds = outcomeCohortIds,
-                                                  targetCohortIds = targetCohortIds)
-  }
   ParallelLogger::unregisterLogger(logger)
 
   return(resultsFiles)

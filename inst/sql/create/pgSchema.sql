@@ -1,34 +1,25 @@
 {DEFAULT @schema = 'reward'}
 
-DROP SCHEMA IF EXISTS @schema CASCADE;
-CREATE SCHEMA @schema;
+drop SCHEMA IF EXISTS @schema CASCADE;
+create SCHEMA @schema;
 
-CREATE TABLE @schema.scc_result (
-  source_id INT NOT NULL,
-  analysis_id INT NOT NULL,
-  outcome_cohort_id BIGINT NOT NULL,
-  target_cohort_id BIGINT NOT NULL,
-  rr NUMERIC,
-  se_log_rr NUMERIC,
-  c_pt NUMERIC,
-  t_pt NUMERIC,
-  t_at_risk NUMERIC,
-  c_at_risk NUMERIC,
-  t_cases NUMERIC,
-  c_cases NUMERIC,
-  lb_95 NUMERIC,
-  ub_95 NUMERIC,
-  p_value NUMERIC,
-  I2 NUMERIC,
-  PRIMARY KEY (source_id, analysis_id, outcome_cohort_id, target_cohort_id)
-);
-create index sccr_idx on @schema.scc_result(outcome_cohort_id, target_cohort_id);
-
-CREATE TABLE @schema.time_on_treatment (
+create TABLE @schema.scc_result (
     source_id INT NOT NULL,
-    analysis_id INT,
+    analysis_id INT NOT NULL,
     outcome_cohort_id BIGINT NOT NULL,
     target_cohort_id BIGINT NOT NULL,
+    rr NUMERIC,
+    se_log_rr NUMERIC,
+    c_pt NUMERIC,
+    t_pt NUMERIC,
+    t_at_risk NUMERIC,
+    c_at_risk NUMERIC,
+    t_cases NUMERIC,
+    c_cases NUMERIC,
+    lb_95 NUMERIC,
+    ub_95 NUMERIC,
+    p_value NUMERIC,
+    I2 NUMERIC,
     mean_time_to_outcome NUMERIC,
     sd_time_to_outcome NUMERIC,
     min_time_to_outcome NUMERIC,
@@ -49,9 +40,9 @@ CREATE TABLE @schema.time_on_treatment (
     max_tx_time NUMERIC,
     PRIMARY KEY (source_id, analysis_id, outcome_cohort_id, target_cohort_id)
 );
-create index tot_idx on @schema.time_on_treatment(outcome_cohort_id, target_cohort_id);
+create index sccr_idx on @schema.scc_result(outcome_cohort_id, target_cohort_id);
 
-CREATE TABLE @schema.data_source (
+create TABLE @schema.data_source (
     source_id INT PRIMARY KEY,
     source_name varchar,
     source_key varchar,
@@ -60,7 +51,7 @@ CREATE TABLE @schema.data_source (
     version_date date
 );
 
-CREATE TABLE @schema.outcome_null_distributions (
+create TABLE @schema.outcome_null_distributions (
     source_id INT NOT NULL,
     analysis_id INT NOT NULL,
     outcome_type INT NOT NULL,
@@ -74,7 +65,7 @@ CREATE TABLE @schema.outcome_null_distributions (
 );
 create index idx_out_null_dist on @schema.outcome_null_distributions(ingredient_concept_id);
 
-CREATE TABLE @schema.exposure_null_distributions (
+create TABLE @schema.exposure_null_distributions (
     source_id INT NOT NULL,
     analysis_id INT NOT NULL,
     outcome_cohort_id BIGINT NOT NULL,

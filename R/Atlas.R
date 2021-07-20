@@ -113,7 +113,7 @@ insertAtlasCohortRef <- function(
     conceptTable <- "atlas_outcome_concept"
     insertSql <- "INSERT INTO @schema.@cohort_table
                             (cohort_definition_name, short_name, conceptset_id, outcome_type)
-                                     values ('@name', '@name', 99999999, 2) RETURNING cohort_definition_id"
+                                     values ('@name', '@name', 99999999, 3) RETURNING cohort_definition_id"
   }
 
   # Null is mainly used for test purposes only

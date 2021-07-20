@@ -67,7 +67,8 @@ runScc <- function(
     exposureTable = config$tables$cohort,
     outcomeDatabaseSchema = config$resultSchema,
     outcomeTable = config$tables$outcomeCohort,
-    computeThreads = cores
+    computeThreads = cores,
+    computeTarDistribution = TRUE
   )
   args <- c(analysisSettings, opts)
 
