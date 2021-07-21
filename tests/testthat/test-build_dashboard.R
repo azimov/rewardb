@@ -7,7 +7,7 @@ test_that("Dashboard creation works", {
   buildDashboardFromConfig(appContextFile, configFilePath, performCalibration = TRUE)
 })
 
-appContext <- loadAppContext(appContextFile, configFilePath)
+appContext <- loadShinyAppContext(appContextFile, configFilePath)
 test_that("Data model utilitiy queries", {
   model <- DashboardDbModel(appContext)
   df <- model$queryDb("SELECT * FROM @schema.result")

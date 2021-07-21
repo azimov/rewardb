@@ -1,9 +1,9 @@
 library(rewardb)
-config <- loadGlobalConfig("config/global-cfg.yml")
+config <- loadGlobalConfiguration("config/global-cfg.yml")
 
 cdmConfigPath <- "config/cdm/jmdc.yml"
 
-cdmConfig <- loadCdmConfig(cdmConfigPath)
+cdmConfig <- loadCdmConfiguration(cdmConfigPath)
 importReferenceTables(cdmConfig, "rewardb-references.zip")
 createCustomDrugEras(cdmConfigPath)
 

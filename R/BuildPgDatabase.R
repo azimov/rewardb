@@ -5,64 +5,50 @@
 #' This will also require a CEM schema to be built which uses the OHDSI Common Evidence Model to generate the matrix
 #' of known assocations for OMOP Standard Vocabulary terms. This is required for generating any stats that require negative controls
 #' @param configFilePath path to global reward config
-#' @param buildPhenotypeLibrary optionally add the entire phenotype library github R package
-#' @param generatePlSql If building the phenotype library, generate the SQL from the github defintion or not (if false this assumes the git defintion works)
+#' @param recreateCem optionally rebuild cem schema from scratch
 #' @export
-buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", buildPhenotypeLibrary = TRUE, generatePlSql = TRUE, recreateCem = FALSE) {
-  config <- loadGlobalConfig(configFilePath)
+buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", recreateCem = FALSE) {
+  config <- loadGlobalConfiguration(configFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
-  tryCatch({
-    message("creating rewardb results schema")
-    sql <- SqlRender::readSql(system.file("sql/create", "pgSchema.sql", package = "rewardb"))
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql,
-      schema = config$rewardbResultsSchema
-    )
-
-    sql <- SqlRender::readSql(system.file("sql/create", "referenceTables.sql", package = "rewardb"))
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql,
-      schema = config$rewardbResultsSchema,
-      include_constraints = 1
-    )
-
-    sql <- SqlRender::readSql(system.file("sql/create", "cohortReferences.sql", package = "rewardb"))
-    DatabaseConnector::renderTranslateExecuteSql(
-      connection,
-      sql,
-      vocabulary_schema = 'vocabulary',
-      schema = config$rewardbResultsSchema
-    )
-
-    cemSchema <- DatabaseConnector::renderTranslateQuerySql(connection, "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'cem';")
-    if (recreateCem | nrow(cemSchema) == 0) {
-      sql <- SqlRender::readSql(system.file("sql/create", "cemSchema.sql", package = "rewardb"))
-      DatabaseConnector::renderTranslateExecuteSql(connection, sql)
-    }
-
-    addAnalysisSettingsJson(connection, config)
-
-    if (buildPhenotypeLibrary) {
-      addPhenotypeLibrary(connection, config,
-                          libraryRepo = "OHDSI/PhenotypeLibrary",
-                          ref = "develop",
-                          local = FALSE,
-                          packageName = "PhenotypeLibrary",
-                          removeExisting = FALSE,
-                          generateSql = generatePlSql)
-    }
-  },
-    error = ParallelLogger::logError
+  message("creating rewardb results schema")
+  sql <- SqlRender::readSql(system.file("sql/create", "pgSchema.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql,
+    schema = config$rewardbResultsSchema
   )
+
+  sql <- SqlRender::readSql(system.file("sql/create", "referenceTables.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql,
+    schema = config$rewardbResultsSchema,
+    include_constraints = 1
+  )
+
+  sql <- SqlRender::readSql(system.file("sql/create", "cohortReferences.sql", package = "rewardb"))
+  DatabaseConnector::renderTranslateExecuteSql(
+    connection,
+    sql,
+    vocabulary_schema = 'vocabulary',
+    schema = config$rewardbResultsSchema
+  )
+
+  cemSchema <- DatabaseConnector::renderTranslateQuerySql(connection, "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'cem';")
+  if (recreateCem | nrow(cemSchema) == 0) {
+    sql <- SqlRender::readSql(system.file("sql/create", "cemSchema.sql", package = "rewardb"))
+    DatabaseConnector::renderTranslateExecuteSql(connection, sql)
+  }
+
+  addAnalysisSettingsJson(connection, config)
+
 }
 
 importCemSummary <- function(summaryFilePath, configFilePath = "config/global-cfg.yml") {
   checkmate::assert_file_exists(summaryFilePath)
-  config <- loadGlobalConfig(configFilePath)
+  config <- loadGlobalConfiguration(configFilePath)
   pgCopy(connectionDetails = config$connectionDetails, summaryFilePath, "cem", "matrix_summary")
 }
 

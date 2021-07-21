@@ -1,5 +1,5 @@
 library(rewardb)
-config <- loadGlobalConfig("config/global-cfg.yml")
+config <- loadGlobalConfiguration("config/global-cfg.yml")
 exportReferenceTables(config, exportPath = "rewardb-references.zip")
 
 rstudioapi::jobRunScript("scripts/runFullAnalysisMdcd.R", name = "MDCD - reward full set", workingDir = ".")

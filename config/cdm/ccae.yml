@@ -13,8 +13,8 @@ connectionDetails:
   user: jgilber2
 
 useSecurePassword: True
+keyringService: "ohda-prod-1"
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
-keyringService: "rhealth-db"
 bulkUpload: True
 
 resultSchema: "scratch_jgilber2"
@@ -25,17 +25,19 @@ drugEraSchema: "scratch_jgilber2"
 cdmVersionTable: "_version"
 
 tables:
-  outcomeCohort: "rb_outcome_cohort_feb_2021"
-  cohort: "rb_cohort_feb_2021"
-  sccResult: "rb_scc_result_feb_2021"
+  outcomeCohort: "rb_outcome_cohort_july2021"
+  cohort: "rb_cohort_july2021"
+  sccResult: "rb_scc_result_july2021"
   # Reference table definitions
-  cohortDefinition: "rb_cohort_definition_feb_2021"
-  outcomeCohortDefinition: "rb_outcome_cohort_definition_feb_2021"
-  conceptSetDefinition: "rb_concept_set_definition_feb_2021"
-  atlasOutcomeReference: "rb_atlas_outcome_reference_feb_2021"
-  atlasOutcomeConcept: "rb_atlas_outcome_concept_feb_2021"
-  atlasExposureReference: "rb_atlas_exposure_reference_feb_2021"
-  atlasExposureConcept: "rb_atlas_exposure_concept_feb_2021"
-  customExposure: "rb_custom_exposure_feb_2021"
-  customExposureConcept: "rb_custom_exposure_concept_feb_2021"
-  analysisSetting: "rb_analysis_setting_feb_2021"
+  cohortDefinition: "rb_cohort_definition_july2021"
+  outcomeCohortDefinition: "rb_outcome_cohort_definition_july2021"
+  conceptSetDefinition: "rb_concept_set_definition_july2021"
+  atlasOutcomeReference: "rb_atlas_outcome_reference_july2021"
+  atlasOutcomeConcept: "rb_atlas_outcome_concept_july2021"
+  atlasExposureReference: "rb_atlas_exposure_reference_july2021"
+  atlasExposureConcept: "rb_atlas_exposure_concept_july2021"
+  customExposure: "rb_custom_exposure_july2021"
+  customExposureConcept: "rb_custom_exposure_concept_july2021"
+  analysisSetting: "rb_analysis_setting_july2021"
+
+

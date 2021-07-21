@@ -1,14 +1,102 @@
 
-getPasswordSecurely <- function(envVar = "REWARD_PASSWORD", prompt = "Enter the reward database password") {
-  pass <- Sys.getenv(envVar)
-  if (pass == "") {
-    pass <- askpass::askpass(prompt)
-    args <- list(pass)
-    names(args) <- envVar
-    do.call(Sys.setenv, args)
-  }
-  return(pass)
+#' Loads Application Context
+#' @description
+#' By default, loads the database connections in to this object
+#' loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
+#' The idea is to allow shared configuration settings between the web app and any data processing tools
+#' @param configPath is a yaml file for the application configuration
+#' @param globalConfigPath path to global yaml
+#' @export
+loadShinyAppContext <- function(configPath, globalConfigPath) {
+
+  defaults <- list(
+    useExposureControls = FALSE,
+    custom_exposure_ids = c(),
+    useConnectionPool = TRUE
+  )
+
+  appContext <- .setDefaultOptions(yaml::read_yaml(configPath), defaults)
+  appContext$globalConfig <- loadGlobalConfiguration(globalConfigPath)
+  appContext$connectionDetails <- appContext$globalConfig$connectionDetails
+
+  class(appContext) <- append(class(appContext), "appContext")
+  return(appContext)
 }
+
+#' Loads global config
+#' @description
+#' Load reward global config yaml file
+#' @param globalConfigPath path to global yaml
+#' @export
+loadGlobalConfiguration <- function(globalConfigPath) {
+  config <- yaml::read_yaml(globalConfigPath)
+
+  if (is.null(config$connectionDetails$password)) {
+
+    if (!is.null(config$keyringService)) {
+      config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
+    } else {
+      stop("Set password securely with keyringService option and using keyring::key_set with the database username.")
+    }
+  }
+
+  config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
+  return(config)
+}
+
+
+#' @title
+#' Load report application context
+#' @description
+#' By default, loads the database connections in to this object
+#' loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
+#' The idea is to allow shared configuration settings between the web app and any data processing tools
+#' @param globalConfigPath is a yaml file for the application configuratione
+#' @param .env environment to load variable in to
+#' @param exposureId exposure cohort id
+#' @param outcomeId outcome cohort id
+loadReportContext <- function(globalConfigPath) {
+  reportAppContext <- loadGlobalConfiguration(globalConfigPath)
+  reportAppContext$useConnectionPool = TRUE
+  class(reportAppContext) <- append(class(reportAppContext), "reportAppContext")
+  return(reportAppContext)
+}
+
+#' load cdm config object
+#' @description
+#' Loads config and prompt user for db password
+#' Password can be set in envrionment variable passwordEnvironmentVariable of yaml file
+#' @param cdmConfigPath cdmConfigPath
+#' @export
+loadCdmConfiguration <- function(cdmConfigPath) {
+  defaults <- list(
+    passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",
+    useSecurePassword = FALSE,
+    bulkUpload = FALSE
+  )
+  config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)
+
+  defaultTables <- list()
+
+  for (table in CONST_REFERENCE_TABLES) {
+    defaultTables[[SqlRender::snakeCaseToCamelCase(table)]] <- table
+  }
+
+  config$tables <- .setDefaultOptions(config$tables, defaultTables)
+
+  if (config$useSecurePassword) {
+
+    if (!is.null(config$keyringService)) {
+      config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
+    } else {
+      config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable)
+    }
+  }
+  config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
+
+  return(config)
+}
+
 
 
 .setDefaultOptions <- function(config, defaults) {
@@ -67,104 +155,3 @@ getTargetCohortIds <- function(appContext, connection) {
   return(result$ID)
 }
 
-
-#' @title
-#' Loads Application Context
-#' @description
-#' By default, loads the database connections in to this object
-#' loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
-#' The idea is to allow shared configuration settings between the web app and any data processing tools
-#' @param configPath is a yaml file for the application configuration
-#' @param globalConfigPath path to global yaml
-#' @param .env environment to load variable in to
-loadAppContext <- function(configPath, globalConfigPath, .env = .GlobalEnv) {
-
-  defaults <- list(
-    useExposureControls = FALSE,
-    custom_exposure_ids = c(),
-    useConnectionPool = TRUE
-  )
-
-  appContext <- .setDefaultOptions(yaml::read_yaml(configPath), defaults)
-  appContext$globalConfig <- loadGlobalConfig(globalConfigPath)
-  appContext$connectionDetails <- appContext$globalConfig$connectionDetails
-
-  class(appContext) <- append(class(appContext), "appContext")
-  return(appContext)
-}
-
-#' @title
-#' Loads global config
-#' @description
-#' Load reward global config yaml file
-#' @param globalConfigPath path to global yaml
-#' @export
-loadGlobalConfig <- function(globalConfigPath) {
-  config <- yaml::read_yaml(globalConfigPath)
-
-  if (is.null(config$connectionDetails$password)) {
-
-    if (!is.null(config$keyringService)) {
-      config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
-    } else {
-      config$connectionDetails$password <- getPasswordSecurely()
-    }
-  }
-
-  config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
-  return(config)
-}
-
-#' @title
-#' Load report application context
-#' @description
-#' By default, loads the database connections in to this object
-#' loads database password from prompt if REWARD_B_PASSWORD system env variable is not set (e.g. in .Rprofile)
-#' The idea is to allow shared configuration settings between the web app and any data processing tools
-#' @param globalConfigPath is a yaml file for the application configuratione
-#' @param .env environment to load variable in to
-#' @param exposureId exposure cohort id
-#' @param outcomeId outcome cohort id
-#' @export
-loadReportContext <- function(globalConfigPath) {
-  reportAppContext <- loadGlobalConfig(globalConfigPath)
-  reportAppContext$useConnectionPool = TRUE
-  class(reportAppContext) <- append(class(reportAppContext), "reportAppContext")
-  return(reportAppContext)
-}
-
-#' @title
-#' load cdm config object
-#' @description
-#' Loads config and prompt user for db password
-#' Password can be set in envrionment variable passwordEnvironmentVariable of yaml file
-#' @param cdmConfigPath cdmConfigPath
-#' @export
-loadCdmConfig <- function(cdmConfigPath) {
-  defaults <- list(
-    passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",
-    useSecurePassword = FALSE,
-    bulkUpload = FALSE
-  )
-  config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)
-
-  defaultTables <- list()
-
-  for (table in CONST_REFERENCE_TABLES) {
-    defaultTables[[SqlRender::snakeCaseToCamelCase(table)]] <- table
-  }
-
-  config$tables <- .setDefaultOptions(config$tables, defaultTables)
-
-  if (config$useSecurePassword) {
-
-    if (!is.null(config$keyringService)) {
-      config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
-    } else {
-      config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable)
-    }
-  }
-  config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)
-
-  return(config)
-}

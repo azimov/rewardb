@@ -1,9 +1,9 @@
 configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
-config <- loadGlobalConfig(configFilePath)
+config <- loadGlobalConfiguration(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
-cdmConfig <- loadCdmConfig(cdmConfigPath)
+cdmConfig <- loadCdmConfiguration(cdmConfigPath)
 
 zipFilePath <- "rewardb-references.zip"
 refFolder <- "reference_test_folder"
@@ -24,7 +24,7 @@ withr::defer({
 appContextFile <- system.file("tests", "test.dashboard.yml", package = "rewardb")
 
 pgDbSetup <- function () {
-  buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE, recreateCem = TRUE)
+  buildPgDatabase(configFilePath = configFilePath, recreateCem = TRUE)
   importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
 }
 

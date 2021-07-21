@@ -265,7 +265,7 @@ dashboardInstance <- function(input, output, session) {
 #' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
 #' @export
 launchDashboard <- function(appConfigPath, globalConfigPath) {
-  .GlobalEnv$appContext <- loadAppContext(appConfigPath, globalConfigPath)
+  .GlobalEnv$appContext <- loadShinyAppContext(appConfigPath, globalConfigPath)
   .GlobalEnv$model <- DashboardDbModel(appContext)
   shiny::shinyApp(server = dashboardInstance, dashboardUi, enableBookmarking = "url", onStart = function() {
     shiny::onStop(function() {

@@ -4,7 +4,7 @@
 # Created on: 2020-10-05
 
 test_that("build rewardb postgres db", {
-  buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = FALSE, recreateCem = TRUE)
+  buildPgDatabase(configFilePath = configFilePath, recreateCem = TRUE)
   importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,

@@ -7,6 +7,7 @@ Authors@R: person("James", "Gilbert", email = "jgilber2@its.jnj.com",
 Description: Package for REal-World Assessment and Research of Drug Performance from observational health data
 License: Copyright Janssen Research & Development 2020 all rights reserved
 Depends:
+    R (>= 4.0.0),
     magrittr,
     DT,
     shiny,

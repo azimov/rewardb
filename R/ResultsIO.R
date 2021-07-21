@@ -78,6 +78,6 @@ importResultsFiles <- function(
 }
 
 importResultsZip <- function(resultsZipPath, configFilePath="config/global-cfg.yml", unzipPath = "rb-import") {
-  config <- loadGlobalConfig(configFilePath)
+  config <- loadGlobalConfiguration(configFilePath)
   importResultsFiles(config$connectionDetails, config$rewardbResultsSchema, resultsZipPath, unzipPath = unzipPath)
 }

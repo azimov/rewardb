@@ -58,7 +58,7 @@ Alternatively, a password prompt will appead the first time a configuration is l
 To load the configuration:
 
 ```{r eval=FALSE}
-config <- loadGlobalConfig("config/global-cfg.yml")
+config <- loadGlobalConfiguration("config/global-cfg.yml")
 ```
 
 ## Adding a vocabulary
@@ -68,9 +68,7 @@ TODO - add an omop vocabulary to the reward database. See the standard vocabular
 Running the following function builds a schema in the postgres database:
 
 ```{r eval=FALSE}
-buildPgDatabase(configFilePath = "config/global-cfg",
-                buildPhenotypeLibrary = TRUE,
-                generatePlSql = TRUE)
+buildPgDatabase(configFilePath = "config/global-cfg")
 ```
 Here, all cohort references will be created from the vocabulary or imported from the Phenotype Library.
 

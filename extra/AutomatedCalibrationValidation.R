@@ -3,7 +3,7 @@ library(MethodEvaluation)
 for (cdmConfigPath in Sys.glob("config/cdm/ccae.yml")) {
 }
 {
-  config <- loadCdmConfig(cdmConfigPath)
+  config <- loadCdmConfiguration(cdmConfigPath)
 
   cdmDatabaseSchema <- config$cdmSchema
   oracleTempSchema <- NULL

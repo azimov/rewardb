@@ -11,6 +11,6 @@ writeToScratchSpace <- function(cdmConfig) {
 cdmConfigPaths <- Sys.glob("config/cdm/*.yml")
 
 for (path in cdmConfigPaths) {
-  cdmConfig <- loadCdmConfig(path)
+  cdmConfig <- loadCdmConfiguration(path)
   writeToScratchSpace(cdmConfig)
 }

@@ -5,7 +5,7 @@ newAtlas <- "https://epi.jnj.com:8443/WebAPI"
 
 ROhdsiWebApi::authorizeWebApi(newAtlas, "windows", "jgilber2", keyring::key_get("jnj", "jgilber2"))
 
-oldConfig <- loadGlobalConfig("config/global-cfg-feb2021.yml")
+oldConfig <- loadGlobalConfiguration("config/global-cfg-feb2021.yml")
 # Get current cohorts from old atlas version
 
 run <- function() {

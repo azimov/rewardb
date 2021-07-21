@@ -1,36 +1,45 @@
 library(rewardb)
-config <- loadGlobalConfig("config/global-cfg.yml")
+configPath <- "config/global-cfg.yml"
+## Test first on local postgres instance with this:
+#configPath <- system.file("tests", "test.cfg.yml", package = "rewardb")
+config <- loadGlobalConfiguration(configPath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
 # Set up a database schema
-buildPgDatabase("config/global-cfg.yml")
+buildPgDatabase(configPath)
 
-atlasCohorts <- c(381, 382, 1257, 1258, 1259, 1260, 1261, 1262, 1263, 1264, 1265, 1267, 1268, 1269, 1270, 1271, 1272,
-                  1273, 1274, 1275, 1276, 1277, 1278, 1279, 1280, 1281, 1282, 1283, 1284, 1286, 1287, 1288, 1289, 1290,
-                  1291, 1292, 1293, 1294, 1295, 1296)
+ROhdsiWebApi::authorizeWebApi(config$webApiUrl, "windows", "jgilber2", keyring::key_get("jnj", "jgilber2"))
+cohortDefinitions <- ROhdsiWebApi::getDefinitionsMetadata(config$webApiUrl, "cohort")
+# Find all cohorts in atlas instance with the tag for REWARD
+rewardTag <- "\\[REWARD\\]"
 
-connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
+outcomeDefinitions <- cohortDefinitions %>% dplyr::filter(grepl(rewardTag, name))
+
 # Add atlas cohorts
-for (atlasId in atlasCohorts) {
+for (atlasId in outcomeDefinitions$id) {
   insertAtlasCohortRef(connection, config, atlasId)
 }
 
-atlasExposureCohorts <- c(19177, 19178)
-
-for (atlasId in atlasExposureCohorts) {
+rewardExposuresTag <- "\\[REWARD EXPOSURE\\]"
+atlasExposureCohorts <- cohortDefinitions %>% dplyr::filter(grepl(rewardExposuresTag, name))
+for (atlasId in atlasExposureCohorts$id) {
   insertAtlasCohortRef(connection, config, atlasId, exposure = TRUE)
 }
 
-customExposureRefs <- list(
-  "IL-17 Inhibitors" = 11721
-)
+rewardExposureClassTag <- "\\[REWARD EXPOSURE CLASS\\]"
+ROhdsiWebApi::authorizeWebApi(config$webApiUrl, "windows", "jgilber2", keyring::key_get("jnj", "jgilber2"))
+conceptSetDefinitions <- ROhdsiWebApi::getDefinitionsMetadata(config$webApiUrl, "conceptSet") %>% dplyr::filter(grepl(rewardExposureClassTag, name))
 
-for (conceptSetName in names(customExposureRefs)) {
-  insertCustomExposureRef(connection, config, customExposureRefs[[ conceptSetName ]], conceptSetName)
+for (i in 1:nrow(conceptSetDefinitions)) {
+  insertCustomExposureRef(connection, config, conceptSetDefinitions[i,]$id, conceptSetDefinitions[i,]$name)
 }
 
+ROhdsiWebApi::authorizeWebApi(config$webApiUrl, "windows", "jgilber2", keyring::key_get("jnj", "jgilber2"))
+addPhenotypeLibrary(connection, config)
+
+
 for (cdmPath in Sys.glob("config/cdm/*.yml")) {
-  cdmConfig <- loadCdmConfig(cdmPath)
+  cdmConfig <- loadCdmConfiguration(cdmPath)
   registerCdm(connection, config, cdmConfig)
 }
 

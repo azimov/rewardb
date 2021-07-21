@@ -2,7 +2,7 @@ sourceId: 12
 database: truven_mdcd
 name: "IBM MDCD"
 
-exportPath: "export_mcdc"
+exportPath: "export_mdcd"
 referencePath: "reference_files"
 
 connectionDetails:
@@ -19,8 +19,8 @@ bulkUpload: True
 
 resultSchema: "scratch_jgilber2"
 referenceSchema: "scratch_jgilber2"
-cdmSchema: "cdm"
-vocabularySchema: "cdm"
+cdmSchema: "cdm_truven_mdcd_v1561"
+vocabularySchema: "cdm_truven_mdcd_v1561"
 drugEraSchema: "scratch_jgilber2"
 cdmVersionTable: "_version"
 

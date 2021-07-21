@@ -100,7 +100,7 @@ generateSccResults <- function(
 ) {
   logger <- .getLogger(logFileName)
   # load config
-  config <- loadCdmConfig(cdmConfigFilePath)
+  config <- loadCdmConfiguration(cdmConfigFilePath)
   connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
@@ -151,7 +151,7 @@ runAdHocScc <- function(
   logFileName = NULL
 ) {
 
-  config <- loadCdmConfig(cdmConfigPath)
+  config <- loadCdmConfiguration(cdmConfigPath)
   if (is.null(logFileName)) {
     logFileName <- paste0(configId, "-scc-data-build-results.log")
   }

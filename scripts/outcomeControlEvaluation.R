@@ -2,7 +2,7 @@ devtools::load_all()
 library(dplyr)
 library(gt)
 source("scripts/controlEvaluationFunctions.R")
-config <- loadGlobalConfig("config/global-cfg.yml")
+config <- loadGlobalConfiguration("config/global-cfg.yml")
 connection <- DatabaseConnector::connect(config$connectionDetails)
 
 dataSources <- DatabaseConnector::renderTranslateQuerySql(connection, "SELECT * FROM @schema.data_source", schema=config$rewardbResultsSchema, snakeCaseToCamelCase = TRUE)

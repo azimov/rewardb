@@ -10,14 +10,17 @@
 #' @param ref git ref to use. Defaults to master. could be a specific git tag or branch
 #' @param local local copy or github
 #' @param packageName name of package to install
+#' @param subsetFile string path to subset
 #' @param removeExisting remove existing pacakge of the same name
 #' @param generateSql use web api to generate sql from source
+#' @export
 addPhenotypeLibrary <- function(connection,
                                 config,
                                 libraryRepo = "OHDSI/PhenotypeLibrary",
-                                ref = "master",
+                                ref = "develop",
                                 local = FALSE,
                                 packageName = "PhenotypeLibrary",
+                                subsetFile = system.file("settings", "phenotypeLibraryIds.csv", package = "rewardb"),
                                 removeExisting = FALSE,
                                 generateSql = TRUE) {
   # Go through folders and add each cohort with names and descriptions
@@ -25,6 +28,12 @@ addPhenotypeLibrary <- function(connection,
     remotes::install_git(libraryRepo, ref = ref, force = TRUE)
   } else {
     remotes::install_github(libraryRepo, ref = ref, force = TRUE)
+  }
+
+  allowedIds <- NULL
+  if (!file.exists(subsetFile)) {
+    subset <- read.csv(subsetFile)
+    allowedIds <- subset$id
   }
 
   definitions <- Sys.glob(file.path(system.file("", package = packageName), "*", "*.json"))
@@ -40,7 +49,12 @@ addPhenotypeLibrary <- function(connection,
 
       cohortId <- stringr::str_split(basename(jsonDefinition), ".json")[[1]][[1]]
 
-      cohortDefinition$name <- description[description$cohortId == cohortId,]$cohortName[[1]]
+      if (!is.null(allowedIds) & !(cohortId %in% allowedIds)) {
+        next
+      }
+
+      cohortDefinition$name <-paste0("[", libraryRepo, "@", ref, "] ", description[description$cohortId == cohortId,]$cohortName[[1]])
+
       cohortDefinition$description <- description[description$cohortId == cohortId,]$logicDescription[[1]]
       cohortDefinition$id <- cohortId
       cohortDefinition$expression <- RJSONIO::fromJSON(jsonDefinition)
@@ -84,7 +98,6 @@ addPhenotypeLibrary <- function(connection,
 #' @param config rewardb global config
 #' @param atlasId id to atlas cohort to pull down
 #' @param exposure If exposure, cohort is treated as an exposure, drug domains are captured
-#'
 #' @export
 insertAtlasCohortRef <- function(
   connection,
@@ -248,6 +261,7 @@ removeAtlasCohort <- function(connection, config, atlasId, webApiUrl = NULL, exp
 #' @param cohortName Name to give cohort
 #' @param .warnNonIngredients Warn for non ingredients
 #' @param webApiUrl URL of webAPI service (if different from specified in config)
+#' @export
 insertCustomExposureRef <- function(
   connection,
   config,
@@ -339,6 +353,7 @@ insertCustomExposureRef <- function(
 #' @param config rewardb global config
 #' @param conceptSetId ids to remove from db
 #' @param webApiUrl URL of WebApi resource (or other source if not imported via web api)
+#' @export
 removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiUrl = NULL) {
   if (is.null(webApiUrl)) {
     webApiUrl <- config$webApiUrl
@@ -365,7 +380,7 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
 #' @param exposure boolean - is this for exposure or outcome cohorts
 #' @export
 sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, sourceUrl, exposure = FALSE, referenceZipFile = NULL) {
-  cdmConfig <- loadCdmConfig(cdmConfigPath)
+  cdmConfig <- loadCdmConfiguration(cdmConfigPath)
 
   if (!is.null(referenceZipFile)) {
     importReferenceTables(cdmConfig, referenceZipFile)

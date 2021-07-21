@@ -10,7 +10,8 @@ test_that("Phenotype Library From github", {
     skip("use options('testBuildPhenotypeLibrary' = TRUE) to test phenotype library")
   }
 
-  buildPgDatabase(configFilePath = configFilePath, buildPhenotypeLibrary = TRUE, generatePlSql = FALSE)
+  buildPgDatabase(configFilePath = configFilePath)
+  addPhenotypeLibrary(connection, config)
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT count(*) as RESULTS_COUNT FROM @schema.atlas_outcome_reference",

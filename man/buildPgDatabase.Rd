@@ -4,19 +4,12 @@
 \alias{buildPgDatabase}
 \title{Build postgres schema}
 \usage{
-buildPgDatabase(
-  configFilePath = "config/global-cfg.yml",
-  buildPhenotypeLibrary = TRUE,
-  generatePlSql = TRUE,
-  recreateCem = FALSE
-)
+buildPgDatabase(configFilePath = "config/global-cfg.yml", recreateCem = FALSE)
 }
 \arguments{
 \item{configFilePath}{path to global reward config}
 
-\item{buildPhenotypeLibrary}{optionally add the entire phenotype library github R package}
-
-\item{generatePlSql}{If building the phenotype library, generate the SQL from the github defintion or not (if false this assumes the git defintion works)}
+\item{recreateCem}{optionally rebuild cem schema from scratch}
 }
 \description{
 Build the reward database schema for postgres instance from scratch

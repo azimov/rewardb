@@ -8,9 +8,10 @@ addPhenotypeLibrary(
   connection,
   config,
   libraryRepo = "OHDSI/PhenotypeLibrary",
-  ref = "master",
+  ref = "develop",
   local = FALSE,
   packageName = "PhenotypeLibrary",
+  subsetFile = system.file("settings", "phenotypeLibraryIds.csv", package = "rewardb"),
   removeExisting = FALSE,
   generateSql = TRUE
 )
@@ -27,6 +28,8 @@ addPhenotypeLibrary(
 \item{local}{local copy or github}
 
 \item{packageName}{name of package to install}
+
+\item{subsetFile}{string path to subset}
 
 \item{removeExisting}{remove existing pacakge of the same name}
 

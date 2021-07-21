@@ -4,7 +4,7 @@ devtools::load_all()
 
 atlasIds <- c(382,381)
 refZipFile <- "reward-reference.zip"
-config <- loadGlobalConfig("config/global-cfg.yml")
+config <- loadGlobalConfiguration("config/global-cfg.yml")
 
 ROhdsiWebApi::authorizeWebApi(config$webApiUrl, "windows")
 

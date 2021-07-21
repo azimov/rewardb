@@ -172,7 +172,7 @@ computeMetaAnalysis <- function(appContext, connection) {
 #' @param allowUserAccess - enables grant permission for read only database user
 #' @export
 buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE, allowUserAccess = TRUE) {
-  appContext <- loadAppContext(filePath, globalConfigPath)
+  appContext <- loadShinyAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 

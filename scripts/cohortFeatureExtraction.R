@@ -3,7 +3,7 @@ library(gt)
 library(dplyr)
 
 
-config <- loadGlobalConfig("config/global-cfg.yml")
+config <- loadGlobalConfiguration("config/global-cfg.yml")
 
 cdmConfigPaths <- c(
   "config/cdm/jmdc.yml"
@@ -30,7 +30,7 @@ covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsG
 ageResults <- data.frame()
 
 for (cdmConfigPath in cdmConfigPaths) {
-  cdmConfig <- loadCdmConfig(cdmConfigPath)
+  cdmConfig <- loadCdmConfiguration(cdmConfigPath)
   covariateDataList <- getExposedOutcomeFetaures(cdmConfig, analysisOptions = sccAnalysisSettings$options, exposureIds = exposureCohortIds, outcomeIds = outcomeCohortIds, covariateSettings = covariateSettings)
   tables[[cdmConfig$database]] <- list()
   
