@@ -19,8 +19,8 @@ bulkUpload: True
 
 resultSchema: "scratch_jgilber2"
 referenceSchema: "scratch_jgilber2"
-cdmSchema: "cdm_optum_extended_ses_v1563"
-vocabularySchema: "cdm_optum_extended_ses_v1563"
+cdmSchema: "cdm_optum_extended_ses_v1680"
+vocabularySchema: "cdm_optum_extended_ses_v1680"
 drugEraSchema: "scratch_jgilber2"
 cdmVersionTable: "_version"
 

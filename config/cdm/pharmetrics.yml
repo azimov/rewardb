@@ -19,8 +19,8 @@ bulkUpload: True
 
 resultSchema: "scratch_jgilber2"
 referenceSchema: "scratch_jgilber2"
-cdmSchema: "cdm_iqvia_pharmetrics_plus_v1500"
-vocabularySchema: "cdm_iqvia_pharmetrics_plus_v1500"
+cdmSchema: "cdm_iqvia_pharmetrics_plus_v1670"
+vocabularySchema: "cdm_iqvia_pharmetrics_plus_v1670"
 drugEraSchema: "scratch_jgilber2"
 cdmVersionTable: "_version"
 
