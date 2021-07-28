@@ -226,7 +226,7 @@ computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
 #' @export
 createCustomDrugEras <- function(configPath) {
 
-  config <- rewardb::loadCdmConfig(configPath)
+  config <- rewardb::loadCdmConfiguration(configPath)
   connection <- DatabaseConnector::connect(config$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
   tryCatch({
