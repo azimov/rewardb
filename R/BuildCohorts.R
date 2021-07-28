@@ -140,21 +140,21 @@ createOutcomeCohorts <- function(connection, config, deleteExisting = FALSE) {
   # Build our set of already computed cohorts (ones with records).
   computedCohortsSql <- SqlRender::readSql(system.file("sql/cohorts", "outcomeComputedCohorts.sql", package = "rewardb"))
   DatabaseConnector::renderTranslateExecuteSql(
-     connection,
-     computedCohortsSql,
-     cohort_database_schema = config$resultSchema,
-     outcome_cohort_table = config$tables$outcomeCohort
+    connection,
+    computedCohortsSql,
+    cohort_database_schema = config$resultSchema,
+    outcome_cohort_table = config$tables$outcomeCohort
   )
 
   computeSql <- SqlRender::readSql(system.file("sql/cohorts", "outcomeCohortsToCompute.sql", package = "rewardb"))
   # Closure calls sql to create uncomputed cohorts
-  cohortsToCompute <- function (oType) {
+  cohortsToCompute <- function(oType) {
     DatabaseConnector::renderTranslateExecuteSql(
-       connection,
-       computeSql,
-       reference_schema = config$referenceSchema,
-       outcome_cohort_definition = config$tables$outcomeCohortDefinition,
-       outcome_type = oType
+      connection,
+      computeSql,
+      reference_schema = config$referenceSchema,
+      outcome_cohort_definition = config$tables$outcomeCohortDefinition,
+      outcome_type = oType
     )
     count <- DatabaseConnector::renderTranslateQuerySql(
       connection,
@@ -202,16 +202,20 @@ computeAtlasCohorts <- function(connection, config, exposureCohorts = FALSE) {
   if (nrow(atlasCohorts) > 0) {
     # Generate each cohort
     apply(atlasCohorts, 1, function(cohortReference) {
-      ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])
-      DatabaseConnector::renderTranslateExecuteSql(
-        connection,
-        sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
-        cdm_database_schema = config$cdmSchema,
-        vocabulary_database_schema = config$vocabularySchema,
-        target_database_schema = config$resultSchema,
-        target_cohort_table = cohortTable,
-        target_cohort_id = cohortReference["COHORT_DEFINITION_ID"]
-      )
+
+      tryCatch({
+        ParallelLogger::logInfo("computing custom cohort: ", cohortReference["COHORT_DEFINITION_ID"])
+        DatabaseConnector::renderTranslateExecuteSql(connection,
+                                                     sql = rawToChar(base64enc::base64decode(cohortReference["SQL_DEFINITION"])),
+                                                     cdm_database_schema = config$cdmSchema,
+                                                     vocabulary_database_schema = config$vocabularySchema,
+                                                     target_database_schema = config$resultSchema,
+                                                     target_cohort_table = cohortTable,
+                                                     target_cohort_id = cohortReference["COHORT_DEFINITION_ID"])
+
+      }, error = function(err) {
+        ParallelLogger::logError("FAILED TO COMPUTE: ", cohortReference["COHORT_DEFINITION_ID"], "\n", err)
+      })
     })
   }
 }
