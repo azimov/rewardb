@@ -1,0 +1,11 @@
+name: JROADS Canagliflozin
+short_name: jroads_canagliflozin
+description: 'JROADS Canagliflozin'
+outcome_concept_ids: ~
+custom_exposure_cohort_ids: ~
+atlas_exposure_ids: ~
+target_concept_ids: [
+    43526465 # Canagliflozin
+]
+useExposureControls: False
+dataSources: [10, 11, 12, 13, 14, 15]
