@@ -26,6 +26,7 @@ SCC_RESULT_COL_NAMES <- c(
   "target_cohort_id" = "exposureId",
   "outcome_cohort_id" = "outcomeId",
   "t_at_risk" = "numPersons",
+  "num_exposures" = "numExposures",
   "t_pt" = "timeAtRiskExposed",
   "t_cases" = "numOutcomesExposed",
   "c_cases" = "numOutcomesUnexposed",
@@ -34,7 +35,26 @@ SCC_RESULT_COL_NAMES <- c(
   "lb_95" = "irrLb95",
   "ub_95" = "irrUb95",
   "se_log_rr" = "seLogRr",
-  "p_value" = "p"
+  "log_rr" = "logRr",
+  "p_value" = "p",
+  "mean_tx_time" = "meanTxTime",
+  "sd_tx_time" = "sdTxTime",
+  "min_tx_time" = "minTxTime",
+  "max_tx_time" = "maxTxTime",
+  "median_tx_time" = "medianTxTime",
+  "p10_tx_time" = "p10TxTime",
+  "p25_tx_time" = "p25TxTime",
+  "p75_tx_time" = "p75TxTime",
+  "p90_tx_time" = "p90TxTime",
+  "mean_time_to_outcome" = "meanTimeToOutcome",
+  "sd_time_to_outcome" = "sdTimeToOutcome",
+  "min_time_to_outcome" = "minTimeToOutcome",
+  "max_time_to_outcome" = "maxTimeToOutcome",
+  "median_time_to_outcome" = "medianTimeToOutcome",
+  "p10_time_to_outcome" = "p10TimeToOutcome",
+  "p25_time_to_outcome" = "p25TimeToOutcome",
+  "p75_time_to_outcome" = "p75TimeToOutcome",
+  "p90_time_to_outcome" = "p90TimeToOutcome"
 )
 
 #' Peform SCC from self controlled cohort package with rewardbs settings
@@ -57,19 +77,17 @@ runScc <- function(
     outcomeIds <- getAllOutcomeIds(connection, config)
   }
 
-  opts <- list(
-    connectionDetails = config$connectionDetails,
-    cdmDatabaseSchema = config$cdmSchema,
-    cdmVersion = 5,
-    exposureIds = exposureIds,
-    outcomeIds = outcomeIds,
-    exposureDatabaseSchema = config$resultSchema,
-    exposureTable = config$tables$cohort,
-    outcomeDatabaseSchema = config$resultSchema,
-    outcomeTable = config$tables$outcomeCohort,
-    computeThreads = cores,
-    computeTarDistribution = TRUE
-  )
+  opts <- list(connectionDetails = config$connectionDetails,
+               cdmDatabaseSchema = config$cdmSchema,
+               cdmVersion = 5,
+               exposureIds = exposureIds,
+               outcomeIds = outcomeIds,
+               exposureDatabaseSchema = config$resultSchema,
+               exposureTable = config$tables$cohort,
+               outcomeDatabaseSchema = config$resultSchema,
+               outcomeTable = config$tables$outcomeCohort,
+               computeThreads = cores,
+               computeTarDistribution = TRUE)
   args <- c(analysisSettings, opts)
 
   sccResult <- do.call(SelfControlledCohort::runSelfControlledCohort, args)
@@ -92,7 +110,7 @@ runScc <- function(
     sccSummary$analysis_id <- as.integer(analysisId)
     sccSummary$c_at_risk <- sccSummary$numPersons
 
-    sccSummary <- dplyr::rename(sccSummary, rewardb::SCC_RESULT_COL_NAMES)
+    sccSummary <- dplyr::rename(sccSummary, SCC_RESULT_COL_NAMES)
   }
 
   ParallelLogger::logInfo(paste("Generated results for SCC", config$database))

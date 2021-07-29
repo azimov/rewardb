@@ -62,7 +62,7 @@ getSccResults <- function(
     if (nrow(sccSummary) > 0) {
       dataFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, ".csv"))
       ParallelLogger::logInfo(paste("Writing file", dataFileName))
-      suppressWarnings({ write.csv(sccSummary[names(rewardb::SCC_RESULT_COL_NAMES)], dataFileName, na = "", row.names = FALSE, fileEncoding = "ascii") })
+      suppressWarnings({ write.csv(sccSummary, dataFileName, na = "", row.names = FALSE, fileEncoding = "ascii") })
       return(dataFileName)
     } else {
       ParallelLogger::logInfo("No data to export, no file written")
