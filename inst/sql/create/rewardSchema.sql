@@ -40,6 +40,9 @@ CREATE TABLE @schema.result (
     max_tx_time NUMERIC
 );
 
+CREATE INDEX result_outcome_cohort_id_idx ON @schema.result (outcome_cohort_id,target_cohort_id);
+
+
 DROP TABLE IF EXISTS @schema.target;
 -- Maps to CDM drug concept. Only one drug concept may be associated with a target cohort
 CREATE TABLE @schema.target (
