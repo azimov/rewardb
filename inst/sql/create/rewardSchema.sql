@@ -83,6 +83,8 @@ DROP TABLE IF EXISTS @schema.outcome_concept;
 CREATE TABLE @schema.outcome_concept (
    outcome_cohort_id BIGINT NOT NULL,
    condition_concept_id BIGINT NOT NULL,
+   include_descendants INT DEFAULT 1,
+   is_excluded INT DEFAULT 0,
    PRIMARY KEY(outcome_cohort_id, condition_concept_id)
 );
 
@@ -94,7 +96,7 @@ CREATE TABLE @schema.cohort_type (
 
 INSERT INTO @schema.cohort_type (cohort_type_id, description) values (0, 'Incident of outcome with inpatient visit');
 INSERT INTO @schema.cohort_type (cohort_type_id, description) values (1, 'Incident of outcome with two diagnosis codes');
-INSERT INTO @schema.cohort_type (cohort_type_id, description) values (2, 'Incident of outcome with one diagnosis codes\');
+INSERT INTO @schema.cohort_type (cohort_type_id, description) values (2, 'Incident of outcome with one diagnosis codes');
 INSERT INTO @schema.cohort_type (cohort_type_id, description) values (3, 'ATLAS cohort');
 
 DROP TABLE IF EXISTS @schema.data_source;
