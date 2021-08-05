@@ -1,4 +1,6 @@
+options(java.parameters = c("-XX:+UseConcMarkSweepGC", "-Xmx8192m"))
 library(rewardb)
+
 config <- loadGlobalConfiguration("config/global-cfg.yml")
 
 cdmConfigPath <- "config/cdm/mdcr.yml"
