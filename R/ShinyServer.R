@@ -262,13 +262,11 @@ dashboardInstance <- function(input, output, session) {
     cemBackend <- CemConnector::CemWebApiBackend$new(apiUrl = appContext$cemConnectorApiUrl)
 
     ingredientConetpInput <- shiny::reactive({
-      browser()
       selected <- selectedExposureOutcome()
       model$getOutcomeConceptSet(selected$OUTCOME_COHORT_ID)
     })
 
     conditionConceptInput <- shiny::reactive({
-      browser()
       selected <- selectedExposureOutcome()
       model$getExposureConceptSet(selected$TARGET_COHORT_ID)
     })
