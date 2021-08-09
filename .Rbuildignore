@@ -7,3 +7,8 @@
 config
 app-cache
 .gitignore
+^export*$
+matrix\_summary\.csv
+rewardb\-references\.zip
+reward\-references\.zip
+extra$
