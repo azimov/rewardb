@@ -154,12 +154,16 @@ FROM @results_database_schema.outcome_cohort_definition
 
 INSERT INTO @schema.outcome_concept (
    outcome_cohort_id,
-   condition_concept_id
+   condition_concept_id,
+   is_excluded,
+   include_descendants
 )
 SELECT
     DISTINCT
     cohort_definition_id as outcome_cohort_id,
-    conceptset_id as condition_concept_id
+    conceptset_id as condition_concept_id,
+    0 as is_excluded,
+    1 as include_descendants
 FROM @results_database_schema.outcome_cohort_definition
 WHERE conceptset_id != 99999999
 {@outcome_cohort_ids_length} ? {AND cohort_definition_id in (@outcome_cohort_ids)};
@@ -167,12 +171,16 @@ WHERE conceptset_id != 99999999
 
 INSERT INTO @schema.outcome_concept (
    outcome_cohort_id,
-   condition_concept_id
+   condition_concept_id,
+   is_excluded,
+   include_descendants
 )
 SELECT
     DISTINCT
     cohort_definition_id as outcome_cohort_id,
-    concept_id as condition_concept_id
+    concept_id as condition_concept_id,
+    is_excluded,
+    include_descendants
 FROM @results_database_schema.atlas_outcome_concept
 {@outcome_cohort_ids_length} ? {WHERE cohort_definition_id in (@outcome_cohort_ids)};
 

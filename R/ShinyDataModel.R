@@ -353,6 +353,18 @@ DashboardDbModel$methods(
   getExposureOutcomeRows = function(exposure, outcome, calibrated) {
     sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
     queryDb(sql, treatment = exposure, outcome = outcome, calibrated = calibrated)
+  },
+
+  getOutcomeConceptSet = function(outcomeId) {
+    queryDb("SELECT *, condition_concept_id as concept_id from @schema.outcome_concept WHERE outcome_cohort_id = @outcome",
+            outcome = outcomeId,
+            snakeCaseToCamelCase = TRUE)
+  },
+
+  getExposureConceptSet = function(exposureId) {
+    queryDb("SELECT * from @schema.target_concept WHERE target_cohort_id = @exposure",
+            exposure = exposureId,
+            snakeCaseToCamelCase = TRUE)
   }
 )
 

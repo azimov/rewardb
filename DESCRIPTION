@@ -33,7 +33,8 @@ Depends:
     meta,
     dplyr,
     gt,
-    keyring
+    keyring,
+    CemConnector
 Suggests:
     doParallel,
     foreach,
@@ -44,6 +45,7 @@ Suggests:
     shinymanager
 Remotes:
     OHDSI/SelfControlledCohort,
+    OHDSI/CemConnector,
     OHDSI/ROhdsiWebApi
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr

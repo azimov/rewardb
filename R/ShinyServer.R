@@ -256,6 +256,29 @@ dashboardInstance <- function(input, output, session) {
   tabPanelTimeToOutcome <- tabPanel("Time to outcome", boxPlotModuleUi("timeToOutcome"))
   shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeToOutcome)
 
+  # Add cem panel if option is present
+  if (!is.null(appContext$cemConnectorApiUrl)) {
+    message("loading cem api")
+    cemBackend <- CemConnector::CemWebApiBackend$new(apiUrl = appContext$cemConnectorApiUrl)
+
+    ingredientConetpInput <- shiny::reactive({
+      selected <- selectedExposureOutcome()
+      model$getOutcomeConceptSet(selected$OUTCOME_COHORT_ID)
+    })
+
+    conditionConceptInput <- shiny::reactive({
+      selected <- selectedExposureOutcome()
+      model$getExposureConceptSet(selected$TARGET_COHORT_ID)
+    })
+    ceModuleServer <- CemConnector::ceExplorerModule("cemExplorer", # This ID should be unqiue and match the call to ceExplorerModuleUi
+                                                     cemBackend,
+                                                     ingredientConceptInput = ingredientConetpInput,
+                                                     conditionConceptInput = conditionConceptInput,
+                                                     siblingLookupLevelsInput = shiny::reactive({ 0 }))
+    cemPanel <- tabPanel("Evidence", CemConnector::ceExplorerModuleUi("cemExplorer"))
+    shiny::appendTab(inputId = "outcomeResultsTabs", cemPanel)
+
+  }
 }
 
 #' @title
