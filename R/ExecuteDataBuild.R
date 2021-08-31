@@ -39,6 +39,7 @@
 getSccResults <- function(config,
                           connection,
                           configId,
+                          analysisIds = NULL,
                           outcomeCohortIds = NULL,
                           targetCohortIds = NULL) {
 
@@ -46,9 +47,11 @@ getSccResults <- function(config,
     dir.create(configId)
   }
 
-  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc'"
+  getSccSettingsSql <- "SELECT * FROM @reference_schema.@analysis_setting WHERE type_id = 'scc'
+  {@analysis_ids != ''} ? {AND analysis_id IN (@analysis_ids)}"
   sccAnalysisSettings <- DatabaseConnector::renderTranslateQuerySql(connection,
                                                                     getSccSettingsSql,
+                                                                    analysis_ids = analysisIds,
                                                                     reference_schema = config$referenceSchema,
                                                                     analysis_setting = config$tables$analysisSetting)
 
@@ -106,8 +109,8 @@ getSccResults <- function(config,
 generateSccResults <- function(cdmConfigFilePath,
                                .createExposureCohorts = TRUE,
                                .createOutcomeCohorts = TRUE,
-                               .generateCohortStats = TRUE,
                                .runSCC = TRUE,
+                               analysisIds = NULL,
                                logFileName = "rbDataBuild.log") {
   logger <- .getLogger(logFileName)
   # load config
@@ -131,6 +134,7 @@ generateSccResults <- function(cdmConfigFilePath,
   if (.runSCC) {
     resultsFiles$scc_result <- getSccResults(config,
                                              connection,
+                                             analysisIds = analysisIds,
                                              configId = config$exportPath,
                                              outcomeCohortIds = NULL,
                                              targetCohortIds = NULL)
