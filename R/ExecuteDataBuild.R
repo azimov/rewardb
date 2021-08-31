@@ -4,6 +4,7 @@
 #' Get the logger and set where the log file is stored.
 #' @param logFileName path to log file
 #' @param .clearLoggers clear existing loggers and make new one
+
 .getLogger <- function(logFileName, .clearLoggers = TRUE) {
   if (.clearLoggers) {
     ParallelLogger::clearLoggers()
@@ -34,13 +35,12 @@
 #' @param targetCohortIds - vector of exposure cohort ids or NULL
 #' @param .generateCohortStats - generate time on treatment and time to outcome stats or not
 #' @returns list of zip file locations
-getSccResults <- function(
-  config,
-  connection,
-  configId,
-  outcomeCohortIds = NULL,
-  targetCohortIds = NULL
-) {
+
+getSccResults <- function(config,
+                          connection,
+                          configId,
+                          outcomeCohortIds = NULL,
+                          targetCohortIds = NULL) {
 
   if (!dir.exists(configId)) {
     dir.create(configId)
@@ -55,12 +55,24 @@ getSccResults <- function(
   filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
     analysisId <- analysis[["ANALYSIS_ID"]]
     ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
+    dataFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, ".csv"))
     analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
 
-    sccSummary <- runScc(connection, config, analysisId, analysisSettings, exposureIds = targetCohortIds, outcomeIds = outcomeCohortIds)
+    sccSummary <- data.frame()
+    if (!file.exists(dataFileName)) {
+      sccSummary <- runScc(connection,
+                           config,
+                           analysisId,
+                           analysisSettings,
+                           exposureIds = targetCohortIds,
+                           outcomeIds = outcomeCohortIds)
+    } else {
+      message(dataFileName, "already exists, remove to regenerate results")
+      ParallelLogger::logInfo(dataFileName, "already exists, remove to regenerate results")
+      return(dataFileName)
+    }
 
     if (nrow(sccSummary) > 0) {
-      dataFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, ".csv"))
       ParallelLogger::logInfo(paste("Writing file", dataFileName))
       readr::write_csv(sccSummary, dataFileName, quote = "none", eol = "\n", na = "")
       return(dataFileName)
@@ -90,14 +102,13 @@ getSccResults <- function(
 #' @param .runSCC perform self controlled cohort analysis and add results to the merged output db
 #' @param dataSources vector of strings or null - keys to cdm stores to use. By default all cdms are added for a given config file
 #' @export
-generateSccResults <- function(
-  cdmConfigFilePath,
-  .createExposureCohorts = TRUE,
-  .createOutcomeCohorts = TRUE,
-  .generateCohortStats = TRUE,
-  .runSCC = TRUE,
-  logFileName = "rbDataBuild.log"
-) {
+
+generateSccResults <- function(cdmConfigFilePath,
+                               .createExposureCohorts = TRUE,
+                               .createOutcomeCohorts = TRUE,
+                               .generateCohortStats = TRUE,
+                               .runSCC = TRUE,
+                               logFileName = "rbDataBuild.log") {
   logger <- .getLogger(logFileName)
   # load config
   config <- loadCdmConfiguration(cdmConfigFilePath)
@@ -142,6 +153,7 @@ generateSccResults <- function(
 #' @param .generateCohortStats - generate time on treatment and time to outcome stats or not
 #' @param getDbId - assumes CDM version is stored in the cdm_source table
 #' @param logFileName logfile used. If null is based on the passed configId
+
 runAdHocScc <- function(
   cdmConfigPath,
   configId,
