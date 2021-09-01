@@ -131,15 +131,10 @@ generateSccResults <- function(cdmConfigFilePath,
     ParallelLogger::logInfo("Creating outcome cohorts")
     createOutcomeCohorts(connection, config)
   }
-  sql <- "SELECT DISTINCT outcome_type FROM @reference_schema.@outcome_cohort_definition"
-  outcomeTypes <- DatabaseConnector::renderTranslateQuerySql(connection,
-                                                             sql,
-                                                             reference_schema = config$referenceSchema,
-                                                             outcome_cohort_definition = config$table$outcomeCohortDefinition)
-
+  outcomeTypes <- c(0,1,2,3)
   resultsFiles <- list(scc_result = c())
   if (.runSCC) {
-    for (oCohortType in outcomeTypes$OUTCOME_TYPE) {
+    for (oCohortType in outcomeTypes) {
       rFile <- getSccResults(config,
                              connection,
                              oCohortType = oCohortType,
