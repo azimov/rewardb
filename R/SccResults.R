@@ -9,14 +9,14 @@ getAllExposureIds <- function(connection, config) {
   return(queryRes$COHORT_DEFINITION_ID)
 }
 
-getAllOutcomeIds <- function(connection, config) {
-  sql <- "SELECT cohort_definition_id FROM @reference_schema.@outcome_cohort_definition"
-  queryRes <- DatabaseConnector::renderTranslateQuerySql(
-    connection,
-    sql,
-    reference_schema = config$referenceSchema,
-    outcome_cohort_definition = config$table$outcomeCohortDefinition
-  )
+getAllOutcomeIds <- function(connection, config, outcomeType = NULL) {
+  sql <- "SELECT cohort_definition_id FROM @reference_schema.@outcome_cohort_definition
+   {@outcome_type != ''} ? {WHERE outcome_type = @outcome_type}"
+  queryRes <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                         sql,
+                                                         reference_schema = config$referenceSchema,
+                                                         outcome_cohort_definition = config$table$outcomeCohortDefinition,
+                                                         outcome_type = outcomeType)
   return(queryRes$COHORT_DEFINITION_ID)
 }
 
@@ -58,23 +58,22 @@ SCC_RESULT_COL_NAMES <- c(
 )
 
 #' Peform SCC from self controlled cohort package with rewardbs settings
-runScc <- function(
-  connection,
-  config,
-  analysisId,
-  analysisSettings,
-  exposureIds = NULL,
-  outcomeIds = NULL,
-  removeNullValues = FALSE,
-  cores = parallel::detectCores() - 1
-) {
+runScc <- function(connection,
+                   config,
+                   analysisId,
+                   analysisSettings,
+                   exposureIds = NULL,
+                   outcomeIds = NULL,
+                   outcomeType = NULL,
+                   removeNullValues = FALSE,
+                   cores = parallel::detectCores() - 1) {
   ParallelLogger::logInfo(paste("Starting SCC analysis on", config$database))
 
   if (is.null(exposureIds)) {
     exposureIds <- getAllExposureIds(connection, config)
   }
   if (is.null(outcomeIds)) {
-    outcomeIds <- getAllOutcomeIds(connection, config)
+    outcomeIds <- getAllOutcomeIds(connection, config, outcomeType = outcomeType)
   }
 
   opts <- list(connectionDetails = config$connectionDetails,

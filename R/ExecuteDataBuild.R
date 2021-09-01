@@ -31,6 +31,7 @@
 #' generated.
 #' @param config - cdm config loaded with loadCdmConfig function
 #' @param connection DatabaseConnector connection
+#' @param oCohortType Integer for batch outcome set number
 #' @param outcomeCohortIds - vector of outcome cohort ids or NULL
 #' @param targetCohortIds - vector of exposure cohort ids or NULL
 #' @param .generateCohortStats - generate time on treatment and time to outcome stats or not
@@ -39,6 +40,7 @@
 getSccResults <- function(config,
                           connection,
                           configId,
+                          oCohortType = NULL,
                           analysisIds = NULL,
                           outcomeCohortIds = NULL,
                           targetCohortIds = NULL) {
@@ -57,8 +59,9 @@ getSccResults <- function(config,
 
   filesGenerated <- apply(sccAnalysisSettings, 1, function(analysis) {
     analysisId <- analysis[["ANALYSIS_ID"]]
-    ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId))
-    dataFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, ".csv"))
+    ParallelLogger::logInfo(paste("Generating scc results with setting id", analysisId, "and outcome type", oCohortType))
+    dataFileName <- file.path(configId, paste0("rb-results-", config$database, "-aid-", analysisId, "-outcotype-",
+                                               oCohortType, ".csv"))
     analysisSettings <- RJSONIO::fromJSON(rawToChar(base64enc::base64decode(analysis["OPTIONS"])))
 
     sccSummary <- data.frame()
@@ -67,6 +70,7 @@ getSccResults <- function(config,
                            config,
                            analysisId,
                            analysisSettings,
+                           outcomeType = oCohortType,
                            exposureIds = targetCohortIds,
                            outcomeIds = outcomeCohortIds)
     } else {
@@ -127,17 +131,24 @@ generateSccResults <- function(cdmConfigFilePath,
     ParallelLogger::logInfo("Creating outcome cohorts")
     createOutcomeCohorts(connection, config)
   }
+  sql <- "SELECT DISTINCT outcome_type FROM @reference_schema.@outcome_cohort_definition"
+  outcomeTypes <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                             sql,
+                                                             reference_schema = config$referenceSchema,
+                                                             outcome_cohort_definition = config$table$outcomeCohortDefinition)
 
-  resultsFiles <- list(
-    scc_result = c()
-  )
+  resultsFiles <- list(scc_result = c())
   if (.runSCC) {
-    resultsFiles$scc_result <- getSccResults(config,
-                                             connection,
-                                             analysisIds = analysisIds,
-                                             configId = config$exportPath,
-                                             outcomeCohortIds = NULL,
-                                             targetCohortIds = NULL)
+    for (oCohortType in outcomeTypes$OUTCOME_TYPE) {
+      rFile <- getSccResults(config,
+                             connection,
+                             oCohortType = oCohortType,
+                             analysisIds = analysisIds,
+                             configId = config$exportPath,
+                             outcomeCohortIds = NULL,
+                             targetCohortIds = NULL)
+      resultsFiles$scc_result <- rbind(resultsFiles$scc_result, rFile)
+    }
   }
 
   ParallelLogger::unregisterLogger(logger)
