@@ -37,7 +37,7 @@ inner join
   and c1.domain_id = 'Condition'
 ) t1 on ca1.ancestor_concept_id = t1.concept_id
 inner join @reference_schema.@outcome_cohort_definition ocr ON (
-    ocr.conceptset_id = ca1.ancestor_concept_id and ocr.outcome_type = 1
+    ocr.conceptset_id = ca1.ancestor_concept_id and ocr.outcome_type = 2
 )
 inner join #cohorts_to_compute coc ON coc.cohort_definition_id = ocr.cohort_definition_id
 
@@ -70,7 +70,7 @@ from
     , ca1.ancestor_concept_id
 ) t1
 inner join @reference_schema.@outcome_cohort_definition ocr ON (
-    ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 1
+    ocr.conceptset_id = t1.ancestor_concept_id AND ocr.outcome_type = 2
 )
 inner join #cohorts_to_compute coc ON ocr.cohort_definition_id = coc.cohort_definition_id
 inner join
