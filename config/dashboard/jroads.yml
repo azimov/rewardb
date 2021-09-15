@@ -15,3 +15,5 @@ useExposureControls: False
 dataSources: [10, 11, 12, 13]
 cemEvidenceFiles:
     4618: "extra/controls/domperidone_controls_export.csv"
+
+cemConnectorApiUrl: "http://cem.ohdsi.org:8080/"
