@@ -1,4 +1,3 @@
-options(java.parameters = c("-XX:+UseConcMarkSweepGC", "-Xmx8192m"))
 library(rewardb)
 
 config <- loadGlobalConfiguration("config/global-cfg.yml")
@@ -14,7 +13,7 @@ createCohorts(connection, cdmConfig)
 createOutcomeCohorts(connection, cdmConfig)
 DatabaseConnector::disconnect(connection)
 
-resultsFiles <- generateSccResults(cdmConfigPath, .createExposureCohorts = FALSE, .createOutcomeCohorts = FALSE)
+resultsFiles <- generateSccResults(cdmConfigPath, .createExposureCohorts = FALSE, .createOutcomeCohorts = FALSE, analysisIds = c(1))
 # Copy files
 for (table in names(resultsFiles)) {
   for (file in resultsFiles[[table]]) {

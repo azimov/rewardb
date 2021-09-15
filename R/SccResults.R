@@ -86,6 +86,7 @@ runScc <- function(connection,
                outcomeDatabaseSchema = config$resultSchema,
                outcomeTable = config$tables$outcomeCohort,
                computeThreads = cores,
+               countTableName = paste0(config$resultSchema, ".scc_counts_a", analysisId, "_o", outcomeType),
                computeTarDistribution = TRUE)
   args <- c(analysisSettings, opts)
 
