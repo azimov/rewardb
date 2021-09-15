@@ -2,7 +2,7 @@ sourceId: 11
 database: truven_ccae
 name: "IBM CCAE"
 
-exportPath: "export_ccae"
+exportPath: "D:/reward_results/export_ccae"
 referencePath: "reference_files"
 
 connectionDetails:

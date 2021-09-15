@@ -2,7 +2,7 @@ sourceId: 13
 database: truven_mdcr
 name: "IBM MDCR"
 
-exportPath: "export_mcdr"
+exportPath: "D:/reward_results/export_mcdr"
 referencePath: "reference_files"
 
 connectionDetails:
