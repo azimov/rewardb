@@ -20,8 +20,14 @@ outcomeNullDistsProc <- function(exposureIds, config, analysisId, minCohortSize 
                                       targetCohortId = nullData$targetCohortId))
 
   getNullDist <- function(x) {
-    oType <- ifelse(x["outcomeType"] == 1, 1, 0)
-    negatives <- nullData[nullData$sourceId == x["sourceId"] & nullData$exposureId == x["exposureId"] & nullData$outcomeType == oType,]
+    oType <- switch(x["outcomeType"],
+                    "3" = 0,
+                    "2" = 2,
+                    "1" = 1,
+                    "0" = 0)
+    negatives <- nullData[nullData$sourceId == x["sourceId"] &
+                            nullData$exposureId == x["exposureId"] &
+                            nullData$outcomeType == oType,]
     nullDist <- EmpiricalCalibration::fitNull(logRr = log(negatives$rr), seLogRr = negatives$seLogRr)
     absSysError <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(nullDist)
     results <- data.frame(sourceId = x["sourceId"],
