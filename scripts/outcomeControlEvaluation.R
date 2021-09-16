@@ -12,13 +12,13 @@ data("ohdsiNegativeControls", package = 'MethodEvaluation')
 ohdsiNegativeControls <- ohdsiNegativeControls[ohdsiNegativeControls$type != "Exposure control",]
 
 exposureOutcomePairs <- data.frame(exposureConceptId = ohdsiNegativeControls$targetId, outcomeConceptId = ohdsiNegativeControls$outcomeId)
-manualControlData <- getConcetptCohortData(connection, config, exposureOutcomePairs)
-saveRDS(manualControlData, "extra/outcomeControlEvaluationManualControlsDt.rds")
+#manualControlData <- getConcetptCohortData(connection, config, exposureOutcomePairs)
+#saveRDS(manualControlData, "extra/outcomeControlEvaluationManualControlsDt.rds")
 manualControlData <- readRDS("extra/outcomeControlEvaluationManualControlsDt.rds")
 
 automatedExposureOutcomePairs <- getOutcomeControlConcepts(connection, config, unique(exposureOutcomePairs$exposureConceptId))
-automatedControlsData <- getConcetptCohortData(connection, config, automatedExposureOutcomePairs)
-saveRDS(automatedControlsData, "extra/outcomeControlEvaluationAutomatedControlsDt.rds")
+#automatedControlsData <- getConcetptCohortData(connection, config, automatedExposureOutcomePairs)
+#saveRDS(automatedControlsData, "extra/outcomeControlEvaluationAutomatedControlsDt.rds")
 automatedControlsData <- readRDS("extra/outcomeControlEvaluationAutomatedControlsDt.rds")
 automatedControlsData <- automatedControlsData[automatedControlsData$tCases + automatedControlsData$cCases > 10, ]
 
@@ -84,7 +84,7 @@ for (sourceId in c(10, 11, 12, 13)) {
 }
 
 saveRDS(results, "extra/outcomeControlEvaluationTable.rds")
-
+results <- readRDS("extra/outcomeControlEvaluationTable.rds")
 
 barDt <- rbind(
   data.frame(
