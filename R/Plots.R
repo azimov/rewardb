@@ -24,6 +24,7 @@ forestPlot <- function(table) {
     ggplot2::geom_errorbarh(height = 0.1) +
     ggplot2::geom_vline(xintercept = 1.0, linetype = 2) +
     ggplot2::ylab("Database") +
+    ggplot2::scale_x_continuous(trans = "log") +
     ggplot2::xlab("Relative Risk") +
     ggplot2::theme(text = ggplot2::element_text(size = 11), legend.position = "none")
   return(plot)

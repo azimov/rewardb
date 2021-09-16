@@ -1,0 +1,10 @@
+name: Parkinsons
+short_name: parkinsons_sept_2021
+description: "Reward for dementia and Parkinsons's (September 2021)"
+outcome_concept_ids: [381270, 37399497, 37395785, 37396747]
+custom_outcome_cohort_ids: [1293, 1274, 1268, 1261]
+target_concept_ids: ~
+useExposureControls: True
+dataSources: [10, 11, 12, 13, 15]
+cemConnectionDetails:
+  apiUrl: http://cem.ohdsi.org:8080
