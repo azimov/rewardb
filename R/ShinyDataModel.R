@@ -140,8 +140,9 @@ DbModel$methods(
             max_time_to_outcome as max
 
           FROM @schema.@table_name tts
-          LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
+          INNER JOIN @schema.data_source ds ON tts.source_id = ds.source_id
           WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome
+          AND mean_time_to_outcome is not NULL
           {@source_ids != ''} ? {AND ds.source_id IN (@source_ids)}",
             table_name = tableName,
             treatment = treatment,
@@ -163,8 +164,9 @@ DbModel$methods(
         p90_tx_time as p90,
         max_tx_time as max
       FROM @schema.@table_name tts
-      LEFT JOIN @schema.data_source ds ON tts.source_id = ds.source_id
+      INNER JOIN @schema.data_source ds ON tts.source_id = ds.source_id
       WHERE target_cohort_id = @treatment AND outcome_cohort_id = @outcome
+      AND mean_tx_time is not NULL
       {@source_ids != ''} ? {AND ds.source_id IN (@source_ids)}",
             table_name = tableName,
             treatment = treatment,
