@@ -28,7 +28,7 @@ dashboardUi <- function(request) {
         ),
         multiple = TRUE
       ),
-      checkboxInput("excludeIndications", "Exclude any mapped associations", TRUE),
+      checkboxInput("excludeIndications", "Attempt to exclude any mapped associations", FALSE),
       p("Mapped assocations includes drug label indications and contra-indications, spontaneous reports, and MESH literature searches."),
       width = 6
     ),

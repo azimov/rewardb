@@ -181,7 +181,7 @@ dashboardInstance <- function(input, output, session) {
 
   output$treatmentOutcomeStr <- renderText({
     s <- selectedExposureOutcome()
-    return(paste(s$TARGET_COHORT_NAME, "for", s$OUTCOME_COHORT_NAME))r
+    return(paste(s$TARGET_COHORT_NAME, "for", s$OUTCOME_COHORT_NAME))
   })
 
   output$downloadData <- downloadHandler(
