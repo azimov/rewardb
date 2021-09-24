@@ -93,12 +93,6 @@ computeSccResults <- function(cdmConfig,
                                                                     reference_schema = cdmConfig$referenceSchema,
                                                                     analysis_setting = cdmConfig$tables$analysisSetting)
 
-  if (cdmConfig$performActiveDataTransfer) {
-    # Uses closures to ensure connection is killed properly
-    rewardConnection <- DatabaseConnector::connect(globalConfig$connectionDetails)
-    on.exit(DatabaseConnector::disconnect(rewardConnection), add = TRUE)
-  }
-
   apply(sccAnalysisSettings, 1, function(analysis) {
     analysisId <- analysis[["ANALYSIS_ID"]]
 
@@ -121,22 +115,18 @@ computeSccResults <- function(cdmConfig,
           tableName <- ifelse(is.null(globalConfig$sccResultTransferTable),
                               "scc_result",
                               globalConfig$sccResultTransferTable)
+          fileName <- paste0("scc-results-", cdmConfig$database, "-aid-", analysisId, "-position-", position, ".csv")
+          dataFileName <- file.path(exportPath, fileName)
+          ParallelLogger::logInfo("Writing ", dataFileName)
+          # Note, entire data set is not written to a single file!
+          vroom::vroom_write(sccBatch, dataFileName, delim = ",", na = "", append = FALSE)
           tryCatch({
-            DatabaseConnector::insertTable(connection = rewardConnection,
-                                           databaseSchema = globalConfig$rewardbResultsSchema,
-                                           tableName = tableName,
-                                           data = sccBatch,
-                                           createTable = FALSE,
-                                           dropTableIfExists = FALSE)
+            pgCopy(globalConfig$connectionDetails, dataFileName, config$rewardbResultsSchema, tableName)
+            unlink(dataFileName)
           }, error = function(error, ...) {
-            ParallelLogger::logError("Error committing batch to database, writing data to disk AID:",
+            ParallelLogger::logError("Error committing batch to database, writing data to disk AID: ",
                                      analysisId,
-                                     "PID:", position)
-            fileName <- paste0("scc-results-", cdmConfig$database, "-aid-", analysisId, "-position-", position, ".csv")
-            dataFileName <- file.path(exportPath, fileName)
-            ParallelLogger::logInfo("Writing ", dataFileName)
-            # Note, entire data set is not written to a single file!
-            vroom::vroom_write(sccBatch, dataFileName, delim = ",", na = "", append = FALSE)
+                                     "PID: ", position)
             ParallelLogger::logError(error)
           })
           return(sccBatch)

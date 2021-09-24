@@ -60,7 +60,7 @@ pgCopyDataFrame <- function(connectionDetails, data, schema, tableName, .echoCom
   dt <- do.call(data.frame, lapply(data, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
   scipen = getOption("scipen")
   options(scipen = 999)
-  write.csv(dt, file = csvFileName, na = "", row.names = FALSE, fileEncoding = "UTF-8")
+  vroom::vroom_write(dt, csvFileName, na = "")
   options(scipen = scipen)
   pgCopy(connectionDetails = connectionDetails, csvFileName = csvFileName, schema = schema, tableName = tableName, .echoCommand = .echoCommand)
 }
