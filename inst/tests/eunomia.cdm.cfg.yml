@@ -2,6 +2,8 @@ sourceId: 0
 database: eunomia
 name: eunomia
 
+performActiveDataTransfer: TRUE
+
 exportPath: "export"
 referencePath: "reference_files"
 
@@ -19,7 +21,6 @@ referenceSchema: "rewardb_reference"
 cdmSchema: "eunomia"
 vocabularySchema: "eunomia"
 # drugEraSchema: "reward"
-
 
 tables:
   outcomeCohort: "rb_outcome_cohort"
