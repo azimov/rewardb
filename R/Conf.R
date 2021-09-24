@@ -72,7 +72,8 @@ loadCdmConfiguration <- function(cdmConfigPath) {
   defaults <- list(
     passwordEnvironmentVariable = "UNSET_DB_PASS_VAR",
     useSecurePassword = FALSE,
-    bulkUpload = FALSE
+    bulkUpload = FALSE,
+    performActiveDataTransfer = FALSE
   )
   config <- .setDefaultOptions(yaml::read_yaml(cdmConfigPath), defaults)
 

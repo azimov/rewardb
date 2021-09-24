@@ -53,14 +53,16 @@ fullDbSetup <- function() {
   registerCdm(connection, config, cdmConfig)
   exportReferenceTables(config)
   importReferenceTables(cdmConfig, zipFilePath)
+
 }
 
 runDataBuild <- function() {
-  resultsFiles <- generateSccResults(cdmConfigPath)
-  for (table in names(resultsFiles)) {
-    for (file in resultsFiles[[table]]) {
-      pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
-    }
+  createCustomDrugEras(cdmConfigPath)
+  createCohorts(connection, cdmConfig)
+  createOutcomeCohorts(connection, cdmConfig)
+  generateSccResults(cdmConfigPath, config)
+  for (file in Sys.glob(paste0(cdmConfig$exportPath, "/*.csv"))) {
+    pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, "scc_result")
   }
 }
 

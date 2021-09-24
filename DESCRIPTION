@@ -8,6 +8,7 @@ Description: Package for REal-World Assessment and Research of Drug Performance 
 License: Copyright Janssen Research & Development 2020 all rights reserved
 Depends:
     R (>= 4.0.0),
+    SelfControlledCohort (>= 1.5.2),
     magrittr,
     DT,
     shiny,
@@ -44,7 +45,7 @@ Suggests:
     rmarkdown,
     shinymanager
 Remotes:
-    OHDSI/SelfControlledCohort,
+    OHDSI/SelfControlledCohort@batch_read,
     OHDSI/CemConnector,
     OHDSI/ROhdsiWebApi
 RoxygenNote: 7.1.1

@@ -20,100 +20,38 @@ getAllOutcomeIds <- function(connection, config, outcomeType = NULL) {
   return(queryRes$COHORT_DEFINITION_ID)
 }
 
-SCC_RESULT_COL_NAMES <- c(
-  "source_id" = "source_id",
-  "analysis_id" = "analysis_id",
-  "target_cohort_id" = "exposureId",
-  "outcome_cohort_id" = "outcomeId",
-  "t_at_risk" = "numPersons",
-  "num_exposures" = "numExposures",
-  "t_pt" = "timeAtRiskExposed",
-  "t_cases" = "numOutcomesExposed",
-  "c_cases" = "numOutcomesUnexposed",
-  "c_pt" = "timeAtRiskUnexposed",
-  "rr" = "irr",
-  "lb_95" = "irrLb95",
-  "ub_95" = "irrUb95",
-  "se_log_rr" = "seLogRr",
-  "log_rr" = "logRr",
-  "p_value" = "p",
-  "mean_tx_time" = "meanTxTime",
-  "sd_tx_time" = "sdTxTime",
-  "min_tx_time" = "minTxTime",
-  "max_tx_time" = "maxTxTime",
-  "median_tx_time" = "medianTxTime",
-  "p10_tx_time" = "p10TxTime",
-  "p25_tx_time" = "p25TxTime",
-  "p75_tx_time" = "p75TxTime",
-  "p90_tx_time" = "p90TxTime",
-  "mean_time_to_outcome" = "meanTimeToOutcome",
-  "sd_time_to_outcome" = "sdTimeToOutcome",
-  "min_time_to_outcome" = "minTimeToOutcome",
-  "max_time_to_outcome" = "maxTimeToOutcome",
-  "median_time_to_outcome" = "medianTimeToOutcome",
-  "p10_time_to_outcome" = "p10TimeToOutcome",
-  "p25_time_to_outcome" = "p25TimeToOutcome",
-  "p75_time_to_outcome" = "p75TimeToOutcome",
-  "p90_time_to_outcome" = "p90TimeToOutcome"
-)
-
 #' Peform SCC from self controlled cohort package with rewardbs settings
-runScc <- function(connection,
-                   config,
+runScc <- function(postProcessFunction,
+                   postProcessArgs,
+                   cdmConfig,
+                   globalConfig,
                    analysisId,
                    analysisSettings,
                    exposureIds = NULL,
                    outcomeIds = NULL,
-                   outcomeType = NULL,
-                   removeNullValues = FALSE,
                    cores = parallel::detectCores() - 1) {
-  ParallelLogger::logInfo(paste("Starting SCC analysis on", config$database))
+  ParallelLogger::logInfo(paste("Starting SCC analysis on", cdmConfig$database))
 
   if (is.null(exposureIds)) {
-    exposureIds <- getAllExposureIds(connection, config)
+    exposureIds <- ""
   }
   if (is.null(outcomeIds)) {
-    outcomeIds <- getAllOutcomeIds(connection, config, outcomeType = outcomeType)
+    outcomeIds <- ""
   }
-
-  opts <- list(connectionDetails = config$connectionDetails,
-               cdmDatabaseSchema = config$cdmSchema,
+  opts <- list(connectionDetails = cdmConfig$connectionDetails,
+               cdmDatabaseSchema = cdmConfig$cdmSchema,
                cdmVersion = 5,
                exposureIds = exposureIds,
                outcomeIds = outcomeIds,
-               exposureDatabaseSchema = config$resultSchema,
-               exposureTable = config$tables$cohort,
-               outcomeDatabaseSchema = config$resultSchema,
-               outcomeTable = config$tables$outcomeCohort,
+               exposureDatabaseSchema = cdmConfig$resultSchema,
+               exposureTable = cdmConfig$tables$cohort,
+               outcomeDatabaseSchema = cdmConfig$resultSchema,
+               outcomeTable = cdmConfig$tables$outcomeCohort,
                computeThreads = cores,
-               countTableName = paste0(config$resultSchema, ".scc_counts_a", analysisId, "_o", outcomeType),
+               postProcessFunction = postProcessFunction,
+               postProcessArgs = postProcessArgs,
                computeTarDistribution = TRUE)
   args <- c(analysisSettings, opts)
-
-  sccResult <- do.call(SelfControlledCohort::runSelfControlledCohort, args)
-
-  ParallelLogger::logInfo(paste("Completed SCC for", config$database))
-  sccSummary <- base::summary(sccResult)
-
-  if (nrow(sccSummary) == 0) {
-    ParallelLogger::logWarn("No results found with scc settings. Check cohorts were run")
-
-  } else {
-    sccSummary$p <- EmpiricalCalibration::computeTraditionalP(sccSummary$logRr, sccSummary$seLogRr)
-    sccSummary <- base::do.call(data.frame, lapply(sccSummary, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
-
-    if (removeNullValues) {
-      sscSummary <- sccSummary[sccSummary$numOutcomesExposed > 0,]
-    }
-
-    sccSummary$source_id <- config$sourceId
-    sccSummary$analysis_id <- as.integer(analysisId)
-    sccSummary$c_at_risk <- sccSummary$numPersons
-
-    sccSummary <- dplyr::rename(sccSummary, SCC_RESULT_COL_NAMES)
-  }
-
-  ParallelLogger::logInfo(paste("Generated results for SCC", config$database))
-
-  return(sccSummary)
+  do.call(SelfControlledCohort::runSelfControlledCohort, args)
+  ParallelLogger::logInfo(paste("Completed SCC for", cdmConfig$database))
 }

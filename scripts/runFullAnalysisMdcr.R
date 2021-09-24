@@ -13,10 +13,8 @@ createCohorts(connection, cdmConfig)
 createOutcomeCohorts(connection, cdmConfig)
 DatabaseConnector::disconnect(connection)
 
-resultsFiles <- generateSccResults(cdmConfigPath, .createExposureCohorts = FALSE, .createOutcomeCohorts = FALSE, analysisIds = c(1))
-# Copy files
-for (table in names(resultsFiles)) {
-  for (file in resultsFiles[[table]]) {
-    pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, table, fileEncoding = "UTF-8-BOM")
-  }
+generateSccResults(cdmConfigPath, config)
+
+for (file in Sys.glob(paste0(cdmConfig$exportPath, "/*.csv"))) {
+  pgCopy(config$connectionDetails, file, config$rewardbResultsSchema, "scc_result")
 }
