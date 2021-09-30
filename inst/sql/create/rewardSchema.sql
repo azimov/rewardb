@@ -84,8 +84,7 @@ CREATE TABLE @schema.outcome_concept (
    outcome_cohort_id BIGINT NOT NULL,
    condition_concept_id BIGINT NOT NULL,
    include_descendants INT DEFAULT 1,
-   is_excluded INT DEFAULT 0,
-   PRIMARY KEY(outcome_cohort_id, condition_concept_id)
+   is_excluded INT DEFAULT 0
 );
 
 DROP TABLE IF EXISTS @schema.cohort_type;

@@ -32,10 +32,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
       if (useExposureControls) {
         negatives <- model$getExposureControls(outcomeIds = outcome, sourceIds = sourceIds)
       } else {
-        otype <- if (model$getOutcomeType(outcome) == 1) 1 else 0
         negatives <- model$getOutcomeControls(targetIds = treatment, sourceIds = sourceIds)
-        # Subset for outcome types
-        negatives <- negatives[negatives$OUTCOME_TYPE == otype,]
       }
       return(negatives)
     }
@@ -50,15 +47,18 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
         for (source in unique(negatives$SOURCE_ID)) {
           subset <- negatives[negatives$SOURCE_ID == source,]
           null <- EmpiricalCalibration::fitNull(log(subset$RR), subset$SE_LOG_RR)
+          systematicError <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(null)
           df <- data.frame(
             "SOURCE_ID" = source,
-            "Controls used" = nrow(subset),
+            "n" = nrow(subset),
             "mean" = round(exp(null[["mean"]]), 3),
-            "sd" = round(exp(null[["sd"]]), 3)
+            "sd" = round(exp(null[["sd"]]), 3),
+            "EASE" = round(systematicError, 3)
           )
           nulls <- rbind(nulls, df)
         }
-        nulls <- dplyr::inner_join(dataSources, nulls, by = "SOURCE_ID")
+        if (nrow(nulls))
+          nulls <- dplyr::inner_join(dataSources, nulls, by = "SOURCE_ID")
       }
       return(nulls)
     })
@@ -69,8 +69,8 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
         null,
         options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0)))),
         rownames = FALSE,
-        colnames = c("Source", "N controls", "Mean", "Stdev"),
-        caption = "Table: null distribution mean and standaard deviation by data source. Select rows to filter in above plot."
+        colnames = c("Source", "N controls", "Mean", "Stdev", "EASE"),
+        caption = "Table: null distribution mean, standaard deviation and Expected Absolute Systematic Error by data source. Select rows to filter in above plot."
       )
       return(output)
     })

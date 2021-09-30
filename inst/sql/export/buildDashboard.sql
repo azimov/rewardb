@@ -1,3 +1,5 @@
+{DEFAULT @analysid_ids = 1}
+
 -- Results
 INSERT INTO @schema.result
 (
@@ -75,7 +77,7 @@ SELECT
   0 as calibrated
   FROM @results_database_schema.scc_result scca
   WHERE scca.rr IS NOT NULL
-  AND scca.analysis_id = 1
+  AND scca.analysis_id IN (@analysid_ids)
   {@source_ids != ''} ? {AND scca.source_id in (@source_ids)}
   {@target_cohort_ids_length} ? {AND target_cohort_id in (@target_cohort_ids)}
   {@outcome_cohort_ids_length} ? {AND outcome_cohort_id in (@outcome_cohort_ids)};
@@ -107,14 +109,7 @@ INSERT INTO @schema.target_concept (
  from @results_database_schema.cohort_definition cd
  INNER JOIN @results_database_schema.concept_set_definition csd ON cd.drug_conceptset_id = csd.conceptset_id
  {@target_cohort_ids_length} ? {WHERE cd.cohort_definition_id in (@target_cohort_ids)}
-;
-
-INSERT INTO @schema.target_concept (
-    target_cohort_id,
-    concept_id,
-    is_excluded,
-    include_descendants
-)
+UNION
  SELECT
     cohort_definition_id as target_cohort_id,
     concept_id,
@@ -122,16 +117,8 @@ INSERT INTO @schema.target_concept (
     include_descendants
  from @results_database_schema.custom_exposure_concept
  {@target_cohort_ids_length} ? {WHERE cohort_definition_id in (@target_cohort_ids)}
-;
-
-INSERT INTO @schema.target_concept (
-    target_cohort_id,
-    concept_id,
-    is_excluded,
-    include_descendants
-)
+UNION
 SELECT
-    DISTINCT
     cohort_definition_id as target_cohort_id,
     concept_id,
     is_excluded,
@@ -159,7 +146,14 @@ INSERT INTO @schema.outcome_concept (
    include_descendants
 )
 SELECT
-    DISTINCT
+    cohort_definition_id as outcome_cohort_id,
+    concept_id as condition_concept_id,
+    is_excluded,
+    include_descendants
+FROM @results_database_schema.atlas_outcome_concept
+{@outcome_cohort_ids_length} ? {WHERE cohort_definition_id in (@outcome_cohort_ids)}
+UNION
+SELECT
     cohort_definition_id as outcome_cohort_id,
     conceptset_id as condition_concept_id,
     0 as is_excluded,
@@ -168,21 +162,6 @@ FROM @results_database_schema.outcome_cohort_definition
 WHERE conceptset_id != 99999999
 {@outcome_cohort_ids_length} ? {AND cohort_definition_id in (@outcome_cohort_ids)};
 
-
-INSERT INTO @schema.outcome_concept (
-   outcome_cohort_id,
-   condition_concept_id,
-   is_excluded,
-   include_descendants
-)
-SELECT
-    DISTINCT
-    cohort_definition_id as outcome_cohort_id,
-    concept_id as condition_concept_id,
-    is_excluded,
-    include_descendants
-FROM @results_database_schema.atlas_outcome_concept
-{@outcome_cohort_ids_length} ? {WHERE cohort_definition_id in (@outcome_cohort_ids)};
 
 INSERT INTO @schema.target_exposure_class (
     target_cohort_id,

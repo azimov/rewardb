@@ -46,12 +46,6 @@ buildPgDatabase <- function(configFilePath = "config/global-cfg.yml", recreateCe
 
 }
 
-importCemSummary <- function(summaryFilePath, configFilePath = "config/global-cfg.yml") {
-  checkmate::assert_file_exists(summaryFilePath)
-  config <- loadGlobalConfiguration(configFilePath)
-  pgCopy(connectionDetails = config$connectionDetails, summaryFilePath, "cem", "matrix_summary")
-}
-
 addAnalysisSetting <- function(connection, config, name, typeId, description, options) {
   jsonStr <- RJSONIO::toJSON(options)
   optionsEnc <- base64enc::base64encode(charToRaw(jsonStr))

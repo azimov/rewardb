@@ -175,11 +175,11 @@ DbModel$methods(
   },
 
   getDataSourceInfo = function() {
-    queryDb(" SELECT * from @schema.data_source WHERE source_id > 0", snakeCaseToCamelCase = TRUE)
+    cacheQuery(paste0(schemaName, "dataSourceInfo"), " SELECT * from @schema.data_source WHERE source_id > 0", snakeCaseToCamelCase = TRUE)
   },
 
   getDataSources = function() {
-    queryDb("SELECT source_id, source_name FROM @schema.data_source;")
+    cacheQuery(paste0(schemaName, "dataSources"), "SELECT source_id, source_name FROM @schema.data_source;")
   }
 
 )
@@ -207,7 +207,7 @@ DashboardDbModel$methods(
     return(queryDb(sql, outcome_cohort_ids = outcomeIds, min_cohort_size = minCohortSize))
   },
 
-  getOutcomeControls = function(targetIds, minCohortSize = 10, sourceIds = NULL) {
+  getOutcomeControls = function(targetIds, sourceIds = NULL, minCohortSize = 5, outcomeTypes = c(0, 1, 2), analysisId = 1) {
     sql <- "
       SELECT r.*, o.type_id as outcome_type
       FROM @schema.result r
@@ -217,9 +217,17 @@ DashboardDbModel$methods(
       INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
       AND r.calibrated = 0
       AND T_CASES >= @min_cohort_size
-      AND r.target_cohort_id IN (@target_cohort_ids)
+      AND o.type_id IN (@outcome_types)
+      AND r.analysis_id IN (@analysis_id)
+      {@source_ids != ''} ? {AND r.source_id IN (@source_ids)}
+      {@exposure_ids != ''} ? {AND r.target_cohort_id IN (@exposure_ids)}
     "
-    return(queryDb(sql, min_cohort_size = minCohortSize, target_cohort_ids = targetIds))
+    return(queryDb(sql,
+                   exposure_ids = targetIds,
+                   source_ids = sourceIds,
+                   analysis_id = analysisId,
+                   outcome_types = outcomeTypes,
+                   min_cohort_size = minCohortSize))
   },
 
   getOutcomeCohortNames = function() {
@@ -244,7 +252,6 @@ DashboardDbModel$methods(
                                           filterByMeta = FALSE,
                                           outcomeCohortTypes = c(0, 1, 2),
                                           calibrated = TRUE,
-                                          excludeIndications = TRUE,
                                           benefitCount = 1,
                                           riskCount = 0,
                                           targetCohortNames = NULL,
@@ -263,7 +270,6 @@ DashboardDbModel$methods(
       risk = riskThreshold,
       benefit = benefitThreshold,
       p_cut_value = pValueCut,
-      exclude_indications = excludeIndications,
       filter_outcome_types = filterOutcomes,
       outcome_types = outcomeCohortTypes,
       risk_count = riskCount,
@@ -358,14 +364,28 @@ DashboardDbModel$methods(
   },
 
   getOutcomeConceptSet = function(outcomeId) {
-    queryDb("SELECT *, condition_concept_id as concept_id from @schema.outcome_concept WHERE outcome_cohort_id = @outcome",
+    queryDb("SELECT c.concept_name,
+             oc.condition_concept_id as concept_id,
+             include_descendants,
+             is_excluded
+             from @schema.outcome_concept oc
+             inner join @vocabulary_schema.concept c on c.concept_id = oc.condition_concept_id
+             WHERE outcome_cohort_id = @outcome",
             outcome = outcomeId,
+            vocabulary_schema = config$globalConfig$vocabularySchema,
             snakeCaseToCamelCase = TRUE)
   },
 
   getExposureConceptSet = function(exposureId) {
-    queryDb("SELECT * from @schema.target_concept WHERE target_cohort_id = @exposure",
+    queryDb("SELECT c.concept_name,
+             tc.concept_id,
+             include_descendants,
+             is_excluded
+             from @schema.target_concept tc
+             inner join @vocabulary_schema.concept c on c.concept_id = tc.concept_id
+             WHERE target_cohort_id = @exposure",
             exposure = exposureId,
+            vocabulary_schema = config$globalConfig$vocabularySchema,
             snakeCaseToCamelCase = TRUE)
   }
 )

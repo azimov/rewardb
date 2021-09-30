@@ -67,11 +67,6 @@ FROM @schema.result fr
 
     INNER JOIN @schema.target t ON t.target_cohort_id = fr.target_cohort_id
     INNER JOIN @schema.outcome o ON o.outcome_cohort_id = fr.outcome_cohort_id
-    {@exclude_indications} ? {
-    LEFT JOIN @schema.positive_indication pi ON (
-        pi.outcome_cohort_id = fr.outcome_cohort_id AND pi.target_cohort_id = fr.target_cohort_id
-    )
-    }
 
     LEFT JOIN @schema.negative_control nc ON (
         nc.outcome_cohort_id = fr.outcome_cohort_id AND nc.target_cohort_id = fr.target_cohort_id
@@ -95,7 +90,6 @@ FROM @schema.result fr
     }
     WHERE fr.calibrated = @calibrated
 
-    {@exclude_indications} ? {AND pi.outcome_cohort_id IS NULL}
     {@outcome_cohort_name_length} ? {AND o.COHORT_NAME IN (@outcome_cohort_names)}
     {@target_cohort_name_length} ? {AND t.COHORT_NAME IN (@target_cohort_names)}
     {@show_exposure_classes & @exposure_classes != ''} ? {AND ec.EXPOSURE_CLASS_NAME IN (@exposure_classes)}

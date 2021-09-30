@@ -1,4 +1,4 @@
-SELECT
+select
   r.SOURCE_ID,
   ds.SOURCE_NAME,
   r.outcome_cohort_id,
@@ -16,7 +16,25 @@ SELECT
   r.T_AT_RISK as n_exposed,
   r.T_PT as exposed_time,
   r.C_CASES as unexposed_cases,
-  r.T_CASES as exposed_cases
+  r.T_CASES as exposed_cases,
+  r.mean_time_to_outcome,
+  r.sd_time_to_outcome,
+  r.min_time_to_outcome,
+  r.p10_time_to_outcome,
+  r.p25_time_to_outcome,
+  r.median_time_to_outcome,
+  r.p75_time_to_outcome,
+  r.p90_time_to_outcome,
+  r.max_time_to_outcome,
+  r.mean_tx_time,
+  r.sd_tx_time,
+  r.min_tx_time,
+  r.p10_tx_time,
+  r.p25_tx_time,
+  r.median_tx_time,
+  r.p75_tx_time,
+  r.p90_tx_time,
+  r.max_tx_time
 FROM @schema.result r
 INNER JOIN @schema.data_source ds ON ds.source_id = r.source_id
 INNER JOIN @schema.outcome o ON o.outcome_cohort_id = r.outcome_cohort_id
@@ -44,4 +62,22 @@ GROUP BY
     r.T_AT_RISK,
     r.T_PT,
     r.C_CASES,
-    r.T_CASES
+    r.T_CASES,
+    r.mean_time_to_outcome,
+  r.sd_time_to_outcome,
+  r.min_time_to_outcome,
+  r.p10_time_to_outcome,
+  r.p25_time_to_outcome,
+  r.median_time_to_outcome,
+  r.p75_time_to_outcome,
+  r.p90_time_to_outcome,
+  r.max_time_to_outcome,
+  r.mean_tx_time,
+  r.sd_tx_time,
+  r.min_tx_time,
+  r.p10_tx_time,
+  r.p25_tx_time,
+  r.median_tx_time,
+  r.p75_tx_time,
+  r.p90_tx_time,
+  r.max_tx_time

@@ -1,5 +1,5 @@
 name: JROADS Canagliflozin
-short_name: jroads_canagliflozin
+short_name: jroads_canagliflozin_sept2021
 description: 'JROADS Canagliflozin'
 outcome_concept_ids: ~
 custom_exposure_cohort_ids: ~
@@ -9,3 +9,5 @@ target_concept_ids: [
 ]
 useExposureControls: False
 dataSources: [10, 11, 12, 13, 14, 15]
+cemConnectionDetails:
+  apiUrl: "http://cem.ohdsi.org:8080"

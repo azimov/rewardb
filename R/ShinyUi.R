@@ -20,7 +20,7 @@ dashboardUi <- function(request) {
       pickerInput(
         "outcomeCohortTypes",
         "Outcome Cohort Types:",
-        choices = c("ATLAS defined", "Inpatient", "Two diagnosis codes"),
+        choices = c("ATLAS defined", "Inpatient", "Two diagnosis codes", "One diagnosis code"),
         selected = c(),
         options = shinyWidgets::pickerOptions(
           actionsBox = TRUE,
@@ -28,8 +28,6 @@ dashboardUi <- function(request) {
         ),
         multiple = TRUE
       ),
-      checkboxInput("excludeIndications", "Attempt to exclude any mapped associations", FALSE),
-      p("Mapped assocations includes drug label indications and contra-indications, spontaneous reports, and MESH literature searches."),
       width = 6
     ),
     width = 12,
@@ -97,7 +95,13 @@ dashboardUi <- function(request) {
         tabPanel(
           "Calibration plot",
           calibrationPlotUi("calibrationPlot", figureTitle = "Figure 2.")
-        )
+        ),
+        tabPanel("Exposure concepts",
+                 h4("Exposure Concepts"),
+                 shinycssloaders::withSpinner(dataTableOutput("selectedExposureConceptSet"))),
+        tabPanel("Outcome concepts",
+                 h4("Outcome Concepts"),
+                 shinycssloaders::withSpinner(dataTableOutput("selectedOutcomeConceptSet")))
       ),
       width = 12
     )

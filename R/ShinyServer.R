@@ -33,23 +33,24 @@ dashboardInstance <- function(input, output, session) {
   library(dplyr, warn.conflicts = FALSE)
 
   getOutcomeCohortTypes <- reactive({
-    cohortTypeMapping <- list("ATLAS defined" = 3, "Inpatient" = 0, "Two diagnosis codes" = 1, "One Diagnosis Code" = 2)
+    cohortTypeMapping <- list("ATLAS defined" = 3, "Inpatient" = 0, "Two diagnosis codes" = 1, "One diagnosis code" = 2)
     lapply(input$outcomeCohortTypes, function(x) cohortTypeMapping[[x]])
   })
 
-  dataSourceInfo <- model$getDataSourceInfo()
-  output$dataSourceTable <- gt::render_gt(dataSourceInfo)
+  dataSourceInfo <- reactive({ model$getDataSourceInfo() })
+  output$dataSourceTable <- gt::render_gt(dataSourceInfo())
 
   output$requiredDataSources <- renderUI({
     pickerInput("requiredDataSources",
                 label = "Select required data sources for benefit:",
-                choices = dataSourceInfo$sourceName,
+                choices = dataSourceInfo()$sourceName,
                 options = shinyWidgets::pickerOptions(actionsBox = TRUE),
                 multiple = TRUE)
   })
 
   requiredBenefitSources <- reactive({
-    dataSourceInfo[dataSourceInfo$sourceName %in% input$requiredDataSources,]$sourceId
+    dsi <- dataSourceInfo()
+    dsi[dsi$sourceName %in% input$requiredDataSources,]$sourceId
   })
 
   getMainTableParams <- reactive({
@@ -64,7 +65,6 @@ dashboardInstance <- function(input, output, session) {
                    requiredBenefitSources = requiredBenefitSources(),
                    filterByMeta = input$filterThreshold == "Meta analysis",
                    outcomeCohortTypes = outcomeTypes,
-                   excludeIndications = input$excludeIndications,
                    calibrated = input$calibrated,
                    benefitCount = input$scBenefit,
                    riskCount = input$scRisk,
@@ -256,28 +256,41 @@ dashboardInstance <- function(input, output, session) {
   tabPanelTimeToOutcome <- tabPanel("Time to outcome", boxPlotModuleUi("timeToOutcome"))
   shiny::appendTab(inputId = "outcomeResultsTabs", tabPanelTimeToOutcome)
 
+  ingredientConetpInput <- shiny::reactive({
+    selected <- selectedExposureOutcome()
+    if (is.null(selected))
+      return(data.frame())
+    model$getExposureConceptSet(selected$TARGET_COHORT_ID)
+  })
+
+  conditionConceptInput <- shiny::reactive({
+    selected <- selectedExposureOutcome()
+    if (is.null(selected))
+      return(data.frame())
+    model$getOutcomeConceptSet(selected$OUTCOME_COHORT_ID)
+  })
+
+
+  output$selectedOutcomeConceptSet <- shiny::renderDataTable({ conditionConceptInput() })
+  output$selectedExposureConceptSet <- shiny::renderDataTable({ ingredientConetpInput() })
+
   # Add cem panel if option is present
-  if (!is.null(appContext$cemConnectorApiUrl)) {
+  if (!is.null(appContext$cemConnectionDetails)) {
     message("loading cem api")
-    cemBackend <- CemConnector::CemWebApiBackend$new(apiUrl = appContext$cemConnectorApiUrl)
 
-    ingredientConetpInput <- shiny::reactive({
-      selected <- selectedExposureOutcome()
-      model$getOutcomeConceptSet(selected$OUTCOME_COHORT_ID)
-    })
+    if (!is.null(appContext$cemConnectionDetails$apiUrl)) {
+      cemBackend <- CemConnector::CemWebApiBackend$new(apiUrl = appContext$cemConnectionDetails$apiUrl)
+    } else {
+      cemBackend <- do.call(CemConnector::CemDatabaseBackend$new, appContext$cemConnectionDetails)
+    }
 
-    conditionConceptInput <- shiny::reactive({
-      selected <- selectedExposureOutcome()
-      model$getExposureConceptSet(selected$TARGET_COHORT_ID)
-    })
-    ceModuleServer <- CemConnector::ceExplorerModule("cemExplorer", # This ID should be unqiue and match the call to ceExplorerModuleUi
+    ceModuleServer <- CemConnector::ceExplorerModule("cemExplorer",
                                                      cemBackend,
                                                      ingredientConceptInput = ingredientConetpInput,
                                                      conditionConceptInput = conditionConceptInput,
                                                      siblingLookupLevelsInput = shiny::reactive({ 0 }))
     cemPanel <- tabPanel("Evidence", CemConnector::ceExplorerModuleUi("cemExplorer"))
     shiny::appendTab(inputId = "outcomeResultsTabs", cemPanel)
-
   }
 }
 

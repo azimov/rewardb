@@ -42,57 +42,57 @@ createDashSchema <- function(appContext, connection) {
 #' @param appContext application context loaded from yaml
 #' @param connection DatabaseConnector connection to cdm
 addCemEvidence <- function(appContext, connection) {
-  library(dplyr)
-  evidenceConcepts <- getStudyControls(
-    connection,
-    schema = appContext$globalConfig$rewardbResultsSchema,
-    cemSchema = appContext$globalConfig$cemSchema,
-    vocabularySchema = appContext$globalConfig$vocabularySchema,
-    targetCohortIds = getTargetCohortIds(appContext, connection),
-    outcomeCohortIds = getOutcomeCohortIds(appContext, connection)
-  )
+  connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = Sys.getenv("CEM_DATABASE_DBMS"),
+                                                                  server = Sys.getenv("CEM_DATABASE_SERVER"),
+                                                                  user = Sys.getenv("CEM_DATABASE_USER"),
+                                                                  port = Sys.getenv("CEM_DATABASE_PORT"),
+                                                                  extraSettings = Sys.getenv("CEM_DATABASE_EXTRA_SETTINGS"),
+                                                                  password = keyring::key_get(Sys.getenv("CEM_KEYRING_SERVICE"),
+                                                                                              user = Sys.getenv("CEM_DATABASE_USER")))
+  cemBackend <- CemConnector::CemDatabaseBackend$new(connectionDetails,
+                                                     cemSchema = Sys.getenv("CEM_DATABASE_SCHEMA"),
+                                                     vocabularySchema = Sys.getenv("CEM_DATABASE_VOCAB_SCHEMA"),
+                                                     sourceSchema = Sys.getenv("CEM_DATABASE_INFO_SCHEMA"))
 
-  ParallelLogger::logInfo(paste("Found", nrow(evidenceConcepts), "mappings"))
-  negatives <- evidenceConcepts[evidenceConcepts$EVIDENCE == 0,]
-  positives <- evidenceConcepts[evidenceConcepts$EVIDENCE == 1,]
-  if (nrow(negatives) == 0 | nrow(positives) == 0) {
-    ParallelLogger::logWarn("Zero control/indication references found. Likely due to a cohort mapping problem")
-  } else {
-    pgCopyDataFrame(appContext$connectionDetails, negatives[c("OUTCOME_COHORT_ID", "TARGET_COHORT_ID")], appContext$short_name, "negative_control")
-    pgCopyDataFrame(appContext$connectionDetails, positives[c("OUTCOME_COHORT_ID", "TARGET_COHORT_ID")], appContext$short_name, "positive_indication")
-  }
-}
-
-addCemEvidenceFiles <- function(appContext) {
-
-  if (!length(appContext$cemEvidenceFiles)) {
-    stop("No files to add")
-  }
-
-  appContext$useConnectionPool <- FALSE
+  # Get exposure concepts for which there are actually results for
   model <- DashboardDbModel(appContext)
+  sql <- "
+  SELECT DISTINCT tc.*
+  from @schema.target_concept tc
+  INNER JOIN @schema.result r ON r.target_cohort_id = tc.target_cohort_id
+  WHERE rr IS NOT NULL"
+  exposureCohortConceptSets <- model$queryDb(sql, snakeCaseToCamelCase = TRUE)
+  # Get mapped negative control evidence, keeps targetCohortId
+  negativControlConcepts <- exposureCohortConceptSets %>%
+    dplyr::group_by(targetCohortId) %>%
+    dplyr::group_modify(~cemBackend$getSuggestedControlCondtions(.x, nControls = 1000), .keep = TRUE) %>%
+    select(targetCohortId, conceptId)
 
-  for (cohortId in names(appContext$cemEvidenceFiles)) {
-    file <- appContext$cemEvidenceFiles[[cohortId]]
-    cohortId <- as.integer(cohortId)
-    data <- read.csv(file)
-
-    positives <- model$queryDb(
-      "SELECT DISTINCT outcome_cohort_id FROM @schema.outcome_concept WHERE condition_concept_id IN (@condition_concepts)",
-      condition_concepts = data[data$`Suggested.Negative.Control` == "N",]$Id
-    )
-    positives$target_cohort_id <- cohortId
-
-    negatives <- model$queryDb(
-      "SELECT DISTINCT outcome_cohort_id FROM @schema.outcome_concept WHERE condition_concept_id IN (@condition_concepts)",
-      condition_concepts = data[data$`Suggested.Negative.Control` == "Y",]$Id
-    )
-    negatives$target_cohort_id <- cohortId
-
-    pgCopyDataFrame(appContext$connectionDetails, negatives, appContext$short_name, "negative_control")
-    pgCopyDataFrame(appContext$connectionDetails, positives, appContext$short_name, "positive_indication")
+  # Map to outcome cohort identifiers
+  mapConceptToCohorts <- function(conceptIds) {
+    sql <- "SELECT oc.outcome_cohort_id
+    FROM @schema.outcome_concept oc
+    INNER JOIN @schema.outcome o ON o.outcome_cohort_id = oc.outcome_cohort_id
+    INNER JOIN vocabulary.concept_ancestor ca ON ca.descendant_concept_id = oc.outcome_cohort_id
+    WHERE ca.ancestor_concept_id IN (@concept_ids)
+    AND o.type_id = @type_id
+    "
+    model$queryDb(sql, concept_ids = conceptIds, type_id = 2, snakeCaseToCamelCase = TRUE)
   }
-  model$closeConnection()
+
+  negativControlCohorts <- negativControlConcepts %>%
+    dplyr::group_by(targetCohortId) %>%
+      dplyr::group_modify(~mapConceptToCohorts(.x$conceptId), .keep = TRUE)
+
+  message(paste("Mapped", nrow(negativControlCohorts), "Controls"))
+  # Add to negative controls table
+  DatabaseConnector::insertTable(connection,
+                                 data = negativControlCohorts,
+                                 databaseSchema = appContext$short_name,
+                                 tableName = "negative_control",
+                                 dropTableIfExists = TRUE,
+                                 camelCaseToSnakeCase = TRUE,
+                                 createTable = TRUE)
 }
 
 #' @title
@@ -155,7 +155,7 @@ computeMetaAnalysis <- function(appContext, connection) {
     group_by(TARGET_COHORT_ID, OUTCOME_COHORT_ID) %>%
     group_modify(~metaAnalysis(.x))
 
-  results$STUDY_DESIGN <- "scc"
+  results$STUDY_DESIGN <- "scca"
   results$CALIBRATED <- 0
   pgCopyDataFrame(connectionDetails = appContext$connectionDetails, results, appContext$short_name, "result")
 }
@@ -185,10 +185,6 @@ buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibrat
     computeMetaAnalysis(appContext, connection)
     message("Adding negative controls from CEM")
     addCemEvidence(appContext, connection)
-
-     if (!is.null(appContext$cemEvidenceFiles)) {
-      addCemEvidenceFiles(appContext)
-    }
 
     if (performCalibration) {
       performCalibration(appContext, connection)

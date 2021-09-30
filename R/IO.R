@@ -56,12 +56,16 @@ pgCopyDataFrame <- function(connectionDetails, data, schema, tableName, .echoCom
   }
 
   csvFileName = tempfile(fileext = "csv")
-  on.exit(unlink(csvFileName))
+
   dt <- do.call(data.frame, lapply(data, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
   scipen = getOption("scipen")
   options(scipen = 999)
-  vroom::vroom_write(dt, csvFileName, na = "")
-  options(scipen = scipen)
+  on.exit({
+    unlink(csvFileName)
+    options(scipen = scipen)
+  }, add = TRUE)
+
+  vroom::vroom_write(dt, csvFileName, na = "", delim = ",")
   pgCopy(connectionDetails = connectionDetails, csvFileName = csvFileName, schema = schema, tableName = tableName, .echoCommand = .echoCommand)
 }
 

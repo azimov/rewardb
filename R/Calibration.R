@@ -7,7 +7,7 @@
 #' @param targetIds cohorts to get negative controls for
 #' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
 #' @return data.frame of negative control exposures for specified outcomes
-getOutcomeControls <- function(appContext, connection, targetIds = NULL, outcomeTypes = c(0,1), minCohortSize = 10) {
+getOutcomeControls <- function(appContext, connection, targetIds = NULL, outcomeTypes = c(0,1,2), minCohortSize = 5) {
 
   sql <- "
     SELECT r.*, o.type_id as outcome_type
@@ -181,7 +181,6 @@ getCalibratedAtlasTargets <- function(appContext, connection) {
   resultSetAtlas <- atlasPositives %>%
     group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID) %>%
     group_modify(~computeCalibratedRows(.x, controlOutcomes[
-      controlOutcomes$OUTCOME_TYPE == 0 &
         controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
         controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
     ], idCol = "OUTCOME_COHORT_ID"), .keep = TRUE)
@@ -210,7 +209,6 @@ getCalibratedGenericTargets <- function(appContext, connection) {
   resultSet <- positives %>%
     group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID) %>%
     group_modify(~computeCalibratedRows(.x, controlOutcomes[
-      controlOutcomes$OUTCOME_TYPE == .x$OUTCOME_TYPE[1] &
         controlOutcomes$TARGET_COHORT_ID == .x$TARGET_COHORT_ID[1] &
         controlOutcomes$SOURCE_ID == .x$SOURCE_ID[1],
     ], idCol = "OUTCOME_COHORT_ID"), .keep = TRUE)
@@ -251,7 +249,6 @@ getCalibratedOutcomes <- function(appContext, connection) {
   resultSet <- positives %>%
     group_by(OUTCOME_TYPE, SOURCE_ID, OUTCOME_COHORT_ID) %>%
     group_modify(~computeCalibratedRows(.x, controlExposures[
-      controlExposures$OUTCOME_TYPE == .x$OUTCOME_TYPE[1] &
         controlExposures$OUTCOME_COHORT_ID == .x$OUTCOME_COHORT_ID[1] &
         controlExposures$SOURCE_ID == .x$SOURCE_ID[1],
     ], idCol = "TARGET_COHORT_ID"), .keep = TRUE)
