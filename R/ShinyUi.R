@@ -98,10 +98,10 @@ dashboardUi <- function(request) {
         ),
         tabPanel("Exposure concepts",
                  h4("Exposure Concepts"),
-                 shinycssloaders::withSpinner(dataTableOutput("selectedExposureConceptSet"))),
+                 shinycssloaders::withSpinner(DT::dataTableOutput("selectedExposureConceptSet"))),
         tabPanel("Outcome concepts",
                  h4("Outcome Concepts"),
-                 shinycssloaders::withSpinner(dataTableOutput("selectedOutcomeConceptSet")))
+                 shinycssloaders::withSpinner(DT::dataTableOutput("selectedOutcomeConceptSet")))
       ),
       width = 12
     )
