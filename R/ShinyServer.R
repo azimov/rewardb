@@ -271,8 +271,8 @@ dashboardInstance <- function(input, output, session) {
   })
 
 
-  output$selectedOutcomeConceptSet <- shiny::renderDataTable({ conditionConceptInput() })
-  output$selectedExposureConceptSet <- shiny::renderDataTable({ ingredientConetpInput() })
+  output$selectedOutcomeConceptSet <- DT::renderDataTable({ conditionConceptInput() })
+  output$selectedExposureConceptSet <- DT::renderDataTable({ ingredientConetpInput() })
 
   # Add cem panel if option is present
   if (!is.null(appContext$cemConnectionDetails)) {
