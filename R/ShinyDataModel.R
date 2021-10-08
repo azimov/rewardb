@@ -483,6 +483,7 @@ ReportDbModel$methods(
   getMetaAnalysisTable = function(exposureId, outcomeId, analysisId = 1, calibrationType = 'outcomes', sourceIds = NULL) {
     checkmate::assert_choice(calibrationType, c('outcomes', 'exposures', 'none'))
     rows <- getExposureOutcomeData(exposureId, outcomeId, analysisId, sourceIds = sourceIds)
+
     if (nrow(rows)) {
       meta <- metaAnalysis(rows)
       meta$CI_95 <- paste(round(meta$LB_95, 2), "-", round(meta$UB_95, 2))
@@ -526,7 +527,6 @@ ReportDbModel$methods(
     nullDist[3] <- null$sourceId
     names(nullDist) <- c("mean", "sd", "sourceId")
     class(nullDist) <- c("null")
-
     errorModel <- EmpiricalCalibration::convertNullToErrorModel(nullDist)
     ci <- EmpiricalCalibration::calibrateConfidenceInterval(log(rows$RR), rows$SE_LOG_RR, errorModel)
     calibratedPValue <- EmpiricalCalibration::calibrateP(nullDist, log(rows$RR), rows$SE_LOG_RR)

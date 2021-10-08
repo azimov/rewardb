@@ -7,15 +7,17 @@
 #' @param input shiny input object
 #' @param output shiny output object
 #' @param session shiny session object
+#' @importFrom gt gt fmt_number render_gt tab_options
+#' @import shiny
 explorerServer <- function(input, output, session) {
   secureApplication <- getOption("reward.secure", default = FALSE)
 
   if (secureApplication) {
     # define some credentials
     credentials <- data.frame(
-      user = c("reward_user", "jgilber2"), # mandatory
-      password = c(model$config$connectionDetails$password(), "hangman252"), # mandatory
-      admin = c(FALSE, TRUE)
+      user = c("reward_user"), # mandatory
+      password = c(model$config$connectionDetails$password()), # mandatory
+      admin = c(FALSE)
     )
 
     res_auth <- secure_server(
@@ -31,22 +33,47 @@ explorerServer <- function(input, output, session) {
 
   exposureCohorts <- model$getExposureCohorts()
   outcomeCohorts <- model$getOutcomeCohorts()
-  dataSources <-  model$getDataSourceInfo()
+  dataSources <- model$getDataSourceInfo()
 
-  message("Loaded startup cache")
-
-  shiny::updateSelectizeInput(session, "outcomeCohorts", choices = outcomeCohorts$cohortDefinitionName, server = TRUE)
   shiny::updateSelectizeInput(session, "targetCohorts", choices = exposureCohorts$cohortDefinitionName, server = TRUE)
+  shiny::updateSelectizeInput(session, "outcomeCohorts", choices = outcomeCohorts$cohortDefinitionName, server = TRUE)
   shinyWidgets::updatePickerInput(session, "dataSourcesUsed", choices = dataSources$sourceName, selected = dataSources$sourceName)
+  selectedOutcomeTypes <- shiny::reactive({
+    if (is.null(input$selectedOutcomeTypes)) {
+      return(0:3)
+    }
+    as.integer(input$selectedOutcomeTypes)
+  })
 
-  message("Loaded  inputs")
+  filteredOutcomeCohorts <- shiny::reactive({
+    selected <- selectedOutcomeTypes()
+    outcomeCohorts %>%
+      dplyr::filter(outcomeType %in% selected)
+  })
 
   output$outcomeCohortsTable <- DT::renderDataTable({
-    outcomeCohorts
+    oc <- filteredOutcomeCohorts()
+    oc %>% dplyr::mutate(outcomeType = dplyr::recode(outcomeType,
+                                                     "0" = "TWO DX",
+                                                     "2" = "ONE DX",
+                                                     "1" = "Inpatient",
+                                                     "3" = "ATLAS"))
+  })
+
+  selectedExposureTypes <- shiny::reactive({
+    if (is.null(input$selectedExposureTypes)) {
+      return(-1:1)
+    }
+    as.integer(input$selectedExposureTypes)
+  })
+
+  filteredExposureCohorts <- shiny::reactive({
+    selected <- selectedExposureTypes()
+    exposureCohorts %>% dplyr::filter(atcFlg %in% selected)
   })
 
   output$exposureCohortsTable <- DT::renderDataTable({
-    exposureCohorts
+    filteredExposureCohorts()
   })
 
   output$dataSourcesTable <- DT::renderDataTable({
@@ -70,11 +97,11 @@ explorerServer <- function(input, output, session) {
   })
 
   getExposureCohort <- shiny::reactive({
-    exposureCohorts[exposureCohorts$cohortDefinitionName %in% input$targetCohorts,]
+    exposureCohorts %>% dplyr::filter(cohortDefinitionName %in% input$targetCohorts)
   })
 
   getOutcomeCohort <- shiny::reactive({
-    outcomeCohorts[outcomeCohorts$cohortDefinitionName %in% input$outcomeCohorts,]
+    outcomeCohorts  %>% dplyr::filter(cohortDefinitionName %in% input$outcomeCohorts)
   })
 
   output$selectedCohorts <- shiny::renderText("not selected")
@@ -97,7 +124,6 @@ explorerServer <- function(input, output, session) {
       calibrationType = input$calibrationType,
       usedDataSources = dataSources[dataSources$sourceName %in% input$dataSourcesUsed,]$sourceId
     )
-
     return(selected)
   })
 
@@ -130,7 +156,7 @@ explorerServer <- function(input, output, session) {
   # Create sub modules
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
-
+              
   calibrationPlotServer("outcomeCalibrationPlot", model, selectedExposureOutcome, FALSE)
   calibrationPlotServer("exposureCalibrationPlot", model, selectedExposureOutcome, TRUE)
 
@@ -144,6 +170,9 @@ explorerServer <- function(input, output, session) {
 
 }
 
+#' @import shiny
+#' @import shinydashboard
+#' @import DT
 explorerUi <- function(request) {
   resultsDisplayCondition <- "output.selectedCohorts == 'selected'"
   riskEstimatesPanel <- shiny::tabsetPanel(id = "searchResults",
@@ -158,57 +187,100 @@ explorerUi <- function(request) {
                                                            calibrationPlotUi("exposureCalibrationPlot")))
 
   searchPanel <- shinydashboard::tabItem("Search",
-                                         shinydashboard::box(width = 12,
-                                                             shiny::column(6,
-                                                                           shiny::selectizeInput("targetCohorts", label = "Drug exposures:", choices = NULL, multiple = FALSE, width = 500)),
-                                                             shiny::column(6,
-                                                                           shiny::selectizeInput("outcomeCohorts", label = "Disease outcomes:", choices = NULL, multiple = FALSE, width = 500)),
-                                                             shiny::column(6,
-                                                                           shiny::selectizeInput("calibrationType",
-                                                                                                 label = "Calibration Controls:",
-                                                                                                 choices = c("exposures", "outcomes"),
-                                                                                                 selected = "outcomes",
-                                                                                                 multiple = FALSE, width = 500)),
-                                                             shiny::column(6,
-                                                                           shinyWidgets::pickerInput("dataSourcesUsed",
-                                                                                                     label = "Data Sources:",
-                                                                                                     choices = NULL,
-                                                                                                     multiple = TRUE, width = 500)),
-                                                             shiny::column(12,
-                                                                           shiny::conditionalPanel(condition = "output.selectedCohorts != 'selected'",
-                                                                                                   shiny::actionButton("selectCohorts", "Select")))),
-                                         shinydashboard::box(width = 12,
-                                                             shiny::conditionalPanel(condition = resultsDisplayCondition,
-                                                                                     shiny::tags$h3(textOutput("treatmentOutcomeStr")), riskEstimatesPanel),
+                                         shiny::fluidRow(
+                                           shinydashboard::box(width = 12,
+                                                               shiny::column(6,
+                                                                             shiny::selectizeInput("targetCohorts",
+                                                                                                   label = "Drug exposures:",
+                                                                                                   choices = NULL,
+                                                                                                   multiple = FALSE,
+                                                                                                   width = 500)),
+                                                               shiny::column(6,
+                                                                             shiny::selectizeInput("outcomeCohorts",
+                                                                                                   label = "Disease outcomes:",
+                                                                                                   choices = NULL,
+                                                                                                   multiple = FALSE,
+                                                                                                   width = 500)),
+                                                               shiny::column(6,
+                                                                             shiny::selectizeInput("calibrationType",
+                                                                                                   label = "Calibration Controls:",
+                                                                                                   choices = c("exposures", "outcomes"),
+                                                                                                   selected = "outcomes",
+                                                                                                   multiple = FALSE, width = 500)),
+                                                               shiny::column(6,
+                                                                             shinyWidgets::pickerInput("dataSourcesUsed",
+                                                                                                       label = "Data Sources:",
+                                                                                                       choices = NULL,
+                                                                                                       multiple = TRUE, width = 500)),
+                                                               shiny::column(12,
+                                                                             shiny::conditionalPanel(condition = "output.selectedCohorts != 'selected'",
+                                                                                                     shiny::actionButton("selectCohorts", "Select")))),
+                                           shinydashboard::box(width = 12,
+                                                               shiny::conditionalPanel(condition = resultsDisplayCondition,
+                                                                                       shiny::tags$h3(textOutput("treatmentOutcomeStr")), riskEstimatesPanel),
 
-                                                             shiny::conditionalPanel(condition = "output.selectedCohorts != 'selected'",
-                                                                                     shiny::textOutput("selectedCohorts"))))
+                                                               shiny::conditionalPanel(condition = "output.selectedCohorts != 'selected'",
+                                                                                       shiny::textOutput("selectedCohorts")))))
 
   aboutTab <- shinydashboard::tabItem("About",
-                                      shinydashboard::box(width = 12,
-                                                          shiny::h1("REWARD - all by all explorer"),
-                                                          shiny::p()))
+                                      shiny::fluidRow(shinydashboard::box(width = 12,
+                                                                          shiny::h1("REWARD - all by all explorer"),
+                                                                          shiny::includeHTML(system.file("static_html", "about_rewardb.html", package = "rewardb")),
+                                                                          shinydashboard::box(width = 12,
+                                                                                              shiny::tags$h3("Registered data sources"),
+                                                                                              shinycssloaders::withSpinner(DT::dataTableOutput("dataSourcesTable"))),
+                                                                          shinydashboard::box(width = 12,
+                                                                                              shiny::tags$h3("Data quality Indicator Pairs"),
+                                                                                              shinycssloaders::withSpinner(gt::gt_output(outputId = "dataQaulityTable"))))))
+  exposureCohortsTab <- shinydashboard::tabItem("exposureCohortsTab",
+                                                shinydashboard::box(width = 12,
+                                                                    shinycssloaders::withSpinner(DT::dataTableOutput("exposureCohortsTable"))))
+
+  outcomeCohortsTab <- shinydashboard::tabItem("outcomeCohortsTab",
+                                               shiny::fluidRow(
+                                                 shinydashboard::box(width = 12,
+                                                                     shinycssloaders::withSpinner(DT::dataTableOutput("outcomeCohortsTable")))))
+
   body <- shinydashboard::dashboardBody(shinydashboard::tabItems(aboutTab,
-                                                 searchPanel,
-                                                 shinydashboard::tabItem("sources",
-                                                                         shinydashboard::box(width = 12,
-                                                                                             shiny::tags$h3("Registered data sources"),
-                                                                                             shinycssloaders::withSpinner(DT::dataTableOutput("dataSourcesTable"))),
-                                                                         shinydashboard::box(width = 12,
-                                                                                             shiny::tags$h3("Data quality Indicator Pairs"),
-                                                                                             shinycssloaders::withSpinner(gt::gt_output(outputId = "dataQaulityTable")))),
-                                                 shinydashboard::tabItem("exposureCohortsTab",
-                                                                         shinydashboard::box(width = 12,
-                                                                                             shinycssloaders::withSpinner(DT::dataTableOutput("exposureCohortsTable")))),
-                                                 shinydashboard::tabItem("outcomeCohortsTab",
-                                                                         shinydashboard::box(width = 12,
-                                                                                             shinycssloaders::withSpinner(DT::dataTableOutput("outcomeCohortsTable"))))))
+                                                                 searchPanel,
+                                                                 exposureCohortsTab,
+                                                                 outcomeCohortsTab))
+
+  outcomeCohortSelection <- shinyWidgets::pickerInput("selectedOutcomeTypes",
+                                                      label = "Outcome Cohort Types:",
+                                                      choices = c(
+                                                        "2 Diagnosis Codes" = 0,
+                                                        "Inpatient Visits" = 1,
+                                                        "1 Diagnosis code" = 2,
+                                                        "ATLAS" = 3
+                                                      ),
+                                                      selected = c(),
+                                                      options = shinyWidgets::pickerOptions(
+                                                        actionsBox = TRUE,
+                                                        noneSelectedText = "Filter by subset"
+                                                      ),
+                                                      multiple = TRUE)
+
+  exposureCohortSelection <- shinyWidgets::pickerInput("selectedExposureTypes",
+                                                       label = "Outcome Cohort Types:",
+                                                       choices = c(
+                                                         "RxNorm Ingredient" = 0,
+                                                         "ATC 3" = 1,
+                                                         "ATLAS" = -1
+                                                       ),
+                                                       selected = c(),
+                                                       options = shinyWidgets::pickerOptions(
+                                                         actionsBox = TRUE,
+                                                         noneSelectedText = "Filter by subset"
+                                                       ),
+                                                       multiple = TRUE)
 
   sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(shinydashboard::menuItem("About", tabName = "About", icon = shiny::icon("list-alt")),
                                                                           shinydashboard::menuItem("Search", tabName = "Search", icon = shiny::icon("table")),
-                                                                          shinydashboard::menuItem("Data Source Quality", tabName = "sources", icon = shiny::icon("table")),
                                                                           shinydashboard::menuItem("Available Exposures", tabName = "exposureCohortsTab", icon = shiny::icon("table")),
-                                                                          shinydashboard::menuItem("Available outcomes", tabName = "outcomeCohortsTab", icon = shiny::icon("table"))))
+                                                                          shinydashboard::menuItem("Available outcomes", tabName = "outcomeCohortsTab", icon = shiny::icon("table")),
+                                                                          outcomeCohortSelection,
+                                                                          exposureCohortSelection))
 
 
   shinydashboard::dashboardPage(shinydashboard::dashboardHeader(title = "REWARD: All Exposures by all outcomes"),
@@ -223,8 +295,7 @@ explorerUi <- function(request) {
 #' @description
 #' Launches a Shiny app for a given configuration file
 #' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
-#' @param exposureId exposure cohort id
-#' @param outcomeId outcome cohort id
+#' @import shiny
 #' @export
 launchExplorer <- function(globalConfigPath) {
   .GlobalEnv$reportAppContext <- loadReportContext(globalConfigPath)

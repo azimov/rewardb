@@ -81,7 +81,7 @@ dashboardInstance <- function(input, output, session) {
   output$mainTablePage <- shiny::renderUI({
     recordCount <- getMainTableCount()
     numPages <- ceiling(recordCount / as.integer(input$mainTablePageSize))
-    selectInput("mainTablePage", "Page", choices = 1:numPages)
+    shiny::selectInput("mainTablePage", "Page", choices = 1:numPages)
   })
 
   getMainTablePage <- shiny::reactive({
