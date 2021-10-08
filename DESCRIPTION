@@ -10,35 +10,28 @@ Depends:
     R (>= 4.0.0),
     SelfControlledCohort (>= 1.5.2),
     magrittr,
-    DT,
-    shiny,
-    shinyWidgets,
-    shinydashboard,
-    shinycssloaders,
     DatabaseConnector,
     pool,
-    shiny,
-    shinyWidgets,
-    shinydashboard,
-    shinycssloaders,
     ggplot2,
     scales,
-    DT,
-    EmpiricalCalibration,
     yaml,
     checkmate,
     RJSONIO,
     readr,
     ParallelLogger,
-    templates,
     meta,
     dplyr,
-    gt,
     keyring,
     CemConnector
+Imports:
+    DT,
+    gt,
+    shiny,
+    shinyWidgets,
+    shinydashboard,
+    shinycssloaders,
+    EmpiricalCalibration
 Suggests:
-    doParallel,
-    foreach,
     withr,
     testthat,
     knitr,
@@ -47,6 +40,7 @@ Suggests:
 Remotes:
     OHDSI/SelfControlledCohort@batch_read,
     OHDSI/CemConnector,
-    OHDSI/ROhdsiWebApi
+    OHDSI/ROhdsiWebApi,
+    OHDSI/DatabaseConnector@develop
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr

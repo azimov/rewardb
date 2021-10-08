@@ -25,35 +25,32 @@ timeToOutcomeServer <- function(id, model, selectedExposureOutcome) {
 #' @param input shiny input object
 #' @param output shiny output object
 #' @param session shiny session
+#' @importFrom gt render_gt
+#' @importFrom DT renderDataTable
+#' @import shiny
 dashboardInstance <- function(input, output, session) {
-  library(shiny, warn.conflicts = FALSE)
-  library(shinyWidgets, warn.conflicts = FALSE)
-  library(scales, warn.conflicts = FALSE)
-  library(DT, warn.conflicts = FALSE)
-  library(dplyr, warn.conflicts = FALSE)
-
-  getOutcomeCohortTypes <- reactive({
+  getOutcomeCohortTypes <- shiny::reactive({
     cohortTypeMapping <- list("ATLAS defined" = 3, "Inpatient" = 0, "Two diagnosis codes" = 1, "One diagnosis code" = 2)
     lapply(input$outcomeCohortTypes, function(x) cohortTypeMapping[[x]])
   })
 
-  dataSourceInfo <- reactive({ model$getDataSourceInfo() })
+  dataSourceInfo <- shiny::reactive({ model$getDataSourceInfo() })
   output$dataSourceTable <- gt::render_gt(dataSourceInfo())
 
-  output$requiredDataSources <- renderUI({
-    pickerInput("requiredDataSources",
-                label = "Select required data sources for benefit:",
-                choices = dataSourceInfo()$sourceName,
-                options = shinyWidgets::pickerOptions(actionsBox = TRUE),
-                multiple = TRUE)
+  output$requiredDataSources <- shiny::renderUI({
+    shinyWidgets::pickerInput("requiredDataSources",
+                              label = "Select required data sources for benefit:",
+                              choices = dataSourceInfo()$sourceName,
+                              options = shinyWidgets::pickerOptions(actionsBox = TRUE),
+                              multiple = TRUE)
   })
 
-  requiredBenefitSources <- reactive({
+  requiredBenefitSources <- shiny::reactive({
     dsi <- dataSourceInfo()
     dsi[dsi$sourceName %in% input$requiredDataSources,]$sourceId
   })
 
-  getMainTableParams <- reactive({
+  getMainTableParams <- shiny::reactive({
     outcomeCohortNames <- if (length(input$outcomeCohorts)) strQueryWrap(input$outcomeCohorts) else NULL
     targetCohortNames <- if (length(input$targetCohorts)) strQueryWrap(input$targetCohorts) else NULL
     exposureClassNames <- if (appContext$useExposureControls & length(input$exposureClass)) strQueryWrap(input$exposureClass) else NULL
@@ -75,29 +72,29 @@ dashboardInstance <- function(input, output, session) {
     return(params)
   })
 
-  getMainTableCount <- reactive({
+  getMainTableCount <- shiny::reactive({
     params <- getMainTableParams()
     res <- do.call(model$getFilteredTableResultsCount, params)
     return(res)
   })
 
-  output$mainTablePage <- renderUI({
+  output$mainTablePage <- shiny::renderUI({
     recordCount <- getMainTableCount()
     numPages <- ceiling(recordCount / as.integer(input$mainTablePageSize))
     selectInput("mainTablePage", "Page", choices = 1:numPages)
   })
 
-  getMainTablePage <- reactive({
+  getMainTablePage <- shiny::reactive({
     return(as.integer(input$mainTablePage))
   })
 
-  output$mainTableNumPages <- renderText({
+  output$mainTableNumPages <- shiny::renderText({
     recordCount <- getMainTableCount()
     numPages <- ceiling(recordCount / as.integer(input$mainTablePageSize))
     return(paste("Page", getMainTablePage(), "of", numPages))
   })
 
-  output$mainTableCount <- renderText({
+  output$mainTableCount <- shiny::renderText({
     res <- getMainTableCount()
     offset <- max(getMainTablePage() - 1, 0) * as.integer(input$mainTablePageSize) + 1
     endNum <- min(offset + as.integer(input$mainTablePageSize) - 1, res)
@@ -105,16 +102,16 @@ dashboardInstance <- function(input, output, session) {
     return(str)
   })
 
-  updateSelectizeInput(session, "outcomeCohorts", choices = model$getOutcomeCohortNames(), server = TRUE)
-  updateSelectizeInput(session, "targetCohorts", choices = model$getExposureCohortNames(), server = TRUE)
+  shiny::updateSelectizeInput(session, "outcomeCohorts", choices = model$getOutcomeCohortNames(), server = TRUE)
+  shiny::updateSelectizeInput(session, "targetCohorts", choices = model$getExposureCohortNames(), server = TRUE)
 
   if (appContext$useExposureControls) {
-    updateSelectizeInput(session, "exposureClass", choices = model$getExposureClassNames(), server = TRUE)
+    shiny::updateSelectizeInput(session, "exposureClass", choices = model$getExposureClassNames(), server = TRUE)
   }
 
   # Subset of results for harm, risk and treatement categories
   # Logic: either select everything or select a user defined subset
-  mainTableReac <- reactive({
+  mainTableReac <- shiny::reactive({
     params <- getMainTableParams()
     params$limit <- input$mainTablePageSize
     params$offset <- max(getMainTablePage() - 1, 0) * as.integer(input$mainTablePageSize)
@@ -125,38 +122,30 @@ dashboardInstance <- function(input, output, session) {
 
   output$mainTable <- DT::renderDataTable({
     df <- mainTableReac()
-    tryCatch(
-    {
-      if (length(df$I2)) {
-        df$I2 <- formatC(df$I2, digits = 2, format = "f")
-      }
-      colnames(df)[colnames(df) == "I2"] <- "I-squared"
-      colnames(df)[colnames(df) == "META_RR"] <- "IRR (meta analysis)"
-      colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
-      colnames(df)[colnames(df) == "BENEFIT_COUNT"] <- "Sources with scc benefit"
-      colnames(df)[colnames(df) == "OUTCOME_COHORT_NAME"] <- "Outcome"
-      colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
-      colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
-      colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
+    if (length(df$I2)) {
+      df$I2 <- formatC(df$I2, digits = 2, format = "f")
+    }
+    colnames(df)[colnames(df) == "I2"] <- "I-squared"
+    colnames(df)[colnames(df) == "META_RR"] <- "IRR (meta analysis)"
+    colnames(df)[colnames(df) == "RISK_COUNT"] <- "Sources with scc risk"
+    colnames(df)[colnames(df) == "BENEFIT_COUNT"] <- "Sources with scc benefit"
+    colnames(df)[colnames(df) == "OUTCOME_COHORT_NAME"] <- "Outcome"
+    colnames(df)[colnames(df) == "TARGET_COHORT_NAME"] <- "Exposure"
+    colnames(df)[colnames(df) == "TARGET_COHORT_ID"] <- "Target cohort id"
+    colnames(df)[colnames(df) == "OUTCOME_COHORT_ID"] <- "Outcome cohort id"
 
-      if (appContext$useExposureControls) {
-        colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
-      }
-      table <- DT::datatable(
-        df, selection = "single", options = list(dom = 't', pageLength = input$mainTablePageSize, ordering = F),
-        rownames = FALSE
-      )
-      return(table)
-    },
-      # Handles messy response
-      error = function(e) {
-        ParallelLogger::logError(paste(e))
-        return(data.frame())
-      })
+    if (appContext$useExposureControls) {
+      colnames(df)[colnames(df) == "ECN"] <- "ATC 3"
+    }
+    table <- DT::datatable(
+      df, selection = "single", options = list(dom = 't', pageLength = input$mainTablePageSize, ordering = F),
+      rownames = FALSE
+    )
+    return(table)
   })
 
   # This links the app components together
-  selectedExposureOutcome <- reactive({
+  selectedExposureOutcome <- shiny::reactive({
     ids <- input$mainTable_rows_selected
     filtered1 <- mainTableReac()
 
@@ -169,7 +158,7 @@ dashboardInstance <- function(input, output, session) {
     return(filtered2)
   })
 
-  fullDataDownload <- reactive({
+  fullDataDownload <- shiny::reactive({
     model$getFilteredTableResults(benefitThreshold = input$cutrange1,
                                   riskThreshold = input$cutrange2,
                                   pValueCut = input$pCut,
@@ -179,12 +168,12 @@ dashboardInstance <- function(input, output, session) {
                                   riskCount = input$scRisk)
   })
 
-  output$treatmentOutcomeStr <- renderText({
+  output$treatmentOutcomeStr <- shiny::renderText({
     s <- selectedExposureOutcome()
     return(paste(s$TARGET_COHORT_NAME, "for", s$OUTCOME_COHORT_NAME))
   })
 
-  output$downloadData <- downloadHandler(
+  output$downloadData <- shiny::downloadHandler(
     filename = function() {
       paste0(appContext$short_name, '-full_results', input$cutrange1, '-', input$cutrange2, '.csv')
     },
@@ -193,17 +182,16 @@ dashboardInstance <- function(input, output, session) {
     }
   )
 
-  output$downloadFullData <- downloadHandler(
+  output$downloadFullData <- shiny::downloadHandler(
     filename = function() {
       paste0(appContext$short_name, '-export.csv')
     },
     content = function(file) {
       data <- model$getFullDataSet()
       write.csv(data, file, row.names = FALSE)
-    }
-  )
+    })
 
-  getNegativeControls <- reactive({
+  getNegativeControls <- shiny::reactive({
     model$getNegativeControls()
   })
 
@@ -213,14 +201,13 @@ dashboardInstance <- function(input, output, session) {
     },
     content = function(file) {
       write.csv(getNegativeControls(), file, row.names = FALSE)
-    }
-  )
+    })
 
-  getIndications <- reactive({
+  getIndications <- shiny::reactive({
     model$getMappedAssociations()
   })
 
-  output$downloadIndications <- downloadHandler(
+  output$downloadIndications <- shiny::downloadHandler(
     filename = function() {
       paste0(appContext$short_name, '-indications.csv')
     },
@@ -230,12 +217,12 @@ dashboardInstance <- function(input, output, session) {
   )
 
   # Subset without limit
-  mainTableDownload <- reactive({
+  mainTableDownload <- shiny::reactive({
     params <- getMainTableParams()
     do.call(model$getFilteredTableResults, params)
   })
 
-  output$downloadFullTable <- downloadHandler(
+  output$downloadFullTable <- shiny::downloadHandler(
     filename = function() {
       paste0(appContext$short_name, '-filtered-', input$cutrange1, '-', input$cutrange2, '.csv')
     },
@@ -277,19 +264,13 @@ dashboardInstance <- function(input, output, session) {
   # Add cem panel if option is present
   if (!is.null(appContext$cemConnectionDetails)) {
     message("loading cem api")
-
-    if (!is.null(appContext$cemConnectionDetails$apiUrl)) {
-      cemBackend <- CemConnector::CemWebApiBackend$new(apiUrl = appContext$cemConnectionDetails$apiUrl)
-    } else {
-      cemBackend <- do.call(CemConnector::CemDatabaseBackend$new, appContext$cemConnectionDetails)
-    }
-
+    cemBackend <- do.call(CemConnector::createCemConnection, appContext$cemConnectionDetails)
     ceModuleServer <- CemConnector::ceExplorerModule("cemExplorer",
                                                      cemBackend,
                                                      ingredientConceptInput = ingredientConetpInput,
                                                      conditionConceptInput = conditionConceptInput,
                                                      siblingLookupLevelsInput = shiny::reactive({ 0 }))
-    cemPanel <- tabPanel("Evidence", CemConnector::ceExplorerModuleUi("cemExplorer"))
+    cemPanel <- shiny::tabPanel("Evidence", CemConnector::ceExplorerModuleUi("cemExplorer"))
     shiny::appendTab(inputId = "outcomeResultsTabs", cemPanel)
   }
 }
@@ -299,6 +280,8 @@ dashboardInstance <- function(input, output, session) {
 #' @description
 #' Launches a Shiny app for a given configuration file
 #' @param appConfigPath path to configuration file. This is loaded in to the local environment with the appContext variable
+#'
+#' @import shiny
 #' @export
 launchDashboard <- function(appConfigPath, globalConfigPath) {
   .GlobalEnv$appContext <- loadShinyAppContext(appConfigPath, globalConfigPath)
