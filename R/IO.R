@@ -47,6 +47,7 @@ unzipAndVerify <- function(exportZipFilePath, unzipPath, overwrite) {
   }
 }
 
+#' @importFrom vroom vroom_write
 #' @export
 pgCopyDataFrame <- function(connectionDetails, data, schema, tableName, .echoCommand = FALSE) {
 

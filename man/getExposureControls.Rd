@@ -4,7 +4,7 @@
 \alias{getExposureControls}
 \title{Get exposure controls}
 \usage{
-getExposureControls(appContext, connection, minCohortSize = 10)
+getExposureControls(appContext, connection)
 }
 \arguments{
 \item{appContext}{rewardb app context}

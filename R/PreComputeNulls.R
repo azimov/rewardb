@@ -87,15 +87,17 @@ computeOutcomeNullDistributions <- function(config, analysisId = 1, sourceIds = 
 
   # Cache results in table to speed up process
   loadRenderTranslateExecuteSql(connection,
-                                "calibration/outcomeCohortNullData.sql",
-                                results_schema = config$rewardbResultsSchema,
-                                min_cohort_size = minCohortSize,
-                                analysis_id = analysisId,
-                                source_ids = sourceIds,
-                                snakeCaseToCamelCase = TRUE)
+                              "calibration/outcomeCohortNullData.sql",
+                              results_schema = config$rewardbResultsSchema,
+                              min_cohort_size = minCohortSize,
+                              analysis_id = analysisId,
+                              source_ids = sourceIds)
 
   sql <- "SELECT * FROM @results_schema.outcome_cohort_null_data;"
-  nullData <- DatabaseConnector::renderTranslateQuerySql(connection, sql, results_schema = config$rewardbResultsSchema)
+  nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                         sql,
+                                                         results_schema = config$rewardbResultsSchema,
+                                                         snakeCaseToCamelCase = TRUE)
   # Cut in to group by exposure id, source id, analysis id
   nullData <- nullData %>% dplyr::group_split(sourceId, analysisId, targetCohortId, outcomeType)
   res <- ParallelLogger::clusterApply(cluster, nullData, outcomeNullDistsProc)
@@ -185,11 +187,13 @@ computeExposureNullDistributions <- function(config, analysisId = 1, sourceIds =
                                 results_schema = config$rewardbResultsSchema,
                                 min_cohort_size = minCohortSize,
                                 analysis_id = analysisId,
-                                source_ids = sourceIds,
-                                snakeCaseToCamelCase = TRUE)
+                                source_ids = sourceIds)
 
   sql <- "SELECT * FROM @results_schema.exposure_cohort_null_data;"
-  nullData <- DatabaseConnector::renderTranslateQuerySql(connection, sql, results_schema = config$rewardbResultsSchema)
+  nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                         sql,
+                                                         results_schema = config$rewardbResultsSchema,
+                                                         snakeCaseToCamelCase = TRUE)
   # Cut in to group by exposure id, source id, analysis id
   nullData <- nullData %>% dplyr::group_split(sourceId, analysisId, outcomeCohortId)
   res <- ParallelLogger::clusterApply(cluster, nullData, exposureNullDistsProc)
@@ -247,6 +251,9 @@ runPreComputeNullDistributions <- function(globalConfigPath,
 #' @description
 #' Run task to pre-compute null distributions for all outcomes and exposures as RStudio Job
 #' This process requires a CemConnector connection, this may be slow if using cem.ohdsi.org
+#'
+#' @inheritParams runPreComputeNullDistributions
+#' @param workingDir                        Charachter working directory (default is currentWd)
 #' @export
 runPreComputeNullDistributionsJob <- function(globalConfigPath,
                                               analysisId = 1,
@@ -254,7 +261,7 @@ runPreComputeNullDistributionsJob <- function(globalConfigPath,
                                               nThreads = 10,
                                               getCemMappings = TRUE,
                                               minCohortSize = 5,
-                                              workingDir = ".") {
+                                              workingDir = getwd()) {
   scriptPath <- system.file("scripts/runPreComputeNulls.R", package = "rewardb")
   .GlobalEnv$analysisId <- analysisId
   .GlobalEnv$globalConfigPath <- normalizePath(globalConfigPath)

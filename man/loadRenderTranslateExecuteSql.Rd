@@ -7,9 +7,8 @@
 loadRenderTranslateExecuteSql(
   connection,
   sqlFilename,
-  dbms = "sql server",
+  dbms = connection@dbms,
   ...,
-  snakeCaseToCamelCase = FALSE,
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
   warnOnMissingParameters = TRUE
 )

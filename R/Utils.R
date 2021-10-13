@@ -34,10 +34,8 @@ loadRenderTranslateSql <- function(sqlFilename,
   renderedSql <- SqlRender::render(sql = sql,
                                    warnOnMissingParameters = warnOnMissingParameters,
                                    ...)
-  renderedSql <- SqlRender::translate(sql = renderedSql,
-                                      targetDialect = dbms,
-                                      tempEmulationSchema = tempEmulationSchema)
-  return(renderedSql)
+  returnedSql <- SqlRender::translate(renderedSql, dbms, tempEmulationSchema = tempEmulationSchema)
+  return(returnedSql)
 }
 
 loadSqlFile <- function(sqlFilename) {
@@ -69,7 +67,7 @@ loadSqlFile <- function(sqlFilename) {
 #' Returns a string containing the rendered SQL.
 loadRenderTranslateQuerySql <- function(connection,
                                         sqlFilename,
-                                        dbms = "sql server",
+                                        dbms = connection@dbms,
                                         ...,
                                         snakeCaseToCamelCase = FALSE,
                                         tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
@@ -104,18 +102,18 @@ loadRenderTranslateQuerySql <- function(connection,
 #' Returns a string containing the rendered SQL.
 loadRenderTranslateExecuteSql <- function(connection,
                                           sqlFilename,
-                                          dbms = "sql server",
+                                          dbms = connection@dbms,
                                           ...,
-                                          snakeCaseToCamelCase = FALSE,
                                           tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                                           warnOnMissingParameters = TRUE) {
 
 
   sql <- loadRenderTranslateSql(sqlFilename = sqlFilename,
-                                dbms = dbms, ...,
+                                dbms = dbms,
+                                ...,
                                 tempEmulationSchema = tempEmulationSchema,
                                 warnOnMissingParameters = warnOnMissingParameters)
-  DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = snakeCaseToCamelCase)
+  DatabaseConnector::executeSql(connection, sql)
 }
 
 

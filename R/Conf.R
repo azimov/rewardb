@@ -12,7 +12,8 @@ loadShinyAppContext <- function(configPath, globalConfigPath) {
   defaults <- list(
     useExposureControls = FALSE,
     custom_exposure_ids = c(),
-    useConnectionPool = TRUE
+    useConnectionPool = TRUE,
+    analysisIds = c(1)
   )
 
   appContext <- .setDefaultOptions(yaml::read_yaml(configPath), defaults)

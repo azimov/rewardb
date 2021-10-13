@@ -11,7 +11,6 @@ Depends:
     SelfControlledCohort (>= 1.5.2),
     magrittr,
     DatabaseConnector,
-    pool,
     ggplot2,
     scales,
     yaml,
@@ -30,7 +29,9 @@ Imports:
     shinyWidgets,
     shinydashboard,
     shinycssloaders,
-    EmpiricalCalibration
+    EmpiricalCalibration,
+    pool,
+    vroom
 Suggests:
     withr,
     testthat,

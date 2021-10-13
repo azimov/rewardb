@@ -74,6 +74,8 @@ cleanUpSccDf <- function(data, sourceId, analysisId) {
 #' @param outcomeCohortIds - vector of outcome cohort ids or NULL
 #' @param targetCohortIds - vector of exposure cohort ids or NULL
 #' @param .generateCohortStats - generate time on treatment and time to outcome stats or not
+#'
+#' @importFrom vroom vroom_write
 #' @returns list of zip file locations
 computeSccResults <- function(cdmConfig,
                               globalConfig,

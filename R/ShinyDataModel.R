@@ -1,3 +1,4 @@
+#' @importFrom pool dbPool poolClose
 DbModel <- setRefClass("DbModel", fields = c("config", "dbConn", "connectionActive", "schemaName"))
 DbModel$methods(
   initialize = function(config, initConnection = TRUE, ...) {

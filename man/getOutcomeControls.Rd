@@ -4,13 +4,7 @@
 \alias{getOutcomeControls}
 \title{Get outcome controls}
 \usage{
-getOutcomeControls(
-  appContext,
-  connection,
-  targetIds = NULL,
-  outcomeTypes = c(0, 1, 2),
-  minCohortSize = 5
-)
+getOutcomeControls(appContext, connection, outcomeTypes = c(0, 1, 2))
 }
 \arguments{
 \item{appContext}{rewardb app context}
@@ -18,8 +12,6 @@ getOutcomeControls(
 \item{connection}{DatabaseConnector connection to postgres rewardb instance}
 
 \item{targetIds}{cohorts to get negative controls for}
-
-\item{minCohortSize}{smaller cohorts are not generally used for calibration as rr values tend to be extremes}
 }
 \value{
 data.frame of negative control exposures for specified outcomes
