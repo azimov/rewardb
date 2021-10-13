@@ -2,7 +2,8 @@ sourceId: 14
 database: iqvia_pharmetrics_plus
 name: "PharMetrics"
 
-exportPath: "D:/reward_results/export_pharmetrics"
+performActiveDataTransfer: TRUE
+exportPath: "E:/export_pharmetrics"
 referencePath: "reference_files"
 
 connectionDetails:
@@ -17,11 +18,11 @@ keyringService: "ohda-prod-1"
 passwordEnvironmentVariable: "REDSHIFT_DB_PASSWORD"
 bulkUpload: True
 
-resultSchema: "scratch_jgilber2"
-referenceSchema: "scratch_jgilber2"
+resultSchema: "reward_iqvia_pharmetrics_plus_v1670"
+referenceSchema: "reward_iqvia_pharmetrics_plus_v1670"
 cdmSchema: "cdm_iqvia_pharmetrics_plus_v1670"
 vocabularySchema: "cdm_iqvia_pharmetrics_plus_v1670"
-drugEraSchema: "scratch_jgilber2"
+drugEraSchema: "reward_iqvia_pharmetrics_plus_v1670"
 cdmVersionTable: "_version"
 
 tables:

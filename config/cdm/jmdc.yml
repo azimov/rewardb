@@ -2,7 +2,9 @@ sourceId: 15
 database: jmdc
 name: "Japan Medical Data Center (JMDC)"
 
-exportPath: "D:/reward_results/export_jmdc"
+performActiveDataTransfer: TRUE
+exportPath: "E:/export_jmdc"
+
 referencePath: "reference_files"
 
 connectionDetails:

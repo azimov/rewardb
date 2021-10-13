@@ -2,7 +2,8 @@ sourceId: 12
 database: truven_mdcd
 name: "IBM MDCD"
 
-exportPath: "D:/reward_results/export_mdcd"
+exportPath: "E:/export_mdcd"
+performActiveDataTransfer: TRUE
 referencePath: "reference_files"
 
 connectionDetails:
