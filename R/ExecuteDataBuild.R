@@ -123,7 +123,7 @@ computeSccResults <- function(cdmConfig,
           # Note, entire data set is not written to a single file!
           vroom::vroom_write(sccBatch, dataFileName, delim = ",", na = "", append = FALSE)
           tryCatch({
-            pgCopy(globalConfig$connectionDetails, dataFileName, config$rewardbResultsSchema, tableName)
+            pgCopy(globalConfig$connectionDetails, dataFileName, globalConfig$rewardbResultsSchema, tableName)
             unlink(dataFileName)
           }, error = function(error, ...) {
             ParallelLogger::logError("Error committing batch to database, writing data to disk AID: ",
@@ -185,6 +185,8 @@ computeSccResults <- function(cdmConfig,
 generateSccResults <- function(cdmConfigFilePath,
                                globalConfig,
                                analysisIds = NULL,
+                               outcomeCohortIds = NULL,
+                               targetCohortIds = NULL,
                                logFileName = "rbDataBuild.log") {
   logger <- .getLogger(logFileName)
   # load config
@@ -196,8 +198,8 @@ generateSccResults <- function(cdmConfigFilePath,
                     connection,
                     analysisIds = analysisIds,
                     exportPath = cdmConfig$exportPath,
-                    outcomeCohortIds = NULL,
-                    targetCohortIds = NULL)
+                    outcomeCohortIds = outcomeCohortIds,
+                    targetCohortIds = targetCohortIds)
   ParallelLogger::unregisterLogger(logger)
 }
 
