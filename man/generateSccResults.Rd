@@ -6,25 +6,23 @@
 \usage{
 generateSccResults(
   cdmConfigFilePath,
-  .createExposureCohorts = TRUE,
-  .createOutcomeCohorts = TRUE,
-  .generateCohortStats = TRUE,
-  .runSCC = TRUE,
+  globalConfig,
+  analysisIds = NULL,
   logFileName = "rbDataBuild.log"
 )
 }
 \arguments{
 \item{cdmConfigFilePath}{path on disk to a yaml configuration file containing all needed config setting to point at relevant cdm}
 
+\item{.createReferences}{create the reference tables (set to false if already ran)}
+
+\item{.addDefaultAtlasCohorts}{use default cohort ids speciefied in config file (these can be added later manually)}
+
 \item{.createExposureCohorts}{Create the drug exposure cohorts default is TRUE}
 
 \item{.createOutcomeCohorts}{Create the outcome cohorts, default is TRUE}
 
 \item{.runSCC}{perform self controlled cohort analysis and add results to the merged output db}
-
-\item{.createReferences}{create the reference tables (set to false if already ran)}
-
-\item{.addDefaultAtlasCohorts}{use default cohort ids speciefied in config file (these can be added later manually)}
 
 \item{dataSources}{vector of strings or null - keys to cdm stores to use. By default all cdms are added for a given config file}
 }

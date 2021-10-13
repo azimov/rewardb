@@ -235,3 +235,22 @@ runAdHocScc <- function(cdmConfigPath,
                     targetCohortIds = targetCohortIds)
   ParallelLogger::unregisterLogger(logger)
 }
+
+#' @title
+#' run Databuild Job
+#' @description
+#' Run analysis job script in rstudio session, this won't block the rstudio thread so other tasks can be completed
+#' NOTE: that this copies the global env (and the values passed will modify .GlobalEnv variables of the same name)
+#'
+#' @param Charachter cdmConfigPath path to cdm configuration file
+#' @param Charachter globalConfigPath path to rewarb global configuration
+#'
+#' @importFrom rstudioapi jobRunScript
+#' @export
+runDatabuildJob <- function(cdmConfigPath, globalConfigPath, rewardReferenceZipPath, name, workingDir = ".") {
+  scriptPath <- system.file("scripts/runAnalysisJob.R", package = "rewardb")
+  .GlobalEnv$cdmConfigPath <- normalizePath(cdmConfigPath)
+  .GlobalEnv$globalConfigPath <- normalizePath(globalConfigPath)
+  .GlobalEnv$rewardReferenceZipPath <- normalizePath(rewardReferenceZipPath)
+  rstudioapi::jobRunScript(scriptPath, name = name, workingDir = workingDir, importEnv = TRUE)
+}

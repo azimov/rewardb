@@ -8,10 +8,6 @@ launchExplorer(globalConfigPath)
 }
 \arguments{
 \item{appConfigPath}{path to configuration file. This is loaded in to the local environment with the appContext variable}
-
-\item{exposureId}{exposure cohort id}
-
-\item{outcomeId}{outcome cohort id}
 }
 \description{
 Launches a Shiny app for a given configuration file

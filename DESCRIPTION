@@ -22,11 +22,11 @@ Depends:
     meta,
     dplyr,
     keyring,
-    CemConnector
+    CemConnector,
+    shiny
 Imports:
     DT,
     gt,
-    shiny,
     shinyWidgets,
     shinydashboard,
     shinycssloaders,
@@ -42,5 +42,5 @@ Remotes:
     OHDSI/CemConnector,
     OHDSI/ROhdsiWebApi,
     OHDSI/DatabaseConnector@develop
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 VignetteBuilder: knitr

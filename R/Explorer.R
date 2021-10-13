@@ -9,6 +9,7 @@
 #' @param session shiny session object
 #' @importFrom gt gt fmt_number render_gt tab_options
 #' @import shiny
+#' @importFrom DT renderDataTable
 explorerServer <- function(input, output, session) {
   secureApplication <- getOption("reward.secure", default = FALSE)
 
@@ -172,7 +173,7 @@ explorerServer <- function(input, output, session) {
 
 #' @import shiny
 #' @import shinydashboard
-#' @import DT
+#' @importFrom DT dataTableOutput
 explorerUi <- function(request) {
   resultsDisplayCondition <- "output.selectedCohorts == 'selected'"
   riskEstimatesPanel <- shiny::tabsetPanel(id = "searchResults",

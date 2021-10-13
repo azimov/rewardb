@@ -6,10 +6,10 @@
 \usage{
 runAdHocScc(
   cdmConfigPath,
+  globalConfig,
   configId,
   outcomeCohortIds = NULL,
   targetCohortIds = NULL,
-  .generateCohortStats = TRUE,
   logFileName = NULL
 )
 }
@@ -22,9 +22,9 @@ runAdHocScc(
 
 \item{targetCohortIds}{- vector of exposure cohort ids or NULL}
 
-\item{.generateCohortStats}{- generate time on treatment and time to outcome stats or not}
-
 \item{logFileName}{logfile used. If null is based on the passed configId}
+
+\item{.generateCohortStats}{- generate time on treatment and time to outcome stats or not}
 
 \item{getDbId}{- assumes CDM version is stored in the cdm_source table}
 }

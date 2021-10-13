@@ -1,3 +1,10 @@
+.requiredVars <- c("globalConfigPath", "cdmConfigPath", "rewardReferenceZipPath")
+.setVars <- sapply(.requiredVars, exists)
+if (!any(.setVars)) {
+  errorMesage <- paste("\nRequired variable:", names(.setVars)[!.unsetVars], "is not set.")
+  stop(errorMesage)
+}
+
 library(rewardb)
 config <- loadGlobalConfiguration(globalConfigPath)
 cdmConfig <- loadCdmConfiguration(cdmConfigPath)

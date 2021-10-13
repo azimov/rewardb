@@ -592,28 +592,28 @@ ReportDbModel$methods(
     queryDb(sql, analysis_id = analysisId, inner_query = innerQuery, snakeCaseToCamelCase = TRUE)
   },
 
-  getOutcomeControls = function(targetIds, sourceIds = NULL, minCohortSize = 10, analysisId = 1) {
-    sql <- loadSqlFile("calibration/outcomeCohortNullData.sql")
+  getOutcomeControls = function(targetIds, sourceIds = NULL, analysisId = 1) {
+    sql <- "SELECT * FROM @schema.outcome_cohort_null_data
+    WHERE target_cohort_id IN (@exposure_ids)
+    AND analysis_id = @analysis_id
+    {@source_ids != ''} ? {AND source_id IN (@source_ids)}
+    "
     return(queryDb(sql,
                    exposure_ids = targetIds,
                    source_ids = sourceIds,
-                   cem = config$cemSchema,
-                   analysis_id = analysisId,
-                   min_cohort_size = minCohortSize,
-                   results_schema = config$rewardbResultsSchema,
-                   vocabulary_schema = config$vocabularySchema))
+                   analysis_id = analysisId))
   },
 
-  getExposureControls = function(outcomeIds, sourceIds = NULL, minCohortSize = 10, analysisId = 1) {
-    sql <- loadSqlFile("calibration/exposureCohortNullData.sql")
+  getExposureControls = function(outcomeIds, sourceIds = NULL, analysisId = 1) {
+    sql <- "SELECT * FROM @schema.exposure_cohort_null_data
+    WHERE outcome_cohort_id IN (@outcome_ids)
+    AND analysis_id = @analysis_id
+    {@source_ids != ''} ? {AND source_id IN (@source_ids)}
+    "
     return(queryDb(sql,
                    outcome_ids = outcomeIds,
                    source_ids = sourceIds,
-                   cem = config$cemSchema,
-                   analysis_id = analysisId,
-                   min_cohort_size = minCohortSize,
-                   results_schema = config$rewardbResultsSchema,
-                   vocabulary = config$vocabularySchema))
+                   analysis_id = analysisId))
   },
 
   getOutcomeType = function(outcomeId) {
