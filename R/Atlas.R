@@ -379,7 +379,8 @@ removeCustomExposureCohort <- function(connection, config, conceptSetId, webApiU
 #' @param configId String configuration id
 #' @param exposure boolean - is this for exposure or outcome cohorts
 #' @export
-sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, sourceUrl, exposure = FALSE, referenceZipFile = NULL) {
+sccAdHocCohorts <- function(cdmConfigPath, globalConfigPath, configId, atlasIds, sourceUrl, exposure = FALSE, referenceZipFile = NULL) {
+  globalConfig <- loadGlobalConfiguration(globalConfigPath)
   cdmConfig <- loadCdmConfiguration(cdmConfigPath)
 
   if (!is.null(referenceZipFile)) {
@@ -427,7 +428,8 @@ sccAdHocCohorts <- function(cdmConfigPath, configId, atlasIds, sourceUrl, exposu
 
   params <- list(
     cdmConfigPath = cdmConfigPath,
-    configId = configId
+    configId = configId,
+    globalConfig = globalConfig
   )
 
   if (exposure) {

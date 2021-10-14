@@ -3,7 +3,8 @@ library(MethodEvaluation)
 source("scripts/controlEvaluationFunctions.R")
 # Ad cohorts to results
 generateCohorts <- FALSE
-config <- loadGlobalConfiguration("config/global-cfg.yml")
+globalConfigPath <- "config/global-cfg.yml"
+config <- loadGlobalConfiguration(globalConfigPath)
 connection <- DatabaseConnector::connect(config$connectionDetails)
 
 cdmConfigPaths <- c(
@@ -67,7 +68,7 @@ if (generateCohorts) {
   for (path in cdmConfigPaths) {
     cdmConfig <- loadCdmConfiguration(path)
     importReferenceTables(cdmConfig, zipFilePath = zipFilePath)
-    resultsFiles <- sccAdHocCohorts(path, configId, c(1, 2, 3, 4), sourceUrl = sourceUrl)
+    resultsFiles <- sccAdHocCohorts(path, globalConfigPath, configId, c(1, 2, 3, 4), sourceUrl = sourceUrl)
     for (table in names(resultsFiles)) {
       for (sqlFile in resultsFiles[[table]]) {
         pgCopy(config$connectionDetails, sqlFile, config$rewardbResultsSchema, table)

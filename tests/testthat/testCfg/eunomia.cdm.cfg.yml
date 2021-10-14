@@ -20,7 +20,7 @@ resultSchema: "rewardb_reference"
 referenceSchema: "rewardb_reference"
 cdmSchema: "eunomia"
 vocabularySchema: "eunomia"
-# drugEraSchema: "reward"
+drugEraSchema: "rewardb_reference"
 
 tables:
   outcomeCohort: "rb_outcome_cohort"

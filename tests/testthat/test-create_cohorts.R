@@ -27,8 +27,8 @@ test_that("Full data generation on CDM", {
   # Should only run the cohorts once!
   expect_true(initialCount == reCount)
 
-  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasExposureCohort1.json", package = "rewardb"))
-  sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
+  cohortDefinition <- RJSONIO::fromJSON(file.path("testCfg", "atlasExposureCohort1.json"))
+  sqlDefinition <- readr::read_file(file.path("testCfg", "atlasCohort1.sql"))
   insertAtlasCohortRef(connection, config, 9999, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
   exportReferenceTables(config, exportZipFile = zipFilePath)
   importReferenceTables(cdmConfig, zipFilePath)
@@ -71,9 +71,9 @@ test_that("Full data generation on CDM", {
   expect_true(initialCount == reCount)
 
   # Test adding a new atlas cohort - requires exporting references again
-  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
+  cohortDefinition <- RJSONIO::fromJSON(file.path("testCfg", "atlasCohort1.json"))
   cohortDefinition$name <- "TEST 2" # requires changing so encoding isn't the same
-  sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
+  sqlDefinition <- readr::read_file(file.path("testCfg", "atlasCohort1.sql"))
   sqlDefinition <- paste(sqlDefinition, "SELECT 1;")
   insertAtlasCohortRef(connection, config, 10001, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
