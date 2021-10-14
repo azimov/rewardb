@@ -1,6 +1,6 @@
 {
   "id": 1,
-  "name": "Pneumonia",
+  "name": "Pneumonia + Strep Throat",
   "description": null,
   "createdBy": "",
   "createdDate": "2019-10-07 16:40",
@@ -35,6 +35,23 @@
               "concept": {
                 "CONCEPT_ID": 255848,
                 "CONCEPT_NAME": "Pneumonia",
+                "STANDARD_CONCEPT": "S",
+                "STANDARD_CONCEPT_CAPTION": "Standard",
+                "INVALID_REASON": "V",
+                "INVALID_REASON_CAPTION": "Valid",
+                "CONCEPT_CODE": "",
+                "DOMAIN_ID": "Condition",
+                "VOCABULARY_ID": "SNOMED",
+                "CONCEPT_CLASS_ID": "Clinical Finding"
+              },
+              "isExcluded": false,
+              "includeDescendants": true,
+              "includeMapped": false
+            },
+            {
+              "concept": {
+                "CONCEPT_ID": 28060,
+                "CONCEPT_NAME": "Streptococcal sore throat",
                 "STANDARD_CONCEPT": "S",
                 "STANDARD_CONCEPT_CAPTION": "Standard",
                 "INVALID_REASON": "V",

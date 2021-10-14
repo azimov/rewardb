@@ -5,7 +5,6 @@
 
 test_that("build rewardb postgres db", {
   buildPgDatabase(configFilePath = configFilePath, recreateCem = TRUE)
-  importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
   qdf <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     "SELECT  * FROM @schema.scc_result",
@@ -38,8 +37,8 @@ test_that("build rewardb postgres db", {
 
 test_that("Add and remove atlas cohort references", {
 
-  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
-  sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
+  cohortDefinition <- RJSONIO::fromJSON(file.path("testCfg", "atlasCohort12047.json"))
+  sqlDefinition <- readr::read_file(file.path("testCfg", "atlasCohort12047.sql"))
   insertAtlasCohortRef(connection = connection, config = config, atlasId = 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(
@@ -62,7 +61,7 @@ test_that("Add and remove atlas cohort references", {
 test_that("Add and remove custom exposure references", {
 
   conceptSetId <- 11933
-  conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
+  conceptSetDefinition <- RJSONIO::fromJSON(file.path("testCfg", "conceptSet1.json"))
   insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
   qdf <- DatabaseConnector::renderTranslateQuerySql(

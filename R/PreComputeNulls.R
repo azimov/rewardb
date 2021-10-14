@@ -33,28 +33,43 @@ getCemExposureNegativeControlConcepts <- function(globalConfig) {
 
   SELECT cohort_definition_id as target_cohort_id,
          concept_id,
-         include_descendants,
-         is_excluded
+         is_excluded,
+         include_descendants
   FROM @schema.atlas_exposure_concept
   "
   exposureCohortConceptSets <- model$queryDb(sql, snakeCaseToCamelCase = TRUE)
+
+  getControlConcepts <- function(conceptSet) {
+    if (nrow(conceptSet) == 0)
+      return(data.frame())
+
+    return(cemConnection$getSuggestedControlCondtions(conceptSet))
+  }
+
   # Get mapped negative control evidence, keeps targetCohortId
   negativControlConcepts <- exposureCohortConceptSets %>%
     dplyr::group_by(targetCohortId) %>%
-    dplyr::group_modify(~cemConnection$getSuggestedControlCondtions(.x), keep = TRUE) %>%
-    dplyr::mutate(cohortDefinitionId = targetCohortId) %>%
-    dplyr::select(cohortDefinitionId, conceptId)
+    dplyr::filter(!all(as.logical(isExcluded))) %>% # Exclude groupings that only have excluded elements in concept set
+    dplyr::group_modify(~getControlConcepts(.x), keep = TRUE)
 
-  connection <- DatabaseConnector::connect(globalConfig$connectionDetails)
-  on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
-  # Insert negative control concept sets
-  DatabaseConnector::insertTable(connection,
-                                 data = negativControlConcepts,
-                                 databaseSchema = globalConfig$rewardbResultsSchema,
-                                 tableName = "exposure_negative_control_concept",
-                                 dropTableIfExists = TRUE,
-                                 camelCaseToSnakeCase = TRUE,
-                                 createTable = TRUE)
+  if (nrow(negativControlConcepts)) {
+    negativControlConcepts <- negativControlConcepts %>%
+      dplyr::mutate(cohortDefinitionId = targetCohortId) %>%
+      dplyr::select(cohortDefinitionId, conceptId)
+
+    connection <- DatabaseConnector::connect(globalConfig$connectionDetails)
+    on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
+    # Insert negative control concept sets
+    DatabaseConnector::insertTable(connection,
+                                   data = negativControlConcepts,
+                                   databaseSchema = globalConfig$rewardbResultsSchema,
+                                   tableName = "exposure_negative_control_concept",
+                                   dropTableIfExists = TRUE,
+                                   camelCaseToSnakeCase = TRUE,
+                                   createTable = TRUE)
+  } else {
+    warning("No concept mappings found")
+  }
 }
 
 outcomeNullDistsProc <- function(nullData) {
@@ -116,13 +131,13 @@ getCemOutcomeNegativeControlConcepts <- function(globalConfig) {
   model <- ReportDbModel(globalConfig)
   sql <- "
   SELECT DISTINCT
-    cd.cohort_definition_id as outcome_cohort_id,
+    ocd.cohort_definition_id as outcome_cohort_id,
     c.concept_id,
-    c.IS_EXCLUDED,
-    c.INCLUDE_DESCENDANTS
+    c.INCLUDE_DESCENDANTS,
+    c.IS_EXCLUDED
   from @schema.concept_set_definition c
   INNER JOIN @schema.outcome_cohort_definition ocd ON ocd.CONCEPTSET_ID = c.conceptset_id
-  INNER JOIN @schema.scc_result r ON r.outcome_cohort_id = cd.cohort_definition_id
+  INNER JOIN @schema.scc_result r ON r.outcome_cohort_id = ocd.cohort_definition_id
   WHERE rr IS NOT NULL
 
   UNION
@@ -134,23 +149,36 @@ getCemOutcomeNegativeControlConcepts <- function(globalConfig) {
   FROM @schema.atlas_outcome_concept
   "
   outcomeCohortConceptSets <- model$queryDb(sql, snakeCaseToCamelCase = TRUE)
+  getControlConcepts <- function(conceptSet) {
+    if (nrow(conceptSet) == 0)
+      return(data.frame())
+
+    return(cemConnection$getSuggestedControlIngredients(conceptSet))
+  }
   # Get mapped negative control evidence, keeps targetCohortId
   negativControlConcepts <- outcomeCohortConceptSets %>%
     dplyr::group_by(outcomeCohortId) %>%
-    dplyr::group_modify(~cemConnection$getSuggestedControlIngredients(.x), keep = TRUE) %>%
-    dplyr::mutate(cohortDefinitionId = outcomeCohortId) %>%
-    dplyr::select(cohortDefinitionId, conceptId)
+    dplyr::filter(!all(as.logical(isExcluded))) %>% # Exclude groupings that only have excluded elements in concept set
+    dplyr::group_modify(~getControlConcepts(.x), keep = TRUE)
 
-  connection <- DatabaseConnector::connect(globalConfig$connectionDetails)
-  on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
-  # Insert negative control concept sets
-  DatabaseConnector::insertTable(connection,
-                                 data = negativControlConcepts,
-                                 databaseSchema = globalConfig$rewardbResultsSchema,
-                                 tableName = "outcome_negative_control_concept",
-                                 dropTableIfExists = TRUE,
-                                 camelCaseToSnakeCase = TRUE,
-                                 createTable = TRUE)
+  if (nrow(negativControlConcepts)) {
+    negativControlConcepts <- negativControlConcepts %>%
+      dplyr::mutate(cohortDefinitionId = outcomeCohortId) %>%
+      dplyr::select(cohortDefinitionId, conceptId)
+      browser()
+      connection <- DatabaseConnector::connect(globalConfig$connectionDetails)
+      on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
+      # Insert negative control concept sets
+      DatabaseConnector::insertTable(connection,
+                                     data = negativControlConcepts,
+                                     databaseSchema = globalConfig$rewardbResultsSchema,
+                                     tableName = "outcome_negative_control_concept",
+                                     dropTableIfExists = TRUE,
+                                     camelCaseToSnakeCase = TRUE,
+                                     createTable = TRUE)
+  } else {
+    warning("No concept mappings found")
+  }
 }
 
 exposureNullDistsProc <- function(nullData) {
@@ -197,6 +225,7 @@ computeExposureNullDistributions <- function(config, analysisId = 1, sourceIds =
   # Cut in to group by exposure id, source id, analysis id
   nullData <- nullData %>% dplyr::group_split(sourceId, analysisId, outcomeCohortId)
   res <- ParallelLogger::clusterApply(cluster, nullData, exposureNullDistsProc)
+  browser()
   rows <- do.call(rbind, res)
 
   colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
@@ -216,7 +245,7 @@ computeExposureNullDistributions <- function(config, analysisId = 1, sourceIds =
 #' @param minCohortSize             Minimum size of cohort to use as a negative control. Default is 5
 #' @export
 runPreComputeNullDistributions <- function(globalConfigPath,
-                                           analysisId = 1,
+                                           analysisId = c(1:5),
                                            sourceIds = NULL,
                                            nThreads = 10,
                                            getCemMappings = TRUE,
@@ -230,16 +259,15 @@ runPreComputeNullDistributions <- function(globalConfigPath,
     getCemOutcomeNegativeControlConcepts(globalConfig)
   }
 
+  message("Computing Expsoure null distributions")
   computeExposureNullDistributions(globalConfig,
                                    analysisId = analysisId,
                                    sourceIds = sourceIds,
-                                   sourceIds = sourceIds,
                                    minCohortSize = minCohortSize,
                                    nThreads = nThreads)
-
+  message("Computing Outcome null distributions")
   computeOutcomeNullDistributions(globalConfig,
                                   analysisId = analysisId,
-                                  sourceIds = sourceIds,
                                   sourceIds = sourceIds,
                                   minCohortSize = minCohortSize,
                                   nThreads = nThreads)

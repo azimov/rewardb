@@ -4,7 +4,8 @@ devtools::load_all()
 
 atlasIds <- c(382,381)
 refZipFile <- "reward-reference.zip"
-config <- loadGlobalConfiguration("config/global-cfg.yml")
+globalConfigPath <- "config/global-cfg.yml"
+config <- loadGlobalConfiguration(globalConfigPath)
 
 ROhdsiWebApi::authorizeWebApi(config$webApiUrl, "windows")
 
@@ -33,7 +34,7 @@ cdmConfigPaths <-c(
 
 
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFiles <- sccAdHocCohorts(cdmConfigPath, configId, atlasIds, config$webApiUrl, referenceZipFile = refZipFile)
+  resultsFiles <- sccAdHocCohorts(cdmConfigPath, globalConfigPath, configId, atlasIds, config$webApiUrl, referenceZipFile = refZipFile)
   # Copy files
 }
 
@@ -41,7 +42,7 @@ for (cdmConfigPath in cdmConfigPaths) {
 atlasExposureId <- c()
 resultsFilesMas <- list()
 for (cdmConfigPath in cdmConfigPaths) {
-  resultsFilesMas[cdmConfigPath] <- sccAdHocCohorts(cdmConfigPath, configId, atlasExposureId, exposure = TRUE)
+  resultsFilesMas[cdmConfigPath] <- sccAdHocCohorts(cdmConfigPath, globalConfigPath, configId, atlasExposureId, exposure = TRUE)
 }
 # Copy files
 

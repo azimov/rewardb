@@ -24,7 +24,7 @@ test_that("export works", {
 
   # Create a csv file
   createCsv(filename = "test_file.csv", path = folder)
-  config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
+  config <- yaml::read_yaml(file.path("testCfg", "test.cfg.yml"))
   config$exportPath <- folder
   rewardb::exportResults(config, exportZipFile = zipFilePath)
   expect_true(checkmate::check_file_exists(zipFilePath))
@@ -44,7 +44,7 @@ test_that("bad checksums fail - modify zipped csv after function", {
 
   # Create a csv file
   createCsv(filename = "test_file.csv", path = folder)
-  config <- yaml::read_yaml(system.file("tests", "test.cfg.yml", package = "rewardb"))
+  config <- yaml::read_yaml(file.path("testCfg", "test.cfg.yml"))
   config$exportPath <- folder
   rewardb::exportResults(config, exportZipFile = zipFilePath)
   # Change the csv file inside the zip

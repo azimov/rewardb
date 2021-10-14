@@ -1,8 +1,8 @@
-configFilePath <- system.file("tests", "test.cfg.yml", package = "rewardb")
+configFilePath <- file.path("testCfg", "test.cfg.yml")
 config <- loadGlobalConfiguration(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
 
-cdmConfigPath <- system.file("tests", "eunomia.cdm.cfg.yml", package = "rewardb")
+cdmConfigPath <- file.path("testCfg", "eunomia.cdm.cfg.yml")
 cdmConfig <- loadCdmConfiguration(cdmConfigPath)
 
 zipFilePath <- "rewardb-references.zip"
@@ -21,28 +21,27 @@ withr::defer({
   DatabaseConnector::disconnect(connection)
 }, testthat::teardown_env())
 
-appContextFile <- system.file("tests", "test.dashboard.yml", package = "rewardb")
+appContextFile <- file.path("testCfg", "test.dashboard.yml")
 
 pgDbSetup <- function () {
   buildPgDatabase(configFilePath = configFilePath, recreateCem = TRUE)
-  importCemSummary(system.file("tests", "matrix_summary.csv", package = "rewardb"), configFilePath = configFilePath)
 }
 
 setupAtlasCohorts <- function() {
-  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort1.json", package = "rewardb"))
-  sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort1.sql", package = "rewardb"))
+  cohortDefinition <- RJSONIO::fromJSON(file.path("testCfg", "atlasCohort1.json"))
+  sqlDefinition <- readr::read_file(file.path("testCfg", "atlasCohort1.sql"))
   insertAtlasCohortRef(connection, config, 1, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
-  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasCohort12047.json", package = "rewardb"))
-  sqlDefinition <- readr::read_file(system.file("tests", "atlasCohort12047.sql", package = "rewardb"))
+  cohortDefinition <- RJSONIO::fromJSON(file.path("testCfg", "atlasCohort12047.json"))
+  sqlDefinition <- readr::read_file(file.path("testCfg", "atlasCohort12047.sql"))
   insertAtlasCohortRef(connection, config, 12047, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition)
 
-  cohortDefinition <- RJSONIO::fromJSON(system.file("tests", "atlasExposureCohort19321.json", package = "rewardb"))
-  sqlDefinition <- readr::read_file(system.file("tests", "atlasExposureCohort19321.sql", package = "rewardb"))
+  cohortDefinition <- RJSONIO::fromJSON(file.path("testCfg", "atlasExposureCohort19321.json"))
+  sqlDefinition <- readr::read_file(file.path("testCfg", "atlasExposureCohort19321.sql"))
   insertAtlasCohortRef(connection, config, 19321, cohortDefinition = cohortDefinition, sqlDefinition = sqlDefinition, exposure = TRUE)
 
   conceptSetId <- 11933
-  conceptSetDefinition <- RJSONIO::fromJSON(system.file("tests", "conceptSet1.json", package = "rewardb"))
+  conceptSetDefinition <- RJSONIO::fromJSON(file.path("testCfg", "conceptSet1.json"))
   insertCustomExposureRef(connection, config, conceptSetId, "Test Exposure Cohort", conceptSetDefinition = conceptSetDefinition)
 
 }
@@ -53,7 +52,6 @@ fullDbSetup <- function() {
   registerCdm(connection, config, cdmConfig)
   exportReferenceTables(config)
   importReferenceTables(cdmConfig, zipFilePath)
-
 }
 
 runDataBuild <- function() {
