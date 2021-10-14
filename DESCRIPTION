@@ -40,7 +40,7 @@ Suggests:
     shinymanager
 Remotes:
     OHDSI/SelfControlledCohort@batch_read,
-    OHDSI/CemConnector,
+    OHDSI/CemConnector@develop,
     OHDSI/ROhdsiWebApi,
     OHDSI/DatabaseConnector@develop
 RoxygenNote: 7.1.2
