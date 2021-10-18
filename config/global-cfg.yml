@@ -14,3 +14,6 @@ cemSchema: "cem"
 cacheDir: "/Users/jamie/PycharmProjects/REWARD_B_dashboard/app-cache"
 
 keyringService: "reward-db"
+
+cemConnectionDetails:
+  apiUrl: http://cem.ohdsi.org:8080
