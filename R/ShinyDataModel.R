@@ -432,7 +432,7 @@ ReportDbModel$methods(
     result <- cacheQuery("exposureCohortsCounted", sql, snakeCaseToCamelCase = TRUE)
   },
 
-  getOutcomeNullDistributions = function(exposureId, analysisId, outcomeType = 0, sourceIds = NULL) {
+  getOutcomeNullDistributions = function(exposureId, analysisId, outcomeType, sourceIds = NULL) {
     sql <- "
     SELECT * FROM @schema.outcome_null_distributions
     WHERE analysis_id = @analysis_id
@@ -499,7 +499,10 @@ ReportDbModel$methods(
     nullDists <- data.frame()
     if (calibrationType == 'outcomes') {
       outcomeType <- getOutcomeType(outcomeId)
-      nullDists <- getOutcomeNullDistributions(exposureId, analysisId, ifelse(outcomeType == 1, 1, 0), sourceIds = sourceIds)
+      nullDists <- getOutcomeNullDistributions(exposureId,
+                                               analysisId,
+                                               ifelse(outcomeType == 3, 2, outcomeType),
+                                               sourceIds = sourceIds)
     }
 
     if (calibrationType == 'exposures') {
@@ -547,7 +550,10 @@ ReportDbModel$methods(
     nullDists <- data.frame()
     if (calibrationType == "outcomes") {
       outcomeType <- getOutcomeType(outcomeId)
-      nullDists <- getOutcomeNullDistributions(exposureId, analysisId, ifelse(outcomeType == 1, 1, 0), sourceIds = sourceIds)
+      nullDists <- getOutcomeNullDistributions(exposureId,
+                                               analysisId,
+                                               ifelse(outcomeType == 3, 2, outcomeType),
+                                               sourceIds = sourceIds)
     }
 
     if (calibrationType == 'exposures') {
@@ -624,5 +630,31 @@ ReportDbModel$methods(
   getExposureOutcomeRows = function(exposure, outcome, calibrated) {
     sql <- readr::read_file(system.file("sql/queries/", "getTargetOutcomeRows.sql", package = "rewardb"))
     queryDb(sql, treatment = exposure, outcome = outcome, calibrated = 0, use_calibration = FALSE, result = 'scc_result')
+  },
+
+  getOutcomeConceptSet = function(outcomeId) {
+    queryDb("SELECT c.concept_name,
+             oc.condition_concept_id as concept_id,
+             include_descendants,
+             is_excluded
+             from @schema.outcome_concept oc
+             inner join @vocabulary_schema.concept c on c.concept_id = oc.condition_concept_id
+             WHERE outcome_cohort_id = @outcome",
+            outcome = outcomeId,
+            vocabulary_schema = config$vocabularySchema,
+            snakeCaseToCamelCase = TRUE)
+  },
+
+  getExposureConceptSet = function(exposureId) {
+    queryDb("SELECT c.concept_name,
+             tc.concept_id,
+             include_descendants,
+             is_excluded
+             from @schema.target_concept tc
+             inner join @vocabulary_schema.concept c on c.concept_id = tc.concept_id
+             WHERE target_cohort_id = @exposure",
+            exposure = exposureId,
+            vocabulary_schema = config$vocabularySchema,
+            snakeCaseToCamelCase = TRUE)
   }
 )
