@@ -1,9 +1,0 @@
-name: 'IL-17 inhibitors'
-short_name: Il17
-description: 'Dashboard for all outcomes for IL-17 inhibitor exposures'
-outcome_concept_ids: ~
-custom_outcome_cohort_ids: ~
-target_concept_ids: [45892883, 1592513, 35603563]
-custom_exposure_ids: [11721]
-useExposureControls: False
-dataSources: [10, 11, 12, 13]

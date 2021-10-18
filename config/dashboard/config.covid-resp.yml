@@ -1,8 +1,0 @@
-name: 'COVID-19 respiritory disease outcomes'
-short_name: covid_resp
-description: 'Dashboard for COVID-19 respiratory disease outcomes'
-outcome_concept_ids: [255848, 319049, 4266367, 312437] # These will be multiplied by 100
-custom_outcome_cohort_ids: ~ # These will not be multiplied by 100
-target_concept_ids: ~
-useExposureControls: True
-dataSources: [10, 11, 12, 13]
