@@ -50,7 +50,7 @@ getCemExposureNegativeControlConcepts <- function(globalConfig) {
   negativControlConcepts <- exposureCohortConceptSets %>%
     dplyr::group_by(targetCohortId) %>%
     dplyr::filter(!all(as.logical(isExcluded))) %>% # Exclude groupings that only have excluded elements in concept set
-    dplyr::group_modify(~getControlConcepts(.x), keep = TRUE)
+    dplyr::group_modify(~getControlConcepts(.x), .keep = TRUE)
 
   if (nrow(negativControlConcepts)) {
     negativControlConcepts <- negativControlConcepts %>%
@@ -71,57 +71,6 @@ getCemExposureNegativeControlConcepts <- function(globalConfig) {
     warning("No concept mappings found")
   }
 }
-
-outcomeNullDistsProc <- function(nullData) {
-  nullDist <- EmpiricalCalibration::fitNull(logRr = log(nullData$rr), seLogRr = nullData$seLogRr)
-  absSysError <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(nullDist)
-  results <- data.frame(sourceId = nullData$sourceId[1],
-                        analysisId = nullData$analysisId[1],
-                        outcomeType = nullData$outcomeType[1],
-                        targetCohortId = nullData$targetCohortId[1],
-                        ingredientConceptId = nullData$ingredientConceptId[1],
-                        nullDistMean = nullDist["mean"],
-                        nullDistSd = nullDist["sd"],
-                        absoluteError = absSysError,
-                        nControls = nrow(nullData))
-
-  return(results)
-}
-
-#' @title
-#' Compute null exposure distributions
-#' @description
-#' Compute the null exposure distribution for all exposure cohorts (requires results and cem_matrix summary table)
-computeOutcomeNullDistributions <- function(config, analysisId = 1, sourceIds = NULL, nThreads = 10, minCohortSize = 5) {
-  cluster <- ParallelLogger::makeCluster(nThreads)
-  connection <- DatabaseConnector::connect(config$connectionDetails)
-  on.exit({
-    DatabaseConnector::disconnect(connection)
-    ParallelLogger::stopCluster(cluster)
-  }, add = TRUE)
-
-  # Cache results in table to speed up process
-  loadRenderTranslateExecuteSql(connection,
-                              "calibration/outcomeCohortNullData.sql",
-                              results_schema = config$rewardbResultsSchema,
-                              min_cohort_size = minCohortSize,
-                              analysis_id = analysisId,
-                              source_ids = sourceIds)
-
-  sql <- "SELECT * FROM @results_schema.outcome_cohort_null_data;"
-  nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
-                                                         sql,
-                                                         results_schema = config$rewardbResultsSchema,
-                                                         snakeCaseToCamelCase = TRUE)
-  # Cut in to group by exposure id, source id, analysis id
-  nullData <- nullData %>% dplyr::group_split(sourceId, analysisId, targetCohortId, outcomeType)
-  res <- ParallelLogger::clusterApply(cluster, nullData, outcomeNullDistsProc)
-  rows <- do.call(rbind, res)
-
-  colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
-  pgCopyDataFrame(config$connectionDetails, rows, schema = config$rewardbResultsSchema, "outcome_null_distributions")
-}
-
 
 #' Gets negative control outcome concepts for exposure cohorts
 getCemOutcomeNegativeControlConcepts <- function(globalConfig) {
@@ -149,59 +98,125 @@ getCemOutcomeNegativeControlConcepts <- function(globalConfig) {
   FROM @schema.atlas_outcome_concept
   "
   outcomeCohortConceptSets <- model$queryDb(sql, snakeCaseToCamelCase = TRUE)
+
   getControlConcepts <- function(conceptSet) {
     if (nrow(conceptSet) == 0)
       return(data.frame())
 
     return(cemConnection$getSuggestedControlIngredients(conceptSet))
   }
+
   # Get mapped negative control evidence, keeps targetCohortId
   negativControlConcepts <- outcomeCohortConceptSets %>%
     dplyr::group_by(outcomeCohortId) %>%
     dplyr::filter(!all(as.logical(isExcluded))) %>% # Exclude groupings that only have excluded elements in concept set
-    dplyr::group_modify(~getControlConcepts(.x), keep = TRUE)
+    dplyr::group_modify(~getControlConcepts(.x), .keep = TRUE)
 
   if (nrow(negativControlConcepts)) {
     negativControlConcepts <- negativControlConcepts %>%
       dplyr::mutate(cohortDefinitionId = outcomeCohortId) %>%
       dplyr::select(cohortDefinitionId, conceptId)
-      browser()
-      connection <- DatabaseConnector::connect(globalConfig$connectionDetails)
-      on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
-      # Insert negative control concept sets
-      DatabaseConnector::insertTable(connection,
-                                     data = negativControlConcepts,
-                                     databaseSchema = globalConfig$rewardbResultsSchema,
-                                     tableName = "outcome_negative_control_concept",
-                                     dropTableIfExists = TRUE,
-                                     camelCaseToSnakeCase = TRUE,
-                                     createTable = TRUE)
+    connection <- DatabaseConnector::connect(globalConfig$connectionDetails)
+    on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
+    # Insert negative control concept sets
+    DatabaseConnector::insertTable(connection,
+                                   data = negativControlConcepts,
+                                   databaseSchema = globalConfig$rewardbResultsSchema,
+                                   tableName = "outcome_negative_control_concept",
+                                   dropTableIfExists = TRUE,
+                                   camelCaseToSnakeCase = TRUE,
+                                   createTable = TRUE)
   } else {
     warning("No concept mappings found")
   }
 }
 
-exposureNullDistsProc <- function(nullData) {
-  nullDist <- EmpiricalCalibration::fitNull(logRr = log(nullData$rr), seLogRr = nullData$seLogRr)
-  absSysError <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(nullDist)
-  results <- data.frame(sourceId = nullData$sourceId[1],
-                        analysisId = nullData$analysisId[1],
-                        outcomeType = nullData$outcomeType[1],
-                        outcomeCohortId = nullData$outcomeCohortId[1],
-                        outcomeConceptId = nullData$outcomeConceptId[1],
-                        nullDistMean = nullDist["mean"],
-                        nullDistSd = nullDist["sd"],
-                        absoluteError = absSysError,
-                        nControls = nrow(nullData))
-
-  return(results)
-}
 
 #' @title
-#' Compute null exposure distributions
+#' meta analysis
 #' @description
-#' Compute the null exposure distribution for all exposure cohorts (requires results and cem_matrix summary table)
-computeExposureNullDistributions <- function(config, analysisId = 1, sourceIds = NULL, nThreads = 10, minCohortSize = 5) {
+#' compute meta-analysis across data sources provided in table
+#' Perform meta-analysis on data sources
+#' @param table data.frame
+#' @return data.frame - results of meta analysis
+#' @importFrom meta metainc
+runMetaAnalysis <- function(table) {
+  # Compute meta analysis with random effects model
+  results <- meta::metainc(data = table,
+                           event.e = tCases,
+                           time.e = tPt,
+                           event.c = cCases,
+                           time.c = cPt,
+                           sm = "IRR",
+                           model.glmm = "UM.RS")
+
+  row <- data.frame(sourceId = -99,
+                    outcomeCohortId = table$outcomeCohortId[1],
+                    targetCohortId = table$targetCohortId[1],
+                    analysisId = table$analysisId[1],
+                    tAtRisk = sum(table$tAtRisk),
+                    tPt = sum(table$tPt),
+                    tCases = sum(table$tCases),
+                    cAtRisk = sum(table$cAtRisk),
+                    cPt = sum(table$cPt),
+                    cCases = sum(table$cCases),
+                    rr = exp(results$TE.random),
+                    seLogRr = results$seTE.random,
+                    lb95 = exp(results$lower.random),
+                    ub95 = exp(results$upper.random),
+                    pValue = results$pval.random,
+                    i2 = results$I2)
+
+  if ("outcomeType" %in% names(table)) {
+    row$outcomeType <- table$outcomeType[1]
+  }
+
+  return(row)
+}
+
+populateOutcomeCohortNullData <- function(config, analysisIds, sourceIds = NULL, minCohortSize = 5, nThreads = 10) {
+  cluster <- ParallelLogger::makeCluster(nThreads)
+  connection <- DatabaseConnector::connect(config$connectionDetails)
+  on.exit({
+    DatabaseConnector::disconnect(connection)
+    ParallelLogger::stopCluster(cluster)
+  }, add = TRUE)
+
+  # Cache results in table to speed up process
+  loadRenderTranslateExecuteSql(connection,
+                                "calibration/outcomeCohortNullData.sql",
+                                results_schema = config$rewardbResultsSchema,
+                                min_cohort_size = minCohortSize,
+                                analysis_id = analysisIds,
+                                source_ids = sourceIds)
+
+  # compute meta-analysis
+  sql <- "SELECT * FROM @results_schema.outcome_cohort_null_data;"
+  nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                         sql,
+                                                         results_schema = config$rewardbResultsSchema,
+                                                         snakeCaseToCamelCase = TRUE)
+
+  if (nrow(nullData) > 0) {
+    # Cut in to group by exposure id, outcome_id, analysis id
+    groupedNulls <- nullData %>% dplyr::group_split(analysisId, outcomeCohortId, targetCohortId)
+  
+    res <- ParallelLogger::clusterApply(cluster, groupedNulls, runMetaAnalysis)
+    rows <- do.call(rbind, res)
+
+    colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
+    rows <- dplyr::rename(rows, i2 = i_2)
+
+    DatabaseConnector::insertTable(connection,
+                                   data = rows,
+                                   databaseSchema = config$rewardbResultsSchema,
+                                   tableName = "outcome_cohort_null_data",
+                                   createTable = FALSE,
+                                   dropTableIfExists = FALSE)
+  }
+}
+
+populateExposureCohortNullData <- function(config, analysisIds, sourceIds = NULL, minCohortSize = 5, nThreads = 10) {
   cluster <- ParallelLogger::makeCluster(nThreads)
   connection <- DatabaseConnector::connect(config$connectionDetails)
   on.exit({
@@ -214,8 +229,99 @@ computeExposureNullDistributions <- function(config, analysisId = 1, sourceIds =
                                 "calibration/exposureCohortNullData.sql",
                                 results_schema = config$rewardbResultsSchema,
                                 min_cohort_size = minCohortSize,
-                                analysis_id = analysisId,
+                                analysis_id = analysisIds,
                                 source_ids = sourceIds)
+
+  sql <- "SELECT * FROM @results_schema.exposure_cohort_null_data;"
+  nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                         sql,
+                                                         results_schema = config$rewardbResultsSchema,
+                                                         snakeCaseToCamelCase = TRUE)
+
+  if (nrow(nullData) > 0) {
+    # Cut in to group by exposure id, source id, analysis id
+    nullData <- nullData %>% dplyr::group_split(analysisId, targetCohortId, outcomeCohortId)
+    res <- ParallelLogger::clusterApply(cluster, nullData, runMetaAnalysis)
+    rows <- do.call(rbind, res)
+    colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
+    rows <- dplyr::rename(rows, i2 = i_2)
+    DatabaseConnector::insertTable(connection,
+                                   data = rows,
+                                   databaseSchema = config$rewardbResultsSchema,
+                                   tableName = "exposure_cohort_null_data",
+                                   createTable = FALSE,
+                                   dropTableIfExists = FALSE)
+  }
+}
+
+outcomeNullDistsProc <- function(nullData) {
+  nullDist <- EmpiricalCalibration::fitNull(logRr = log(nullData$rr), seLogRr = nullData$seLogRr)
+  absSysError <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(nullDist)
+  results <- data.frame(sourceId = nullData$sourceId[1],
+                        analysisId = nullData$analysisId[1],
+                        outcomeType = nullData$outcomeType[1],
+                        targetCohortId = nullData$targetCohortId[1],
+                        nullDistMean = nullDist["mean"],
+                        nullDistSd = nullDist["sd"],
+                        absoluteError = absSysError,
+                        nControls = nrow(nullData))
+
+  return(results)
+}
+
+exposureNullDistsProc <- function(nullData) {
+  nullDist <- EmpiricalCalibration::fitNull(logRr = log(nullData$rr), seLogRr = nullData$seLogRr)
+  absSysError <- EmpiricalCalibration::computeExpectedAbsoluteSystematicError(nullDist)
+  results <- data.frame(sourceId = nullData$sourceId[1],
+                        analysisId = nullData$analysisId[1],
+                        outcomeCohortId = nullData$outcomeCohortId[1],
+                        nullDistMean = nullDist["mean"],
+                        nullDistSd = nullDist["sd"],
+                        absoluteError = absSysError,
+                        nControls = nrow(nullData))
+
+  return(results)
+}
+
+#' @title
+#' Compute null exposure distributions
+#' @description
+#' Compute the null exposure distribution for all exposure cohorts (requires results and cem_matrix summary table)
+computeOutcomeNullDistributions <- function(config, analysisId = 1, nThreads = 10) {
+  cluster <- ParallelLogger::makeCluster(nThreads)
+  connection <- DatabaseConnector::connect(config$connectionDetails)
+  on.exit({
+    DatabaseConnector::disconnect(connection)
+    ParallelLogger::stopCluster(cluster)
+  }, add = TRUE)
+
+  sql <- "SELECT * FROM @results_schema.outcome_cohort_null_data;"
+  nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                         sql,
+                                                         results_schema = config$rewardbResultsSchema,
+                                                         snakeCaseToCamelCase = TRUE)
+  # Cut in to group by exposure id, source id, analysis id
+  nullData <- nullData %>% dplyr::group_split(sourceId, analysisId, targetCohortId, outcomeType)
+  res <- ParallelLogger::clusterApply(cluster, nullData, outcomeNullDistsProc)
+
+  if (length(res) > 0) {
+    rows <- do.call(rbind, res)
+    colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
+    pgCopyDataFrame(config$connectionDetails, rows, schema = config$rewardbResultsSchema, "outcome_null_distributions")
+  }
+}
+
+#' @title
+#' Compute null exposure distributions
+#' @description
+#' Compute the null exposure distribution for all exposure cohorts (requires results and cem_matrix summary table)
+computeExposureNullDistributions <- function(config, analysisId = 1, nThreads = 10) {
+  cluster <- ParallelLogger::makeCluster(nThreads)
+  connection <- DatabaseConnector::connect(config$connectionDetails)
+  on.exit({
+    DatabaseConnector::disconnect(connection)
+    ParallelLogger::stopCluster(cluster)
+  }, add = TRUE)
 
   sql <- "SELECT * FROM @results_schema.exposure_cohort_null_data;"
   nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
@@ -225,11 +331,11 @@ computeExposureNullDistributions <- function(config, analysisId = 1, sourceIds =
   # Cut in to group by exposure id, source id, analysis id
   nullData <- nullData %>% dplyr::group_split(sourceId, analysisId, outcomeCohortId)
   res <- ParallelLogger::clusterApply(cluster, nullData, exposureNullDistsProc)
-  browser()
-  rows <- do.call(rbind, res)
-
-  colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
-  pgCopyDataFrame(config$connectionDetails, rows, schema = config$rewardbResultsSchema, "exposure_null_distributions")
+  if (length(res) > 0) {
+    rows <- do.call(rbind, res)
+    colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
+    pgCopyDataFrame(config$connectionDetails, rows, schema = config$rewardbResultsSchema, "exposure_null_distributions")
+  }
 }
 
 #' @title
@@ -259,17 +365,19 @@ runPreComputeNullDistributions <- function(globalConfigPath,
     getCemOutcomeNegativeControlConcepts(globalConfig)
   }
 
+  message("Populating outcome cohort null data")
+  populateOutcomeCohortNullData(globalConfig, analysisId, sourceIds = sourceIds, minCohortSize = minCohortSize)
+
+  message("Populating exposure cohort null data")
+  populateExposureCohortNullData(globalConfig, analysisId, sourceIds = sourceIds, minCohortSize = minCohortSize)
+
   message("Computing Expsoure null distributions")
   computeExposureNullDistributions(globalConfig,
                                    analysisId = analysisId,
-                                   sourceIds = sourceIds,
-                                   minCohortSize = minCohortSize,
                                    nThreads = nThreads)
   message("Computing Outcome null distributions")
   computeOutcomeNullDistributions(globalConfig,
                                   analysisId = analysisId,
-                                  sourceIds = sourceIds,
-                                  minCohortSize = minCohortSize,
                                   nThreads = nThreads)
 }
 

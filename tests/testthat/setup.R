@@ -1,3 +1,4 @@
+set.seed(1337)
 configFilePath <- file.path("testCfg", "test.cfg.yml")
 config <- loadGlobalConfiguration(configFilePath)
 connection <- DatabaseConnector::connect(connectionDetails = config$connectionDetails)
@@ -9,9 +10,14 @@ zipFilePath <- "rewardb-references.zip"
 refFolder <- "reference_test_folder"
 unlink(zipFilePath)
 unlink(refFolder)
+cemConnection <- getCemConnection()
 
 # Cleanup test dir
 withr::defer({
+  cemConnection$finalize()
+  # Remove any fake drug eras
+  delStment <- "DELETE FROM eunomia.drug_era WHERE drug_era_id IS NULL"
+  DatabaseConnector::renderTranslateExecuteSql(connection, delStment)
   unlink(zipFilePath, recursive = TRUE, force = TRUE)
   unlink(refFolder, recursive = TRUE, force = TRUE)
   unlink(cdmConfig$referenceFolder, recursive = TRUE, force = TRUE)
@@ -21,9 +27,46 @@ withr::defer({
   DatabaseConnector::disconnect(connection)
 }, testthat::teardown_env())
 
+# Strep is common in eunomia, negative controls for it are not
+strepConceptId <- 28060
+controls <- cemConnection$getSuggestedControlIngredients(conditionConceptSet = data.frame(conceptId=c(strepConceptId)))
+# Insert simulated negative control drug eras for Strep concept
+for (controlConceptId in controls$conceptId) {
+  insertSimulatedExposure(connection,
+                          strepConceptId,
+                          controlConceptId,
+                          sample(1:50, 1),
+                          sample(1:50, 1))
+}
+
+controls$domainId <- "Drug"
+controls$vocabularyId <- "RxNorm"
+controls$conceptClassId <- "Ingredient"
+controls$standardConcept <- "S"
+controls$conceptCode <- controls$conceptId
+controls$validStartDate <- as.Date("1970-01-01")
+controls$validEndDate <- as.Date("2099-12-31")
+
+DatabaseConnector::insertTable(connection,
+                               data = controls,
+                               databaseSchema = "eunomia",
+                               tableName = "concept",
+                               dropTableIfExists = FALSE,
+                               camelCaseToSnakeCase = TRUE,
+                               createTable = FALSE)
+
+DatabaseConnector::insertTable(connection,
+                               data = controls,
+                               databaseSchema = "vocabulary",
+                               tableName = "concept",
+                               dropTableIfExists = FALSE,
+                               camelCaseToSnakeCase = TRUE,
+                               createTable = FALSE)
+
+
 appContextFile <- file.path("testCfg", "test.dashboard.yml")
 
-pgDbSetup <- function () {
+pgDbSetup <- function() {
   buildPgDatabase(configFilePath = configFilePath, recreateCem = TRUE)
 }
 
