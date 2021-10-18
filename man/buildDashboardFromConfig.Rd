@@ -8,7 +8,8 @@ buildDashboardFromConfig(
   filePath,
   globalConfigPath,
   performCalibration = TRUE,
-  allowUserAccess = TRUE
+  allowUserAccess = TRUE,
+  overwrite = FALSE
 )
 }
 \arguments{

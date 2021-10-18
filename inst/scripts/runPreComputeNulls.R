@@ -7,9 +7,20 @@ if (!any(.setVars)) {
   stop(errorMesage)
 }
 
-runPreComputeNullDistributions(globalConfigPath,
-                               analysisId = analysisId,
-                               sourceIds = sourceIds,
-                               nThreads = nThreads,
-                               getCemMappings = getCemMappings,
-                               minCohortSize = minCohortSize)
+if (computeExposures) {
+  runPreComputeNullExposureDistributions(globalConfigPath,
+                                 analysisId = analysisId,
+                                 sourceIds = sourceIds,
+                                 nThreads = nThreads,
+                                 getCemMappings = getCemMappings,
+                                 minCohortSize = minCohortSize)
+}
+
+if (computeOutcomes) {
+  runPreComputeNullOutcomeDistributions(globalConfigPath,
+                                 analysisId = analysisId,
+                                 sourceIds = sourceIds,
+                                 nThreads = nThreads,
+                                 getCemMappings = getCemMappings,
+                                 minCohortSize = minCohortSize)
+}

@@ -10,6 +10,8 @@ runPreComputeNullDistributionsJob(
   sourceIds = NULL,
   nThreads = 10,
   getCemMappings = TRUE,
+  computeExposures = TRUE,
+  computeOutcomes = TRUE,
   minCohortSize = 5,
   workingDir = getwd()
 )
@@ -22,6 +24,10 @@ runPreComputeNullDistributionsJob(
 \item{sourceIds}{Integer vector of integer sources to run on (default is NULL, all sources)}
 
 \item{nThreads}{Integer number of threads}
+
+\item{computeExposures}{Compute exposure distributions}
+
+\item{computeOutcomes}{Compute outcome null distributions}
 
 \item{minCohortSize}{Minimum size of cohort to use as a negative control. Default is 5}
 

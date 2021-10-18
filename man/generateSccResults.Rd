@@ -8,6 +8,8 @@ generateSccResults(
   cdmConfigFilePath,
   globalConfig,
   analysisIds = NULL,
+  outcomeCohortIds = NULL,
+  targetCohortIds = NULL,
   logFileName = "rbDataBuild.log"
 )
 }

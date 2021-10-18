@@ -6,6 +6,7 @@
 \usage{
 sccAdHocCohorts(
   cdmConfigPath,
+  globalConfigPath,
   configId,
   atlasIds,
   sourceUrl,

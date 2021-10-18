@@ -4,13 +4,7 @@
 \alias{computeOutcomeNullDistributions}
 \title{Compute null exposure distributions}
 \usage{
-computeOutcomeNullDistributions(
-  config,
-  analysisId = 1,
-  sourceIds = NULL,
-  nThreads = 10,
-  minCohortSize = 5
-)
+computeOutcomeNullDistributions(config, analysisId = 1, nThreads = 10)
 }
 \description{
 Compute the null exposure distribution for all exposure cohorts (requires results and cem_matrix summary table)

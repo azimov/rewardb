@@ -350,7 +350,7 @@ computeExposureNullDistributions <- function(config, analysisId = 1, nThreads = 
 #' @param nThreads                  Integer number of threads
 #' @param minCohortSize             Minimum size of cohort to use as a negative control. Default is 5
 #' @export
-runPreComputeNullDistributions <- function(globalConfigPath,
+runPreComputeNullExposureDistributions <- function(globalConfigPath,
                                            analysisId = c(1:5),
                                            sourceIds = NULL,
                                            nThreads = 10,
@@ -361,20 +361,41 @@ runPreComputeNullDistributions <- function(globalConfigPath,
   if (getCemMappings) {
     message("Adding negative control outcome concepts from Common evidence model:")
     getCemExposureNegativeControlConcepts(globalConfig)
-    message("Adding negative control exposure concepts from Common evidence model:")
-    getCemOutcomeNegativeControlConcepts(globalConfig)
   }
-
-  message("Populating outcome cohort null data")
-  populateOutcomeCohortNullData(globalConfig, analysisId, sourceIds = sourceIds, minCohortSize = minCohortSize)
-
   message("Populating exposure cohort null data")
   populateExposureCohortNullData(globalConfig, analysisId, sourceIds = sourceIds, minCohortSize = minCohortSize)
-
   message("Computing Expsoure null distributions")
   computeExposureNullDistributions(globalConfig,
                                    analysisId = analysisId,
                                    nThreads = nThreads)
+}
+
+#' @title
+#' Run pre compute null distributions
+#' @description
+#' Run task to pre-compute null distributions for all outcomes and exposures.
+#' This process requires a CemConnector connection, this may be slow if using cem.ohdsi.org
+#'
+#' @param globalConfigPath          Charachter path to global conifg yaml
+#' @param analysisId                Integer analysis settings ID (default is 1)
+#' @param sourceIds                 Integer vector of integer sources to run on (default is NULL, all sources)
+#' @param nThreads                  Integer number of threads
+#' @param minCohortSize             Minimum size of cohort to use as a negative control. Default is 5
+#' @export
+runPreComputeNullOutcomeDistributions <- function(globalConfigPath,
+                                           analysisId = c(1:5),
+                                           sourceIds = NULL,
+                                           nThreads = 10,
+                                           getCemMappings = TRUE,
+                                           minCohortSize = 5) {
+  globalConfig <- loadGlobalConfiguration(globalConfigPath)
+
+  if (getCemMappings) {
+    message("Adding negative control exposure concepts from Common evidence model:")
+    getCemOutcomeNegativeControlConcepts(globalConfig)
+  }
+  message("Populating outcome cohort null data")
+  populateOutcomeCohortNullData(globalConfig, analysisId, sourceIds = sourceIds, minCohortSize = minCohortSize)
   message("Computing Outcome null distributions")
   computeOutcomeNullDistributions(globalConfig,
                                   analysisId = analysisId,
@@ -388,14 +409,18 @@ runPreComputeNullDistributions <- function(globalConfigPath,
 #' Run task to pre-compute null distributions for all outcomes and exposures as RStudio Job
 #' This process requires a CemConnector connection, this may be slow if using cem.ohdsi.org
 #'
-#' @inheritParams runPreComputeNullDistributions
+#' @inheritParams runPreComputeNullExposureDistributions
 #' @param workingDir                        Charachter working directory (default is currentWd)
+#' @param computeExposures                  Compute exposure distributions
+#' @param computeOutcomes                   Compute outcome null distributions
 #' @export
 runPreComputeNullDistributionsJob <- function(globalConfigPath,
                                               analysisId = 1,
                                               sourceIds = NULL,
                                               nThreads = 10,
                                               getCemMappings = TRUE,
+                                              computeExposures = TRUE,
+                                              computeOutcomes = TRUE,
                                               minCohortSize = 5,
                                               workingDir = getwd()) {
   scriptPath <- system.file("scripts/runPreComputeNulls.R", package = "rewardb")
@@ -405,6 +430,8 @@ runPreComputeNullDistributionsJob <- function(globalConfigPath,
   .GlobalEnv$nThreads <- nThreads
   .GlobalEnv$getCemMappings <- getCemMappings
   .GlobalEnv$minCohortSize <- minCohortSize
+  .GlobalEnv$computeExposures <- computeExposures
+  .GlobalEnv$computeOutcomes <- computeOutcomes
   workingDir <- normalizePath(workingDir)
   rstudioapi::jobRunScript(scriptPath, name = "Pre Compute Null Distributions", workingDir = workingDir, importEnv = TRUE)
 }
