@@ -169,6 +169,35 @@ explorerServer <- function(input, output, session) {
   tabPanelTimeToOutcome <- shiny::tabPanel("Time to outcome", boxPlotModuleUi("timeToOutcome"))
   shiny::appendTab(inputId = "searchResults", tabPanelTimeToOutcome)
 
+  ingredientConetpInput <- shiny::reactive({
+    selected <- selectedExposureOutcome()
+    if (is.null(selected))
+      return(data.frame())
+    model$getExposureConceptSet(selected$TARGET_COHORT_ID)
+  })
+
+  conditionConceptInput <- shiny::reactive({
+    selected <- selectedExposureOutcome()
+    if (is.null(selected))
+      return(data.frame())
+    model$getOutcomeConceptSet(selected$OUTCOME_COHORT_ID)
+  })
+
+  output$selectedOutcomeConceptSet <- DT::renderDataTable({ conditionConceptInput() })
+  output$selectedExposureConceptSet <- DT::renderDataTable({ ingredientConetpInput() })
+
+  # Add cem panel if option is present
+  if (!is.null(reportAppContext$cemConnectionDetails)) {
+    message("loading cem api")
+    cemBackend <- do.call(CemConnector::createCemConnection, reportAppContext$cemConnectionDetails)
+    ceModuleServer <- CemConnector::ceExplorerModule("cemExplorer",
+                                                     cemBackend,
+                                                     ingredientConceptInput = ingredientConetpInput,
+                                                     conditionConceptInput = conditionConceptInput,
+                                                     siblingLookupLevelsInput = shiny::reactive({ 0 }))
+    cemPanel <- shiny::tabPanel("Evidence", CemConnector::ceExplorerModuleUi("cemExplorer"))
+    shiny::appendTab(inputId = "searchResults", cemPanel)
+  }
 }
 
 #' @import shiny
