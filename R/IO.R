@@ -56,10 +56,10 @@ pgCopyDataFrame <- function(connectionDetails, data, schema, tableName, .echoCom
     return(NULL)
   }
 
-  csvFileName = tempfile(fileext = "csv")
+  csvFileName <- tempfile(fileext = "csv")
 
   dt <- do.call(data.frame, lapply(data, function(x) replace(x, is.infinite(x) | is.nan(x), NA)))
-  scipen = getOption("scipen")
+  scipen <- getOption("scipen")
   options(scipen = 999)
   on.exit({
     unlink(csvFileName)

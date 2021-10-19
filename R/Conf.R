@@ -58,7 +58,7 @@ loadGlobalConfiguration <- function(globalConfigPath) {
 #' @param outcomeId outcome cohort id
 loadReportContext <- function(globalConfigPath) {
   reportAppContext <- loadGlobalConfiguration(globalConfigPath)
-  reportAppContext$useConnectionPool = TRUE
+  reportAppContext$useConnectionPool <- TRUE
   class(reportAppContext) <- append(class(reportAppContext), "reportAppContext")
   return(reportAppContext)
 }

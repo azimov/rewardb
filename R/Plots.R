@@ -36,7 +36,7 @@ forestPlot <- function(table) {
 #' Peform meta analysis on a dataframe of elements and return row (e.g. to be appended with rbind
 #' @param table expected data.frame containing fielsds: T_AT_RISK, T_PT, T_CASES, C_AT_RISK, C_PT, C_CASES, IRR
 #'
-#' @importFrom meta metamean
+#' @importFrom meta metainc
 getMetaAnalysisData <- function(table) {
   table$I2 <- NA
   results <- meta::metainc(data = table,
