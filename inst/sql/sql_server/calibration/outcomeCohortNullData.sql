@@ -1,7 +1,7 @@
-IF OBJECT_ID('@results_schema.exposure_cohort_null_data', 'U') IS NOT NULL
-    DROP TABLE @results_schema.exposure_cohort_null_data;
+IF OBJECT_ID('@results_schema.outcome_cohort_null_data', 'U') IS NOT NULL
+    DROP TABLE @results_schema.outcome_cohort_null_data;
 
-CREATE TABLE @results_schema.exposure_cohort_null_data AS (
+CREATE TABLE @results_schema.outcome_cohort_null_data AS (
     SELECT sr.*
     FROM @results_schema.outcome_negative_control_concept oncc
     INNER JOIN @results_schema.cohort_definition cd ON (cd.drug_conceptset_id = oncc.concept_id)
