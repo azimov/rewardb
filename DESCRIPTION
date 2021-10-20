@@ -18,7 +18,7 @@ Depends:
     RJSONIO,
     readr,
     ParallelLogger,
-    meta (== 4.19.2),
+    meta (>= 5.0.0),
     dplyr,
     keyring,
     CemConnector,

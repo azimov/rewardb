@@ -38,6 +38,7 @@ forestPlot <- function(table) {
 #'
 #' @importFrom meta metainc
 getMetaAnalysisData <- function(table) {
+  meta::settings.meta('meta4')
   table$I2 <- NA
   results <- meta::metainc(data = table,
                            event.e = T_CASES,

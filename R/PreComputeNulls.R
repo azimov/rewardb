@@ -141,6 +141,7 @@ getCemOutcomeNegativeControlConcepts <- function(globalConfig) {
 #' @return data.frame - results of meta analysis
 #' @importFrom meta metainc
 runMetaAnalysis <- function(table) {
+  meta::settings.meta("meta4")
   # Compute meta analysis with random effects model
   results <- meta::metainc(data = table,
                            event.e = tCases,
@@ -206,13 +207,10 @@ populateOutcomeCohortNullData <- function(config, analysisIds, sourceIds = NULL,
 
     colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
     rows <- dplyr::rename(rows, i2 = i_2)
-
-    DatabaseConnector::insertTable(connection,
-                                   data = rows,
-                                   databaseSchema = config$rewardbResultsSchema,
-                                   tableName = "outcome_cohort_null_data",
-                                   createTable = FALSE,
-                                   dropTableIfExists = FALSE)
+    pgCopyDataFrame(connectionDetails = config$connectionDetails,
+                    rows,
+                    config$rewardbResultsSchema,
+                    "outcome_cohort_null_data")
   }
 }
 
@@ -245,12 +243,8 @@ populateExposureCohortNullData <- function(config, analysisIds, sourceIds = NULL
     rows <- do.call(rbind, res)
     colnames(rows) <- SqlRender::camelCaseToSnakeCase(colnames(rows))
     rows <- dplyr::rename(rows, i2 = i_2)
-    DatabaseConnector::insertTable(connection,
-                                   data = rows,
-                                   databaseSchema = config$rewardbResultsSchema,
-                                   tableName = "exposure_cohort_null_data",
-                                   createTable = FALSE,
-                                   dropTableIfExists = FALSE)
+
+    pgCopyDataFrame(connectionDetails = config$connectionDetails, rows, config$rewardbResultsSchema, "exposure_cohort_null_data")
   }
 }
 
