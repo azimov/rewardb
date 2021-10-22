@@ -10,28 +10,16 @@ runPreComputeNullDistributionsJob(
   sourceIds = NULL,
   nThreads = 10,
   getCemMappings = TRUE,
-  computeExposures = TRUE,
-  computeOutcomes = TRUE,
   minCohortSize = 5,
   workingDir = getwd()
 )
 }
 \arguments{
-\item{globalConfigPath}{Charachter path to global conifg yaml}
-
-\item{analysisId}{Integer analysis settings ID (default is 1)}
-
-\item{sourceIds}{Integer vector of integer sources to run on (default is NULL, all sources)}
-
-\item{nThreads}{Integer number of threads}
+\item{workingDir}{Charachter working directory (default is currentWd)}
 
 \item{computeExposures}{Compute exposure distributions}
 
 \item{computeOutcomes}{Compute outcome null distributions}
-
-\item{minCohortSize}{Minimum size of cohort to use as a negative control. Default is 5}
-
-\item{workingDir}{Charachter working directory (default is currentWd)}
 }
 \description{
 Run task to pre-compute null distributions for all outcomes and exposures as RStudio Job

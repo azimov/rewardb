@@ -175,7 +175,7 @@ runMetaAnalysis <- function(table) {
   return(row)
 }
 
-populateOutcomeCohortNullData <- function(config, analysisIds, sourceIds = NULL, minCohortSize = 5, nThreads = 10) {
+populateNullData <- function(config, analysisIds, sourceIds = NULL, minCohortSize = 5, nThreads = 10) {
   cluster <- ParallelLogger::makeCluster(nThreads)
   connection <- DatabaseConnector::connect(config$connectionDetails)
   on.exit({
@@ -201,7 +201,7 @@ populateOutcomeCohortNullData <- function(config, analysisIds, sourceIds = NULL,
   if (nrow(nullData) > 0) {
     # Cut in to group by exposure id, outcome_id, analysis id
     groupedNulls <- nullData %>% dplyr::group_split(analysisId, outcomeCohortId, targetCohortId)
-  
+
     res <- ParallelLogger::clusterApply(cluster, groupedNulls, runMetaAnalysis)
     rows <- do.call(rbind, res)
 
@@ -212,15 +212,6 @@ populateOutcomeCohortNullData <- function(config, analysisIds, sourceIds = NULL,
                     config$rewardbResultsSchema,
                     "outcome_cohort_null_data")
   }
-}
-
-populateExposureCohortNullData <- function(config, analysisIds, sourceIds = NULL, minCohortSize = 5, nThreads = 10) {
-  cluster <- ParallelLogger::makeCluster(nThreads)
-  connection <- DatabaseConnector::connect(config$connectionDetails)
-  on.exit({
-    DatabaseConnector::disconnect(connection)
-    ParallelLogger::stopCluster(cluster)
-  }, add = TRUE)
 
   # Cache results in table to speed up process
   loadRenderTranslateExecuteSql(connection,
@@ -289,7 +280,7 @@ computeOutcomeNullDistributions <- function(config, analysisId = 1, nThreads = 1
     ParallelLogger::stopCluster(cluster)
   }, add = TRUE)
 
-  sql <- "SELECT * FROM @results_schema.outcome_cohort_null_data;"
+  sql <- "SELECT * FROM @results_schema.exposure_cohort_null_data;"
   nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
                                                          sql,
                                                          results_schema = config$rewardbResultsSchema,
@@ -317,7 +308,7 @@ computeExposureNullDistributions <- function(config, analysisId = 1, nThreads = 
     ParallelLogger::stopCluster(cluster)
   }, add = TRUE)
 
-  sql <- "SELECT * FROM @results_schema.exposure_cohort_null_data;"
+  sql <- "SELECT * FROM @results_schema.outcome_cohort_null_data;"
   nullData <- DatabaseConnector::renderTranslateQuerySql(connection,
                                                          sql,
                                                          results_schema = config$rewardbResultsSchema,
@@ -344,58 +335,33 @@ computeExposureNullDistributions <- function(config, analysisId = 1, nThreads = 
 #' @param nThreads                  Integer number of threads
 #' @param minCohortSize             Minimum size of cohort to use as a negative control. Default is 5
 #' @export
-runPreComputeNullExposureDistributions <- function(globalConfigPath,
-                                           analysisId = c(1:5),
-                                           sourceIds = NULL,
-                                           nThreads = 10,
-                                           getCemMappings = TRUE,
-                                           minCohortSize = 5) {
+runPreComputeNullDistributions <- function(globalConfigPath,
+                                                   analysisId = c(1:5),
+                                                   sourceIds = NULL,
+                                                   nThreads = 10,
+                                                   getCemMappings = TRUE,
+                                                   minCohortSize = 5) {
   globalConfig <- loadGlobalConfiguration(globalConfigPath)
 
   if (getCemMappings) {
     message("Adding negative control outcome concepts from Common evidence model:")
     getCemExposureNegativeControlConcepts(globalConfig)
+    message("Adding negative control exposure concepts from Common evidence model:")
+    getCemOutcomeNegativeControlConcepts(globalConfig)
   }
-  message("Populating exposure cohort null data")
-  populateExposureCohortNullData(globalConfig, analysisId, sourceIds = sourceIds, minCohortSize = minCohortSize)
+  message("Populating exposure and outcome cohort null data")
+  populateNullData(globalConfig, analysisId, sourceIds = sourceIds, minCohortSize = minCohortSize)
+
   message("Computing Expsoure null distributions")
   computeExposureNullDistributions(globalConfig,
                                    analysisId = analysisId,
                                    nThreads = nThreads)
-}
 
-#' @title
-#' Run pre compute null distributions
-#' @description
-#' Run task to pre-compute null distributions for all outcomes and exposures.
-#' This process requires a CemConnector connection, this may be slow if using cem.ohdsi.org
-#'
-#' @param globalConfigPath          Charachter path to global conifg yaml
-#' @param analysisId                Integer analysis settings ID (default is 1)
-#' @param sourceIds                 Integer vector of integer sources to run on (default is NULL, all sources)
-#' @param nThreads                  Integer number of threads
-#' @param minCohortSize             Minimum size of cohort to use as a negative control. Default is 5
-#' @export
-runPreComputeNullOutcomeDistributions <- function(globalConfigPath,
-                                           analysisId = c(1:5),
-                                           sourceIds = NULL,
-                                           nThreads = 10,
-                                           getCemMappings = TRUE,
-                                           minCohortSize = 5) {
-  globalConfig <- loadGlobalConfiguration(globalConfigPath)
-
-  if (getCemMappings) {
-    message("Adding negative control exposure concepts from Common evidence model:")
-    getCemOutcomeNegativeControlConcepts(globalConfig)
-  }
-  message("Populating outcome cohort null data")
-  populateOutcomeCohortNullData(globalConfig, analysisId, sourceIds = sourceIds, minCohortSize = minCohortSize)
   message("Computing Outcome null distributions")
   computeOutcomeNullDistributions(globalConfig,
                                   analysisId = analysisId,
                                   nThreads = nThreads)
 }
-
 
 #' @title
 #' Run pre compute null distributions Rstudio Job
@@ -413,8 +379,6 @@ runPreComputeNullDistributionsJob <- function(globalConfigPath,
                                               sourceIds = NULL,
                                               nThreads = 10,
                                               getCemMappings = TRUE,
-                                              computeExposures = TRUE,
-                                              computeOutcomes = TRUE,
                                               minCohortSize = 5,
                                               workingDir = getwd()) {
   scriptPath <- system.file("scripts/runPreComputeNulls.R", package = "rewardb")
