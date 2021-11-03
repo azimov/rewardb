@@ -32,6 +32,11 @@ loadShinyAppContext <- function(configPath, globalConfigPath) {
 loadGlobalConfiguration <- function(globalConfigPath) {
   config <- yaml::read_yaml(globalConfigPath)
 
+  if (is.null(config$connectionDetails$user)) {
+    user <- Sys.getenv("REWARD_DB_USER", "reward_user")
+    config$connectionDetails$user <- user
+  }
+
   if (is.null(config$connectionDetails$password)) {
 
     if (!is.null(config$keyringService)) {
@@ -85,6 +90,11 @@ loadCdmConfiguration <- function(cdmConfigPath) {
   }
 
   config$tables <- .setDefaultOptions(config$tables, defaultTables)
+
+  if (is.null(config$connectionDetails$user)) {
+    user <- Sys.getenv("REWARD_CDM_USER", Sys.info()[["user"]])
+    config$connectionDetails$user <- user
+  }
 
   if (config$useSecurePassword) {
 
