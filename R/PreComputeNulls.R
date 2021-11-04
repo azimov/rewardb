@@ -43,7 +43,7 @@ getCemExposureNegativeControlConcepts <- function(globalConfig) {
     if (nrow(conceptSet) == 0)
       return(data.frame())
 
-    return(cemConnection$getSuggestedControlCondtions(conceptSet))
+    return(cemConnection$getSuggestedControlCondtions(conceptSet, nControls = 150))
   }
 
   # Get mapped negative control evidence, keeps targetCohortId
@@ -103,7 +103,7 @@ getCemOutcomeNegativeControlConcepts <- function(globalConfig) {
     if (nrow(conceptSet) == 0)
       return(data.frame())
 
-    return(cemConnection$getSuggestedControlIngredients(conceptSet))
+    return(cemConnection$getSuggestedControlIngredients(conceptSet, nControls = 150))
   }
 
   # Get mapped negative control evidence, keeps targetCohortId
@@ -246,6 +246,7 @@ outcomeNullDistsProc <- function(nullData) {
                         analysisId = nullData$analysisId[1],
                         outcomeType = nullData$outcomeType[1],
                         targetCohortId = nullData$targetCohortId[1],
+                        ingredientConceptId = -1, # TODO: remove me
                         nullDistMean = nullDist["mean"],
                         nullDistSd = nullDist["sd"],
                         absoluteError = absSysError,
@@ -336,11 +337,11 @@ computeExposureNullDistributions <- function(config, analysisId = 1, nThreads = 
 #' @param minCohortSize             Minimum size of cohort to use as a negative control. Default is 5
 #' @export
 runPreComputeNullDistributions <- function(globalConfigPath,
-                                                   analysisId = c(1:5),
-                                                   sourceIds = NULL,
-                                                   nThreads = 10,
-                                                   getCemMappings = TRUE,
-                                                   minCohortSize = 5) {
+                                           analysisId = c(1:5),
+                                           sourceIds = NULL,
+                                           nThreads = 10,
+                                           getCemMappings = TRUE,
+                                           minCohortSize = 5) {
   globalConfig <- loadGlobalConfiguration(globalConfigPath)
 
   if (getCemMappings) {
