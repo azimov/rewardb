@@ -52,6 +52,12 @@ explorerServer <- function(input, output, session) {
       dplyr::filter(outcomeType %in% selected)
   })
 
+  shiny::observe({
+    input$selectedOutcomeTypes
+    cohorts <- filteredOutcomeCohorts()
+    shiny::updateSelectizeInput(session, "outcomeCohorts", choices = cohorts$cohortDefinitionName, server = TRUE)
+  })
+
   output$outcomeCohortsTable <- DT::renderDataTable({
     oc <- filteredOutcomeCohorts()
     oc %>% dplyr::mutate(outcomeType = dplyr::recode(outcomeType,
@@ -72,6 +78,13 @@ explorerServer <- function(input, output, session) {
     selected <- selectedExposureTypes()
     exposureCohorts %>% dplyr::filter(atcFlg %in% selected)
   })
+
+  shiny::observe({
+    input$selectedExposureTypes
+    cohorts <- filteredExposureCohorts()
+    shiny::updateSelectizeInput(session, "targetCohorts", choices = cohorts$cohortDefinitionName, server = TRUE)
+  })
+
 
   output$exposureCohortsTable <- DT::renderDataTable({
     filteredExposureCohorts()
@@ -102,7 +115,7 @@ explorerServer <- function(input, output, session) {
   })
 
   getOutcomeCohort <- shiny::reactive({
-    outcomeCohorts  %>% dplyr::filter(cohortDefinitionName %in% input$outcomeCohorts)
+    outcomeCohorts %>% dplyr::filter(cohortDefinitionName %in% input$outcomeCohorts)
   })
 
   output$selectedCohorts <- shiny::renderText("not selected")
@@ -111,7 +124,7 @@ explorerServer <- function(input, output, session) {
     output$selectedCohorts <- shiny::renderText("selected")
   })
 
-  selectedExposureOutcome <- shiny::reactive({
+  selectedExposureOutcome <- shiny::eventReactive(input$selectCohorts, {
     exposureCohort <- getExposureCohort()
     outcomeCohort <- getOutcomeCohort()
     if (is.null(exposureCohort) || is.null(outcomeCohort)) {
@@ -123,7 +136,7 @@ explorerServer <- function(input, output, session) {
       OUTCOME_COHORT_ID = outcomeCohort$cohortDefinitionId,
       OUTCOME_COHORT_NAME = outcomeCohort$cohortDefinitionName,
       calibrationType = input$calibrationType,
-      usedDataSources = dataSources[dataSources$sourceName %in% input$dataSourcesUsed,]$sourceId
+      usedDataSources = c(dataSources[dataSources$sourceName %in% input$dataSourcesUsed,]$sourceId, -99)
     )
     return(selected)
   })
@@ -157,7 +170,7 @@ explorerServer <- function(input, output, session) {
   # Create sub modules
   metaAnalysisTableServer("metaTable", model, selectedExposureOutcome)
   forestPlotServer("forestPlot", model, selectedExposureOutcome)
-              
+
   calibrationPlotServer("outcomeCalibrationPlot", model, selectedExposureOutcome, FALSE)
   calibrationPlotServer("exposureCalibrationPlot", model, selectedExposureOutcome, TRUE)
 
@@ -169,7 +182,7 @@ explorerServer <- function(input, output, session) {
   tabPanelTimeToOutcome <- shiny::tabPanel("Time to outcome", boxPlotModuleUi("timeToOutcome"))
   shiny::appendTab(inputId = "searchResults", tabPanelTimeToOutcome)
 
-  ingredientConetpInput <- shiny::reactive({
+  ingredientConceptInput <- shiny::reactive({
     selected <- selectedExposureOutcome()
     if (is.null(selected))
       return(data.frame())
@@ -184,7 +197,7 @@ explorerServer <- function(input, output, session) {
   })
 
   output$selectedOutcomeConceptSet <- DT::renderDataTable({ conditionConceptInput() })
-  output$selectedExposureConceptSet <- DT::renderDataTable({ ingredientConetpInput() })
+  output$selectedExposureConceptSet <- DT::renderDataTable({ ingredientConceptInput() })
 
   # Add cem panel if option is present
   if (!is.null(reportAppContext$cemConnectionDetails)) {
@@ -192,7 +205,7 @@ explorerServer <- function(input, output, session) {
     cemBackend <- do.call(CemConnector::createCemConnection, reportAppContext$cemConnectionDetails)
     ceModuleServer <- CemConnector::ceExplorerModule("cemExplorer",
                                                      cemBackend,
-                                                     ingredientConceptInput = ingredientConetpInput,
+                                                     ingredientConceptInput = ingredientConceptInput,
                                                      conditionConceptInput = conditionConceptInput,
                                                      siblingLookupLevelsInput = shiny::reactive({ 0 }))
     cemPanel <- shiny::tabPanel("Evidence", CemConnector::ceExplorerModuleUi("cemExplorer"))
@@ -243,8 +256,8 @@ explorerUi <- function(request) {
                                                                                                        choices = NULL,
                                                                                                        multiple = TRUE, width = 500)),
                                                                shiny::column(12,
-                                                                             shiny::conditionalPanel(condition = "output.selectedCohorts != 'selected'",
-                                                                                                     shiny::actionButton("selectCohorts", "Select")))),
+
+                                                                             shiny::actionButton("selectCohorts", "Select"))),
                                            shinydashboard::box(width = 12,
                                                                shiny::conditionalPanel(condition = resultsDisplayCondition,
                                                                                        shiny::tags$h3(textOutput("treatmentOutcomeStr")), riskEstimatesPanel),
@@ -292,7 +305,7 @@ explorerUi <- function(request) {
                                                       multiple = TRUE)
 
   exposureCohortSelection <- shinyWidgets::pickerInput("selectedExposureTypes",
-                                                       label = "Outcome Cohort Types:",
+                                                       label = "Exposure Cohort Types:",
                                                        choices = c(
                                                          "RxNorm Ingredient" = 0,
                                                          "ATC 3" = 1,
