@@ -290,5 +290,14 @@ ReportDbModel$methods(
             exposure = exposureId,
             vocabulary_schema = config$vocabularySchema,
             snakeCaseToCamelCase = TRUE)
+  },
+
+  getDataSources = function(...) {
+    sources <- callSuper(...)
+    if(!-99 %in% sources$SOURCE_ID) {
+      sources <- rbind(data.frame(SOURCE_ID = -99, SOURCE_NAME = "Meta-analysis"), sources)
+    }
+
+    return(sources)
   }
 )

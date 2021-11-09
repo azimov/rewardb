@@ -26,7 +26,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
 
     getNegativeControlSubset <- function(treatment, outcome, sourceIds = NULL) {
       if (is.null(sourceIds)) {
-        sourceIds <- dataSources$SOURCE_ID
+        sourceIds <- dataSources$SOURCE_ID[[1]]
       }
 
       if (useExposureControls) {
@@ -69,8 +69,9 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
         null,
         options = list(dom = 't', columnDefs = list(list(visible = FALSE, targets = c(0)))),
         rownames = FALSE,
+        selection = "single",
         colnames = c("Source", "N controls", "Mean", "Stdev", "EASE"),
-        caption = "Table: null distribution mean, standaard deviation and Expected Absolute Systematic Error by data source. Select rows to filter in above plot."
+        caption = "Table: null distribution mean, standard deviation and Expected Absolute Systematic Error by data source. Select row to view in above plot."
       )
       return(output)
     })
@@ -83,38 +84,31 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
       plot <- ggplot2::ggplot()
       if (!is.na(treatment)) {
         null <- getNullDist()
-
         selectedRows <- input$nullDistribution_rows_selected
         validSourceIds <- null[selectedRows,]$SOURCE_ID
 
         if (length(validSourceIds) == 0) {
-          validSourceIds <- dataSources$SOURCE_ID
+          validSourceIds <- dataSources$SOURCE_ID[1]
         }
-
-        positives <- model$getExposureOutcomeRows(treatment, outcome, calibrated = 0)
-        positives <- positives[positives$SOURCE_ID %in% validSourceIds,]
 
         negatives <- getNegativeControlSubset(treatment, outcome, s$usedDataSources)
         negatives <- negatives[negatives$SOURCE_ID %in% validSourceIds,]
 
         if (length(negatives)) {
-
-          plotPositives <- positives[positives$RR > 0, ]
           plotNegatives <- negatives[negatives$RR > 0, ]
 
-          plot <- EmpiricalCalibration::plotCalibrationEffect(
-            logRrNegatives = log(plotNegatives$RR),
-            seLogRrNegatives = plotNegatives$SE_LOG_RR,
-            logRrPositives = log(plotPositives$RR),
-            seLogRrPositives = plotPositives$SE_LOG_RR
-          )
+          plot <- EmpiricalCalibration::plotCalibrationEffect(logRrNegatives = log(plotNegatives$RR),
+                                                              seLogRrNegatives = plotNegatives$SE_LOG_RR)
 
           if (min(plotNegatives$RR) < 0.25) {
             # TODO submit a patch to EmpiricalCalibration package
             suppressWarnings({
               breaks <- c(0.0, 0.125, 0.25, 0.5, 1, 2, 4, 6, 8, 10)
               plot <- plot +
-                ggplot2::scale_x_continuous("Relative Risk", trans = "log10", limits = c(min(plotNegatives$RR), 10), breaks = breaks, labels = breaks) +
+                ggplot2::scale_x_continuous("Relative Risk",
+                                            trans = "log10",
+                                            limits = c(min(plotNegatives$RR), 10),
+                                            breaks = breaks, labels = breaks) +
                 ggplot2::geom_vline(xintercept = breaks, colour = "#AAAAAA", lty = 1, size = 0.5)
             })
           }
