@@ -389,8 +389,6 @@ runPreComputeNullDistributionsJob <- function(globalConfigPath,
   .GlobalEnv$nThreads <- nThreads
   .GlobalEnv$getCemMappings <- getCemMappings
   .GlobalEnv$minCohortSize <- minCohortSize
-  .GlobalEnv$computeExposures <- computeExposures
-  .GlobalEnv$computeOutcomes <- computeOutcomes
   workingDir <- normalizePath(workingDir)
   rstudioapi::jobRunScript(scriptPath, name = "Pre Compute Null Distributions", workingDir = workingDir, importEnv = TRUE)
 }
