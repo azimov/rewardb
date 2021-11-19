@@ -99,19 +99,6 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
 
           plot <- EmpiricalCalibration::plotCalibrationEffect(logRrNegatives = log(plotNegatives$RR),
                                                               seLogRrNegatives = plotNegatives$SE_LOG_RR)
-
-          if (min(plotNegatives$RR) < 0.25) {
-            # TODO submit a patch to EmpiricalCalibration package
-            suppressWarnings({
-              breaks <- c(0.0, 0.125, 0.25, 0.5, 1, 2, 4, 6, 8, 10)
-              plot <- plot +
-                ggplot2::scale_x_continuous("Relative Risk",
-                                            trans = "log10",
-                                            limits = c(min(plotNegatives$RR), 10),
-                                            breaks = breaks, labels = breaks) +
-                ggplot2::geom_vline(xintercept = breaks, colour = "#AAAAAA", lty = 1, size = 0.5)
-            })
-          }
         } else {
           ParallelLogger::logWarn("Error finding negative controls for treatment", treatment, " and outome", outcome)
         }

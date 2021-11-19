@@ -1,10 +1,10 @@
 # Set up a database with constructed cohorts etc
-fullDbSetup()
-runDataBuild()
-
 test_that("Dashboard creation works", {
+  fullDbSetup()
+  runDataBuild()
+  runPreComputeNullDistributions(configFilePath)
   Sys.setenv("REWARD_B_PASSWORD" = "postgres")
-  buildDashboardFromConfig(appContextFile, configFilePath, performCalibration = TRUE)
+  buildDashboardFromConfig(appContextFile, configFilePath, performCalibration = TRUE, overwrite = TRUE)
 })
 
 appContext <- loadShinyAppContext(appContextFile, configFilePath)

@@ -7,6 +7,4 @@ target_concept_ids: ~
 useExposureControls: True
 
 analysisIds: [1,2] # Specify analysis settings
-sourceIds: [1,2] # Specify data sources used in this study
-
-
+sourceIds: [1] # Specify data sources used in this study
