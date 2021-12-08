@@ -5,7 +5,6 @@
 #' @import shinyWidgets
 #' @importFrom shinycssloaders withSpinner
 #' @import shinydashboard
-#' @importFrom DT dataTableOutput
 dashboardUi <- function(request) {
   scBenefitRisk <- c("none", "one", "most", "all")
   # This hides the outcome exporues/result pairing

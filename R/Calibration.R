@@ -5,29 +5,23 @@
 #' @param appContext rewardb app context
 #' @param connection DatabaseConnector connection to postgres rewardb instance
 #' @param targetIds cohorts to get negative controls for
-#' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
 #' @return data.frame of negative control exposures for specified outcomes
-getOutcomeControls <- function(appContext, connection, targetIds = NULL, outcomeTypes = c(0,1,2), minCohortSize = 5) {
+getOutcomeControls <- function(appContext, connection, outcomeTypes = c(0,1,2)) {
 
   sql <- "
-    SELECT r.*, o.type_id as outcome_type
-    FROM @schema.result r
-    INNER JOIN @schema.negative_control nc ON (
-      r.target_cohort_id = nc.target_cohort_id AND nc.outcome_cohort_id = r.outcome_cohort_id
-    )
-    INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
-    AND r.calibrated = 0
-    AND T_CASES >= @min_cohort_size
-    AND o.type_id IN (@outcome_types)
-    {@target_cohort_ids != ''} ? {AND r.target_cohort_id IN (@target_cohort_ids)}
+  SELECT n.*
+  FROM @results_schema.outcome_cohort_null_data n
+  INNER JOIN @schema.target t ON t.target_cohort_id = n.target_cohort_id
+  WHERE outcome_type IN (@outcome_types)
+  AND analysis_id IN (@analysis_ids)
   "
   negatives <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
     schema = appContext$short_name,
-    min_cohort_size = minCohortSize,
+    results_schema = appContext$globalConfig$rewardbResultsSchema,
     outcome_types = outcomeTypes,
-    target_cohort_ids = targetIds
+    analysis_ids = appContext$analysisIds
   )
   return(negatives)
 }
@@ -40,25 +34,21 @@ getOutcomeControls <- function(appContext, connection, targetIds = NULL, outcome
 #' @param connection DatabaseConnector connection to postgres rewardb instance
 #' @param minCohortSize smaller cohorts are not generally used for calibration as rr values tend to be extremes
 #' @return data.frame of negative control exposures for specified outcomes
-getExposureControls <- function(appContext, connection, minCohortSize = 10) {
+getExposureControls <- function(appContext, connection) {
 
   sql <- "
-    SELECT r.*, o.type_id as outcome_type
-    FROM @schema.result r
-    INNER JOIN @schema.negative_control nc ON (
-      r.target_cohort_id = nc.target_cohort_id AND nc.outcome_cohort_id = r.outcome_cohort_id
-    )
-    INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
-    AND r.calibrated = 0
-    AND T_CASES >= @min_cohort_size
+  SELECT n.*
+  FROM @results_schema.exposure_cohort_null_data n
+  INNER JOIN @schema.outcome o ON o.outcome_cohort_id = n.outcome_cohort_id
+  AND analysis_id IN (@analysis_ids)
   "
   negatives <- DatabaseConnector::renderTranslateQuerySql(
     connection,
     sql,
     schema = appContext$short_name,
-    min_cohort_size = minCohortSize
+    results_schema = appContext$globalConfig$rewardbResultsSchema,
+    analysis_ids = appContext$analysisIds
   )
-
   return(negatives)
 }
 
@@ -177,7 +167,7 @@ getCalibratedAtlasTargets <- function(appContext, connection) {
   # Apply to atlas cohorts
   controlOutcomes <- getOutcomeControls(appContext, connection)
   atlasPositives <- getUncalibratedAtlasCohorts(appContext)
-  message(paste("Calibrating", nrow(atlasPositives), "atlas outcomes"))
+  ParallelLogger::logInfo(paste("Calibrating", nrow(atlasPositives), "atlas outcomes"))
   resultSetAtlas <- atlasPositives %>%
     group_by(OUTCOME_TYPE, SOURCE_ID, TARGET_COHORT_ID) %>%
     group_modify(~computeCalibratedRows(.x, controlOutcomes[
@@ -186,7 +176,7 @@ getCalibratedAtlasTargets <- function(appContext, connection) {
     ], idCol = "OUTCOME_COHORT_ID"), .keep = TRUE)
 
   resultSetAtlas <- data.frame(resultSetAtlas[, !(names(resultSetAtlas) %in% c("OUTCOME_TYPE"))])
-  message(paste("Computed", nrow(resultSetAtlas), "calibrations"))
+  ParallelLogger::logInfo(paste("Computed", nrow(resultSetAtlas), "calibrations"))
 
   return(resultSetAtlas)
 }
@@ -214,7 +204,7 @@ getCalibratedGenericTargets <- function(appContext, connection) {
     ], idCol = "OUTCOME_COHORT_ID"), .keep = TRUE)
 
   resultSet <- data.frame(resultSet[, !(names(resultSet) %in% c("OUTCOME_TYPE"))])
-  message(paste("Computed", nrow(resultSet), "calibrations"))
+  ParallelLogger::logInfo(paste("Computed", nrow(resultSet), "calibrations"))
   return(resultSet)
 }
 
@@ -225,7 +215,7 @@ getCalibratedGenericTargets <- function(appContext, connection) {
 #' Requires negative control cohorts to be set
 #' @param appContext takes a rewardb application context
 #' @return data.frame of calibrated results
-getCalibratedTargets <- function(appContext, connection) {
+getCalibratedExposures <- function(appContext, connection) {
   return(rbind(getCalibratedAtlasTargets(appContext, connection), getCalibratedGenericTargets(appContext, connection)))
 }
 
@@ -242,7 +232,7 @@ getCalibratedOutcomes <- function(appContext, connection) {
   controlExposures <- getExposureControls(appContext, connection)
   # get positives
   positives <- getUncalibratedExposures(appContext)
-  ParallelLogger::logDebug(paste("calibrating", nrow(positives), "exposures"))
+  ParallelLogger::logInfo(paste("calibrating", nrow(positives), "exposures"))
   library(dplyr)
 
   # Get all exposures for a given outcome, source and outcome type

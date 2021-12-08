@@ -31,7 +31,8 @@ Imports:
     shinycssloaders,
     EmpiricalCalibration,
     pool,
-    vroom
+    vroom,
+    plotly
 Suggests:
     withr,
     testthat,

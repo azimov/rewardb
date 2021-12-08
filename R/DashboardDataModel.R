@@ -7,42 +7,30 @@ DashboardDbModel$methods(
     setSchemaName(config$short_name)
   },
 
-  getExposureControls = function(outcomeIds, minCohortSize = 10, sourceIds = NULL) {
-    sql <- "
-      SELECT r.*, o.type_id as outcome_type
-      FROM @schema.result r
-      INNER JOIN @schema.negative_control nc ON (
-        r.target_cohort_id = nc.target_cohort_id AND nc.outcome_cohort_id = r.outcome_cohort_id
-      )
-      INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
-      WHERE r.OUTCOME_COHORT_ID IN (@outcome_cohort_ids)
-      AND r.calibrated = 0
-      AND T_CASES >= @min_cohort_size
-    "
-    return(queryDb(sql, outcome_cohort_ids = outcomeIds, min_cohort_size = minCohortSize))
-  },
-
-  getOutcomeControls = function(targetIds, sourceIds = NULL, minCohortSize = 5, outcomeTypes = c(0, 1, 2), analysisId = 1) {
-    sql <- "
-      SELECT r.*, o.type_id as outcome_type
-      FROM @schema.result r
-      INNER JOIN @schema.negative_control nc ON (
-        r.target_cohort_id = nc.target_cohort_id AND nc.outcome_cohort_id = r.outcome_cohort_id
-      )
-      INNER JOIN @schema.outcome o ON r.outcome_cohort_id = o.outcome_cohort_id
-      AND r.calibrated = 0
-      AND T_CASES >= @min_cohort_size
-      AND o.type_id IN (@outcome_types)
-      AND r.analysis_id IN (@analysis_id)
-      {@source_ids != ''} ? {AND r.source_id IN (@source_ids)}
-      {@exposure_ids != ''} ? {AND r.target_cohort_id IN (@exposure_ids)}
+  getExposureControls = function(outcomeIds, sourceIds = NULL, analysisId = 1) {
+    sql <- "SELECT * FROM @main_results_schema.outcome_cohort_null_data
+    WHERE outcome_cohort_id IN (@outcome_ids)
+    AND analysis_id = @analysis_id
+    {@source_ids != ''} ? {AND source_id IN (@source_ids)}
     "
     return(queryDb(sql,
+                   main_results_schema = config$globalConfig$rewardbResultsSchema,
+                   outcome_ids = outcomeIds,
+                   source_ids = sourceIds,
+                   analysis_id = analysisId))
+  },
+
+  getOutcomeControls = function(targetIds, sourceIds = NULL, analysisId = 1) {
+    sql <- "SELECT * FROM @main_results_schema.exposure_cohort_null_data
+    WHERE target_cohort_id IN (@exposure_ids)
+    AND analysis_id = @analysis_id
+    {@source_ids != ''} ? {AND source_id IN (@source_ids)}
+    "
+    return(queryDb(sql,
+                   main_results_schema = config$globalConfig$rewardbResultsSchema,
                    exposure_ids = targetIds,
                    source_ids = sourceIds,
-                   analysis_id = analysisId,
-                   outcome_types = outcomeTypes,
-                   min_cohort_size = minCohortSize))
+                   analysis_id = analysisId))
   },
 
   getOutcomeCohortNames = function() {

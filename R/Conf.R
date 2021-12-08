@@ -8,7 +8,6 @@
 #' @param globalConfigPath path to global yaml
 #' @export
 loadShinyAppContext <- function(configPath, globalConfigPath) {
-
   defaults <- list(
     useExposureControls = FALSE,
     custom_exposure_ids = c(),
@@ -101,7 +100,7 @@ loadCdmConfiguration <- function(cdmConfigPath) {
     if (!is.null(config$keyringService)) {
       config$connectionDetails$password <- keyring::key_get(config$keyringService, username = config$connectionDetails$user)
     } else {
-      config$connectionDetails$password <- getPasswordSecurely(envVar = config$passwordEnvironmentVariable)
+      stop("Set password securely with keyringService option and using keyring::key_set with the database username.")
     }
   }
   config$connectionDetails <- do.call(DatabaseConnector::createConnectionDetails, config$connectionDetails)

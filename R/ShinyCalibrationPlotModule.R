@@ -3,7 +3,7 @@
 # Created by: jpg
 # Created on: 2020-12-14
 
-CONST_CALIBRATION_PLOT_TXT <- "Plot of calibration of effect estimates. Blue dots are negative controls, yellow diamonds are uncalibrated effect estimates"
+CONST_CALIBRATION_PLOT_TXT <- "Plot of calibration of effect estimates. Blue dots are negative control effect estimates."
 
 calibrationPlotUi <- function(id, figureTitle = "Figure.", figureText = CONST_CALIBRATION_PLOT_TXT) {
   shiny::tagList(
@@ -43,7 +43,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
       outcome <- s$OUTCOME_COHORT_ID
       nulls <- data.frame()
       if (length(treatment) & length(outcome)) {
-        negatives <- getNegativeControlSubset(treatment, outcome, s$usedDataSources)
+        negatives <- getNegativeControlSubset(treatment, outcome, dataSources$SOURCE_ID)
         for (source in unique(negatives$SOURCE_ID)) {
           subset <- negatives[negatives$SOURCE_ID == source,]
           null <- EmpiricalCalibration::fitNull(log(subset$RR), subset$SE_LOG_RR)
@@ -91,7 +91,7 @@ calibrationPlotServer <- function(id, model, selectedExposureOutcome, useExposur
           validSourceIds <- dataSources$SOURCE_ID[1]
         }
 
-        negatives <- getNegativeControlSubset(treatment, outcome, s$usedDataSources)
+        negatives <- getNegativeControlSubset(treatment, outcome, dataSources$SOURCE_ID)
         negatives <- negatives[negatives$SOURCE_ID %in% validSourceIds,]
 
         if (length(negatives)) {

@@ -30,3 +30,4 @@ inst/doc
 /renv/settings.dcf
 /.Rprofile
 /renv/.gitignore
+*.log

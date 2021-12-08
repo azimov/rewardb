@@ -82,7 +82,7 @@ addCemEvidence <- function(appContext, connection) {
 
   negativControlCohorts <- negativControlConcepts %>%
     dplyr::group_by(targetCohortId) %>%
-      dplyr::group_modify(~mapConceptToCohorts(.x$conceptId), .keep = TRUE)
+    dplyr::group_modify(~mapConceptToCohorts(.x$conceptId), .keep = TRUE)
 
   message(paste("Mapped", nrow(negativControlCohorts), "Controls"))
   # Add to negative controls table
@@ -95,40 +95,29 @@ addCemEvidence <- function(appContext, connection) {
                                  createTable = TRUE)
 }
 
-#' @title
-#' meta analysis
-#' @description
-#' compute meta-analysis across data sources provided in table
-#' Perform meta-analysis on data sources
-#' @param table data.frame
-#' @return data.frame - results of meta analysis
 metaAnalysis <- function(table) {
   # Compute meta analysis with random effects model
-  results <- meta::metainc(
-    data = table,
-    event.e = T_CASES,
-    time.e = T_PT,
-    event.c = C_CASES,
-    time.c = C_PT,
-    sm = "IRR",
-    model.glmm = "UM.RS"
-  )
+  results <- meta::metainc(data = table,
+                           event.e = T_CASES,
+                           time.e = T_PT,
+                           event.c = C_CASES,
+                           time.c = C_PT,
+                           sm = "IRR",
+                           model.glmm = "UM.RS")
 
-  row <- data.frame(
-    SOURCE_ID = -99,
-    T_AT_RISK = sum(table$T_AT_RISK),
-    T_PT = sum(table$T_PT),
-    T_CASES = sum(table$T_CASES),
-    C_AT_RISK = sum(table$C_AT_RISK),
-    C_PT = sum(table$C_PT),
-    C_CASES = sum(table$C_CASES),
-    RR = exp(results$TE.random),
-    SE_LOG_RR = results$seTE.random,
-    LB_95 = exp(results$lower.random),
-    UB_95 = exp(results$upper.random),
-    P_VALUE = results$pval.random,
-    I2 = results$I2
-  )
+  row <- data.frame(SOURCE_ID = -99,
+                    T_AT_RISK = sum(table$T_AT_RISK),
+                    T_PT = sum(table$T_PT),
+                    T_CASES = sum(table$T_CASES),
+                    C_AT_RISK = sum(table$C_AT_RISK),
+                    C_PT = sum(table$C_PT),
+                    C_CASES = sum(table$C_CASES),
+                    RR = exp(results$TE.random),
+                    SE_LOG_RR = results$seTE.random,
+                    LB_95 = exp(results$lower.random),
+                    UB_95 = exp(results$upper.random),
+                    P_VALUE = results$pval.random,
+                    I2 = results$I2)
 
   return(row)
 }
@@ -139,25 +128,53 @@ metaAnalysis <- function(table) {
 #' Runs and saves metanalayis on data, uploads back to db
 #' @param appContext application context loaded from yaml
 #' @param connection DatabaseConnector connection to cdm
+#' @import dplyr
 computeMetaAnalysis <- function(appContext, connection) {
-  library(dplyr, warn.conflicts = FALSE)
-  fullResults <- DatabaseConnector::renderTranslateQuerySql(
-    connection,
-    "SELECT * FROM @schema.result WHERE source_id != -99;",
-    schema = appContext$short_name
-  )
 
-  # For each distinct pair: (target, outcome) get all data sources
-  # Run meta analysis
-  # Write uncalibrated table
-  # Calibrate meta analysis results
-  results <- fullResults %>%
-    group_by(TARGET_COHORT_ID, OUTCOME_COHORT_ID) %>%
-    group_modify(~metaAnalysis(.x))
+  for (analysisId in appContext$analysisIds) {
+    fullResults <- DatabaseConnector::renderTranslateQuerySql(
+      connection,
+      "SELECT * FROM @schema.result WHERE source_id != -99 and analysis_id = @analysis_id;",
+      schema = appContext$short_name,
+      analysis_id = analysisId
+    )
 
-  results$STUDY_DESIGN <- "scca"
-  results$CALIBRATED <- 0
-  pgCopyDataFrame(connectionDetails = appContext$connectionDetails, results, appContext$short_name, "result")
+    # For each distinct pair: (target, outcome) get all data sources
+    # Run meta analysis
+    # Write uncalibrated table
+    # Calibrate meta analysis results
+    results <- fullResults %>%
+      group_by(TARGET_COHORT_ID, OUTCOME_COHORT_ID) %>%
+      group_modify(~metaAnalysis(.x))
+
+    results$STUDY_DESIGN <- "scca"
+    results$CALIBRATED <- 0
+    results$ANALYSIS_ID <- analysisId
+    pgCopyDataFrame(connectionDetails = appContext$connectionDetails, results, appContext$short_name, "result")
+  }
+}
+
+runCalibration <- function(appContext, connection = NULL) {
+  if (is.null(connection)) {
+    connection <- DatabaseConnector::connect(appContext$connectionDetails)
+    on.exit(DatabaseConnector::disconnect(connection))
+  }
+
+  .removeCalibratedResults(appContext, connection)
+  if (appContext$useExposureControls) {
+    message("Calibrating outcomes")
+    calibratedData <- getCalibratedOutcomes(appContext, connection)
+  } else {
+    calibratedData <- getCalibratedExposures(appContext, connection)
+  }
+  pgCopyDataFrame(appContext$connectionDetails, calibratedData, appContext$short_name, "result")
+  invisible(NULL)
+}
+
+grantReadOnlyUserPermissions <- function(connection, schema) {
+  pathToSqlFile <- system.file("sql/postgresql", "grantPermissions.sql", package = "rewardb")
+  sql <- SqlRender::readSql(pathToSqlFile)
+  DatabaseConnector::renderTranslateExecuteSql(connection, sql, schema = schema)
 }
 
 #' @title
@@ -171,53 +188,40 @@ computeMetaAnalysis <- function(appContext, connection) {
 #' @param performCalibration - use empirical calibration package to compute adjusted p values, effect estimates and confidence intervals
 #' @param allowUserAccess - enables grant permission for read only database user
 #' @export
-buildDashboardFromConfig <- function(filePath, globalConfigPath, performCalibration = TRUE, allowUserAccess = TRUE) {
+buildDashboardFromConfig <- function(filePath,
+                                     globalConfigPath,
+                                     performCalibration = TRUE,
+                                     allowUserAccess = TRUE,
+                                     overwrite = FALSE) {
+  meta::settings.meta("meta4")
   appContext <- loadShinyAppContext(filePath, globalConfigPath)
   connection <- DatabaseConnector::connect(connectionDetails = appContext$connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
 
   logger <- .getLogger(paste0(appContext$short_name, "DashboardCreation.log"))
-  tryCatch(
-  {
-    message("Creating schema")
-    createDashSchema(appContext, connection)
-    message("Running meta analysis")
-    computeMetaAnalysis(appContext, connection)
-    message("Adding negative controls from CEM")
-    addCemEvidence(appContext, connection)
 
-    if (performCalibration) {
-      performCalibration(appContext, connection)
+  if (!overwrite) {
+    res <- DatabaseConnector::renderTranslateQuerySql(connection,
+                                                      "SELECT schema_name FROM information_schema.schemata WHERE schema_name = '@schema';",
+                                                      schema = appContext$short_name)
+
+    if (nrow(res) > 0) {
+      if (!askYesNo("Schema already exists, continue?", default = FALSE)) {
+        stop("Schema already exists")
+      }
     }
-
-    if (allowUserAccess) {
-      grantReadOnlyUserPermissions(connection, appContext$short_name)
-    }
-  },
-    error = ParallelLogger::logError
-  )
-}
-
-performCalibration <- function(appContext, connection = NULL) {
-  if (is.null(connection)) {
-    connection <- DatabaseConnector::connect(appContext$connectionDetails)
-    on.exit(DatabaseConnector::disconnect(connection))
   }
 
-  .removeCalibratedResults(appContext, connection)
-  if (appContext$useExposureControls) {
-    message("Calibrating outcomes")
-    calibratedData <- getCalibratedOutcomes(appContext, connection)
-  } else {
-    message("Calibrating targets")
-    calibratedData <- getCalibratedTargets(appContext, connection)
+  message("Creating schema")
+  createDashSchema(appContext, connection)
+  message("Running meta analysis")
+
+  if (performCalibration) {
+    runCalibration(appContext, connection)
   }
-  pgCopyDataFrame(appContext$connectionDetails, calibratedData, appContext$short_name, "result")
 
-}
+  if (allowUserAccess) {
+    grantReadOnlyUserPermissions(connection, appContext$short_name)
+  }
 
-grantReadOnlyUserPermissions <- function(connection, schema) {
-  pathToSqlFile <- system.file("sql/postgresql", "grantPermissions.sql", package = "rewardb")
-  sql <- SqlRender::readSql(pathToSqlFile)
-  DatabaseConnector::renderTranslateExecuteSql(connection, sql, schema = schema)
 }

@@ -27,7 +27,6 @@ timeToOutcomeServer <- function(id, model, selectedExposureOutcome) {
 #' @param session shiny session
 #' @importFrom gt render_gt
 #' @import shiny
-#' @importFrom DT renderDataTable
 dashboardInstance <- function(input, output, session) {
   getOutcomeCohortTypes <- shiny::reactive({
     cohortTypeMapping <- list("ATLAS defined" = 3, "Inpatient" = 0, "Two diagnosis codes" = 1, "One diagnosis code" = 2)
