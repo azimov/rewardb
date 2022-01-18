@@ -40,25 +40,7 @@ cleanUpSccDf <- function(data, sourceId, analysisId) {
                   "lb_95" = "irrLb95",
                   "ub_95" = "irrUb95",
                   "p_value" = "p",
-                  "num_exposures" = "numExposures",
-                  "mean_time_to_outcome" = "meanTimeToOutcome",
-                  "sd_time_to_outcome" = "sdTimeToOutcome",
-                  "min_time_to_outcome" = "minTimeToOutcome",
-                  "p10_time_to_outcome" = "p10TimeToOutcome",
-                  "p25_time_to_outcome" = "p25TimeToOutcome",
-                  "median_time_to_outcome" = "medianTimeToOutcome",
-                  "p75_time_to_outcome" = "p75TimeToOutcome",
-                  "p90_time_to_outcome" = "p90TimeToOutcome",
-                  "max_time_to_outcome" = "maxTimeToOutcome",
-                  "mean_tx_time" = "meanTxTime",
-                  "sd_tx_time" = "sdTxTime",
-                  "min_tx_time" = "minTxTime",
-                  "p10_tx_time" = "p10TxTime",
-                  "p25_tx_time" = "p25TxTime",
-                  "median_tx_time" = "medianTxTime",
-                  "p75_tx_time" = "p75TxTime",
-                  "p90_tx_time" = "p90TxTime",
-                  "max_tx_time" = "maxTxTime")
+                  "num_exposures" = "numExposures")
   return(data)
 }
 

@@ -1,25 +1,3 @@
-getAllExposureIds <- function(connection, config) {
-  sql <- "SELECT cohort_definition_id FROM @reference_schema.@cohort_definition"
-  queryRes <- DatabaseConnector::renderTranslateQuerySql(
-    connection,
-    sql,
-    reference_schema = config$referenceSchema,
-    cohort_definition = config$table$cohortDefinition
-  )
-  return(queryRes$COHORT_DEFINITION_ID)
-}
-
-getAllOutcomeIds <- function(connection, config, outcomeType = NULL) {
-  sql <- "SELECT cohort_definition_id FROM @reference_schema.@outcome_cohort_definition
-   {@outcome_type != ''} ? {WHERE outcome_type = @outcome_type}"
-  queryRes <- DatabaseConnector::renderTranslateQuerySql(connection,
-                                                         sql,
-                                                         reference_schema = config$referenceSchema,
-                                                         outcome_cohort_definition = config$table$outcomeCohortDefinition,
-                                                         outcome_type = outcomeType)
-  return(queryRes$COHORT_DEFINITION_ID)
-}
-
 #' Peform SCC from self controlled cohort package with rewardbs settings
 runScc <- function(postProcessFunction,
                    postProcessArgs,
