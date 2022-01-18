@@ -215,7 +215,7 @@ buildDashboardFromConfig <- function(filePath,
   message("Creating schema")
   createDashSchema(appContext, connection)
   message("Running meta analysis")
-
+  computeMetaAnalysis(appContext, connection)
   if (performCalibration) {
     runCalibration(appContext, connection)
   }
