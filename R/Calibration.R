@@ -6,14 +6,13 @@
 #' @param connection DatabaseConnector connection to postgres rewardb instance
 #' @param targetIds cohorts to get negative controls for
 #' @return data.frame of negative control exposures for specified outcomes
-getOutcomeControls <- function(appContext, connection, outcomeTypes = c(0,1,2)) {
+getOutcomeControls <- function(appContext, connection, outcomeTypes = c(0,1,2,3)) {
   ParallelLogger::logInfo("Getting outcome control data")
   sql <- "
   SELECT n.*
-  FROM @results_schema.outcome_cohort_null_data n
+  FROM @results_schema.exposure_cohort_null_data n
   INNER JOIN @schema.target t ON t.target_cohort_id = n.target_cohort_id
-  INNER JOIN @results_schema.outcome_cohort_definition ocd ON ocd.cohort_definition_id = n.outcome_cohort_id
-  WHERE ocd.outcome_type IN (@outcome_types)
+  WHERE outcome_type IN (@outcome_types)
   AND n.analysis_id IN (@analysis_ids)
   "
   negatives <- DatabaseConnector::renderTranslateQuerySql(
