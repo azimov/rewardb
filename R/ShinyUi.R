@@ -24,7 +24,7 @@ dashboardUi <- function(request) {
                                                                              multiple = TRUE),
                                                        shinyWidgets::pickerInput("outcomeCohortTypes",
                                                                           "Outcome Cohort Types:",
-                                                                          choices = c("ATLAS defined", "Inpatient", "Two diagnosis codes", "One diagnosis code"),
+                                                                          choices = c("ATLAS defined" = 3, "Inpatient" = 1, "Two diagnosis codes" = 0, "One diagnosis code" = 2),
                                                                           selected = c(),
                                                                           options = shinyWidgets::pickerOptions(
                                                                             actionsBox = TRUE,
@@ -52,7 +52,8 @@ dashboardUi <- function(request) {
                                          "I-squared" = "I2",
                                          "IRR" = "META_RR",
                                          "Sources with scc risk" = "RISK_COUNT",
-                                         "Sources with scc benefit" = "BENEFIT_COUNT"))
+                                         "Sources with scc benefit" = "BENEFIT_COUNT"),
+                                       selected = "META_RR")
       ),
       shiny::column(2,
                     shiny::radioButtons("mainTableOrderAscending", "", c("Ascending" = "ASC", "Descending" = "DESC"))),
@@ -64,10 +65,13 @@ dashboardUi <- function(request) {
     shiny::hr(),
     shiny::fluidRow(
       shiny::column(4,
-                    shiny::textOutput("mainTableCount")),
+                    shiny::textOutput("mainTableCount"),
+                    shiny::actionButton("mainTablePrevious", "Previous Page")
+      ),
       shiny::column(6),
       shiny::column(2,
-                    shiny::textOutput("mainTableNumPages"))),
+                    shiny::textOutput("mainTableNumPages"),
+                    shiny::actionButton("mainTableNext", "Next Page"))),
     shiny::hr(),
     shiny::downloadButton("downloadFullTable", "Download"),
     width = 12)
@@ -135,7 +139,7 @@ dashboardUi <- function(request) {
 
   sidebar <- shinydashboard::dashboardSidebar(
     shinydashboard::sidebarMenu(
-      shinydashboard::menuItem("About", tabName = "about", icon = icon("list-alt")),
+      shinydashboard::menuItem("About", tabName = "about", icon = icon("rectangle-list")),
       shinydashboard::menuItem("Results", tabName = "results", icon = icon("table")),
       shiny::sliderInput("cutrange1", "Benefit Threshold:", min = 0.1, max = 0.9, step = 0.1, value = 0.5),
       shiny::sliderInput("cutrange2", "Risk Threshold:", min = 1.1, max = 2.5, step = 0.1, value = 2),

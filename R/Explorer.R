@@ -316,7 +316,7 @@ explorerUi <- function(request) {
                                                        ),
                                                        multiple = TRUE)
 
-  sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(shinydashboard::menuItem("About", tabName = "About", icon = shiny::icon("list-alt")),
+  sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(shinydashboard::menuItem("About", tabName = "About", icon = shiny::icon("rectangle-list")),
                                                                           shinydashboard::menuItem("Search", tabName = "Search", icon = shiny::icon("table")),
                                                                           shinydashboard::menuItem("Available Exposures", tabName = "exposureCohortsTab", icon = shiny::icon("table")),
                                                                           shinydashboard::menuItem("Available outcomes", tabName = "outcomeCohortsTab", icon = shiny::icon("table")),

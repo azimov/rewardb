@@ -28,11 +28,6 @@ timeToOutcomeServer <- function(id, model, selectedExposureOutcome) {
 #' @importFrom gt render_gt
 #' @import shiny
 dashboardInstance <- function(input, output, session) {
-  getOutcomeCohortTypes <- shiny::reactive({
-    cohortTypeMapping <- list("ATLAS defined" = 3, "Inpatient" = 0, "Two diagnosis codes" = 1, "One diagnosis code" = 2)
-    lapply(input$outcomeCohortTypes, function(x) cohortTypeMapping[[x]])
-  })
-
   dataSourceInfo <- shiny::reactive({ model$getDataSourceInfo() })
   output$dataSourceTable <- gt::render_gt(dataSourceInfo())
 
@@ -53,7 +48,7 @@ dashboardInstance <- function(input, output, session) {
     outcomeCohortNames <- if (length(input$outcomeCohorts)) strQueryWrap(input$outcomeCohorts) else NULL
     targetCohortNames <- if (length(input$targetCohorts)) strQueryWrap(input$targetCohorts) else NULL
     exposureClassNames <- if (appContext$useExposureControls & length(input$exposureClass)) strQueryWrap(input$exposureClass) else NULL
-    outcomeTypes <- getOutcomeCohortTypes()
+    outcomeTypes <- input$outcomeCohortTypes
 
     params <- list(benefitThreshold = input$cutrange1,
                    riskThreshold = input$cutrange2,
@@ -77,14 +72,38 @@ dashboardInstance <- function(input, output, session) {
     return(res)
   })
 
-  output$mainTablePage <- shiny::renderUI({
+  mainTablePage <- shiny::reactiveVal(1)
+  mainTableMaxPages <- shiny::reactive({
     recordCount <- getMainTableCount()
-    numPages <- ceiling(recordCount / as.integer(input$mainTablePageSize))
-    shiny::selectInput("mainTablePage", "Page", choices = 1:numPages)
+    ceiling(recordCount / as.integer(input$mainTablePageSize))
+  })
+
+  shiny::observeEvent(input$mainTableNext, {
+    mainTablePage <- mainTablePage() + 1
+    if (mainTablePage <= mainTableMaxPages()) {
+      mainTablePage(mainTablePage)
+    }
+
+  })
+  shiny::observeEvent(input$mainTablePrevious, {
+    mainTablePage <- mainTablePage() - 1
+    if (mainTablePage > 0) {
+      mainTablePage(mainTablePage)
+    }
   })
 
   getMainTablePage <- shiny::reactive({
-    return(as.integer(input$mainTablePage))
+    return(mainTablePage())
+  })
+
+  output$mainTablePage <- shiny::renderUI({
+
+    numPages <- mainTableMaxPages()
+    shiny::selectInput("mainTablePage", "Page", choices = 1:numPages, selected = mainTablePage())
+  })
+
+  shiny::observeEvent(input$mainTablePage, {
+    mainTablePage(as.integer(input$mainTablePage))
   })
 
   output$mainTableNumPages <- shiny::renderText({
