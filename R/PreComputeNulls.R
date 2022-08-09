@@ -370,10 +370,13 @@ runPreComputeNullDistributions <- function(globalConfigPath,
 #' Run task to pre-compute null distributions for all outcomes and exposures as RStudio Job
 #' This process requires a CemConnector connection, this may be slow if using cem.ohdsi.org
 #'
-#' @inheritParams runPreComputeNullExposureDistributions
+#' @param globalConfigPath              config path
+#' @param analysisId                    analysis setting to use
+#' @param sourceIds                     data sources
+#' @param nThreads                      thread count
 #' @param workingDir                        Charachter working directory (default is currentWd)
-#' @param computeExposures                  Compute exposure distributions
-#' @param computeOutcomes                   Compute outcome null distributions
+#' @param getCemMappings                  get mappings from cem
+#' @param minCohortSize                   Compute outcome null distributions
 #' @export
 runPreComputeNullDistributionsJob <- function(globalConfigPath,
                                               analysisId = 1,

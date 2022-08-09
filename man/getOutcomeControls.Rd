@@ -4,7 +4,7 @@
 \alias{getOutcomeControls}
 \title{Get outcome controls}
 \usage{
-getOutcomeControls(appContext, connection, outcomeTypes = c(0, 1, 2))
+getOutcomeControls(appContext, connection, outcomeTypes = c(0, 1, 2, 3))
 }
 \arguments{
 \item{appContext}{rewardb app context}

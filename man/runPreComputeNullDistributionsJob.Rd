@@ -15,11 +15,19 @@ runPreComputeNullDistributionsJob(
 )
 }
 \arguments{
+\item{globalConfigPath}{config path}
+
+\item{analysisId}{analysis setting to use}
+
+\item{sourceIds}{data sources}
+
+\item{nThreads}{thread count}
+
+\item{getCemMappings}{get mappings from cem}
+
+\item{minCohortSize}{Compute outcome null distributions}
+
 \item{workingDir}{Charachter working directory (default is currentWd)}
-
-\item{computeExposures}{Compute exposure distributions}
-
-\item{computeOutcomes}{Compute outcome null distributions}
 }
 \description{
 Run task to pre-compute null distributions for all outcomes and exposures as RStudio Job
